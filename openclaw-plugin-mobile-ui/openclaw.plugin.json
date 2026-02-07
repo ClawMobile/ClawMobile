@@ -1,0 +1,6 @@
+{
+  "name": "openclaw-plugin-mobile-ui",
+  "version": "0.1.0",
+  "main": "dist/index.js",
+  "description": "Mobile UI tools backed by droidrun (executor/agent)."
+}

@@ -1,7 +1,7 @@
 #!/data/data/com.termux/files/usr/bin/bash
 set -euo pipefail
 
-UBUNTU_DISTRO="${UBUNTU_DISTRO:-ubuntu-22.04}"
+UBUNTU_DISTRO="${UBUNTU_DISTRO:-ubuntu}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
