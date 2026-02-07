@@ -75,86 +75,126 @@ fi
 } > "$TMP_ENV"
 
 echo "[clawbot] Starting OpenClaw Gateway..."
-proot-distro login "${UBUNTU_DISTRO}" --shared-tmp -- bash -lc "
-  set -euo pipefail
+proot-distro login "${UBUNTU_DISTRO}" --shared-tmp -- bash -lc 'bash -seuo pipefail' <<EOF
+REPO_ROOT='${REPO_ROOT}'
+REPO_RULES='${REPO_RULES}'
+PLUGIN_DIR='${PLUGIN_DIR}'
+TMP_ENV='${TMP_ENV}'
 
-  REPO_ROOT='${REPO_ROOT}'
-  REPO_RULES='${REPO_RULES}'
-  PLUGIN_DIR='${PLUGIN_DIR}'
-  TMP_ENV='${TMP_ENV}'
+# ---- import chosen droidrun provider/model + key ----
+if [ -f "\$TMP_ENV" ]; then
+  # shellcheck disable=SC1090
+  source "\$TMP_ENV"
+fi
 
-  # ---- import chosen droidrun provider/model + key ----
-  if [ -f \"\$TMP_ENV\" ]; then
-    source \"\$TMP_ENV\"
+echo "[run] droidrun chosen: provider=\${DROIDRUN_PROVIDER:-<empty>} model=\${DROIDRUN_MODEL:-<empty>}"
+echo "[run] key check: OPENAI_API_KEY=\${OPENAI_API_KEY:+<set>} GEMINI_API_KEY=\${GEMINI_API_KEY:+<set>} ANTHROPIC_API_KEY=\${ANTHROPIC_API_KEY:+<set>} DEEPSEEK_API_KEY=\${DEEPSEEK_API_KEY:+<set>}"
+
+cd "\$REPO_ROOT"
+
+# ---- ensure env.sh patch also loads (node netif patch) ----
+if [ -f installer/ubuntu/env.sh ]; then
+  # shellcheck disable=SC1091
+  source installer/ubuntu/env.sh
+fi
+
+# ---- activate python virtual environment + pin CLAW_MOBILE_PYTHON ----
+if [ -f "/root/venvs/clawbot/bin/activate" ]; then
+  # shellcheck disable=SC1091
+  source "/root/venvs/clawbot/bin/activate"
+  if [ -x "/root/venvs/clawbot/bin/python3" ]; then
+    export CLAW_MOBILE_PYTHON="/root/venvs/clawbot/bin/python3"
+  else
+    export CLAW_MOBILE_PYTHON="/root/venvs/clawbot/bin/python"
   fi
+else
+  echo "[run] WARNING: venv not found at /root/venvs/clawbot; tools may use system python"
+fi
+echo "[run] CLAW_MOBILE_PYTHON=\${CLAW_MOBILE_PYTHON:-}" || true
 
-  echo \"[run] droidrun chosen: provider=\${DROIDRUN_PROVIDER:-<empty>} model=\${DROIDRUN_MODEL:-<empty>}\"
-  echo \"[run] key check: OPENAI_API_KEY=\${OPENAI_API_KEY:+<set>} GEMINI_API_KEY=\${GEMINI_API_KEY:+<set>} ANTHROPIC_API_KEY=\${ANTHROPIC_API_KEY:+<set>} DEEPSEEK_API_KEY=\${DEEPSEEK_API_KEY:+<set>}\"
+# ---- ADB prep: pick a usable device serial automatically (prefer emulator-*) ----
+if command -v adb >/dev/null 2>&1; then
+  adb start-server >/dev/null 2>&1 || true
+  mapfile -t DEVICES < <(adb devices | awk 'NR>1 && \$2=="device" {print \$1}')
 
-  cd \"\$REPO_ROOT\"
-
-  # ---- ensure env.sh patch also loads (node netif patch) ----
-  if [ -f installer/ubuntu/env.sh ]; then
-    source installer/ubuntu/env.sh
-  fi
-
-  # ---- activate python virtual environment + pin CLAW_MOBILE_PYTHON ----
-  if [ -f \"/root/venvs/clawbot/bin/activate\" ]; then
-    source \"/root/venvs/clawbot/bin/activate\"
-    if [ -x \"/root/venvs/clawbot/bin/python3\" ]; then
-      export CLAW_MOBILE_PYTHON=\"/root/venvs/clawbot/bin/python3\"
-    else
-      export CLAW_MOBILE_PYTHON=\"/root/venvs/clawbot/bin/python\"
+  if [ "\${#DEVICES[@]}" -eq 0 ]; then
+    echo "[run] WARNING: no adb device in 'device' state."
+    echo "[run] adb devices output:"
+    adb devices || true
+    echo "[run] If unauthorized: enable USB/Wireless debugging and accept prompt on phone."
+  else
+    if [ -z "\${DROIDRUN_SERIAL:-}" ]; then
+      PICK=""
+      for s in "\${DEVICES[@]}"; do
+        if [[ "\$s" == emulator-* ]]; then
+          PICK="\$s"
+          break
+        fi
+      done
+      [ -n "\$PICK" ] || PICK="\${DEVICES[0]}"
+      export DROIDRUN_SERIAL="\$PICK"
     fi
-  else
-    echo \"[run] WARNING: venv not found at /root/venvs/clawbot; tools may use system python\"
+    echo "[run] adb selected serial: \${DROIDRUN_SERIAL}"
   fi
-  echo \"[run] CLAW_MOBILE_PYTHON=\${CLAW_MOBILE_PYTHON:-}\" || true
+else
+  echo "[run] WARNING: adb not found."
+fi
 
-  # ---- ADB prep: pick a usable device serial automatically ----
-  if command -v adb >/dev/null 2>&1; then
-    adb start-server >/dev/null 2>&1 || true
-    mapfile -t DEVICES < <(adb devices | awk 'NR>1 && \$2==\"device\" {print \$1}')
-    if [ \${#DEVICES[@]} -eq 0 ]; then
-      echo \"[run] WARNING: no adb device in 'device' state.\"
-      echo \"[run] adb devices output:\"
-      adb devices || true
-      echo \"[run] If unauthorized: enable USB/Wireless debugging and accept prompt on phone.\"
-    else
-      if [ -z \"\${DROIDRUN_SERIAL:-}\" ]; then
-        export DROIDRUN_SERIAL=\"\${DEVICES[0]}\"
-      fi
-      echo \"[run] adb selected serial: \${DROIDRUN_SERIAL}\"
-    fi
-  else
-    echo \"[run] WARNING: adb not found.\"
+# ---- build plugin if needed, then plugins install ----
+if [ -d "\$PLUGIN_DIR" ]; then
+  if [ ! -d "\$PLUGIN_DIR/dist" ]; then
+    echo "[run] building plugin (dist missing)..."
+    cd "\$PLUGIN_DIR"
+    npm install
+    npm run build
+    cd "\$REPO_ROOT"
   fi
 
-  # ---- build plugin if needed, then plugins install ----
-  if [ -d \"\$PLUGIN_DIR\" ]; then
-    if [ ! -d \"\$PLUGIN_DIR/dist\" ]; then
-      echo \"[run] building plugin (dist missing)...\"
-      cd \"\$PLUGIN_DIR\"
-      npm i -D @types/node
-      npm install
-      npm run build
-      cd \"\$REPO_ROOT\"
-    fi
+  echo "[run] openclaw plugins install \$PLUGIN_DIR"
+  openclaw plugins install "\$PLUGIN_DIR" || true
+else
+  echo "[run] WARNING: plugin dir not found at \$PLUGIN_DIR"
+fi
 
-    echo \"[run] openclaw plugins install \$PLUGIN_DIR\"
-    openclaw plugins install \"\$PLUGIN_DIR\" || true
+# ---- workspace seed: inject AGENTS/TOOLS blocks + sync rules ----
+WORKSPACE="\$(openclaw config get agents.defaults.workspace 2>/dev/null | tr -d '\"' || true)"
+[ -n "\$WORKSPACE" ] || WORKSPACE="/root/.openclaw/workspace"
+mkdir -p "\$WORKSPACE"
+
+SEED_DIR="\$REPO_ROOT/installer/workspace-seed"
+
+append_block_if_missing() {
+  local target="\$1"
+  local block="\$2"
+  local marker="CLAWBOT_MOBILE_BEGIN"
+
+  [ -f "\$block" ] || return 0
+  touch "\$target"
+
+  if ! grep -q "\$marker" "\$target"; then
+    printf "\n\n" >> "\$target"
+    cat "\$block" >> "\$target"
+    printf "\n" >> "\$target"
+    echo "[run] injected mobile block into \$(basename "\$target")"
   else
-    echo \"[run] WARNING: plugin dir not found at \$PLUGIN_DIR\"
+    echo "[run] mobile block already present in \$(basename "\$target")"
   fi
+}
 
-  # ---- configure external rules for memory_search (read-only) ----
-  if [ -d \"\$REPO_RULES\" ]; then
-    JSON_RULES=\$(printf '[\"%s\"]' \"\$REPO_RULES\")
-    openclaw config set agents.defaults.memorySearch.extraPaths \"\$JSON_RULES\" >/dev/null 2>&1 || true
-    echo \"[run] memorySearch.extraPaths set to: \$REPO_RULES\"
-  else
-    echo \"[run] rules folder not found at \$REPO_RULES (ok)\"
-  fi
+append_block_if_missing "\$WORKSPACE/AGENTS.md" "\$SEED_DIR/AGENTS.mobile.md"
+append_block_if_missing "\$WORKSPACE/TOOLS.md"  "\$SEED_DIR/TOOLS.mobile.md"
 
-  exec openclaw gateway --bind ${GATEWAY_BIND} --port ${GATEWAY_PORT} --verbose
-"
+RULES_SRC="\$SEED_DIR/rules"
+RULES_DST="\$WORKSPACE/rules"
+mkdir -p "\$RULES_DST/user"
+
+if [ -d "\$RULES_SRC/Clawbot-mobile" ]; then
+  mkdir -p "\$RULES_DST/Clawbot-mobile"
+  rsync -a --delete "\$RULES_SRC/Clawbot-mobile/" "\$RULES_DST/Clawbot-mobile/"
+  echo "[run] synced rules -> \$RULES_DST/Clawbot-mobile (overwrite)"
+else
+  echo "[run] WARNING: seed rules not found at \$RULES_SRC/Clawbot-mobile"
+fi
+
+exec openclaw gateway --bind ${GATEWAY_BIND} --port ${GATEWAY_PORT} --verbose
+EOF
