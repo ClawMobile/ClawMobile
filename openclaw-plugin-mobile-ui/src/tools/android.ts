@@ -140,15 +140,21 @@ export async function android_ui_type_find(input: {
   return exec.uiTypeFind(input || ({} as any));
 }
 
-export async function android_vibrate(args?: { ms?: number; repeat?: number; gapMs?: number }) {
+export async function android_signal_complete(args?: {
+  ms?: number;
+  repeat?: number;
+  gapMs?: number;
+  tts?: string;
+  title?: string;
+  content?: string;
+}) {
   const payload = {
-    ms: args?.ms ?? 200,
-    repeat: args?.repeat ?? 1,
+    ms: args?.ms ?? 250,
+    repeat: args?.repeat ?? 2,
     gapMs: args?.gapMs ?? 120,
+    tts: args?.tts ?? "Done",
+    title: args?.title ?? "Clawbot",
+    content: args?.content ?? "Task completed.",
   };
-
-  // 这里假设你已有一个“执行 pyexec 下脚本并返回 JSON”的封装：
-  // 比如 runPyJson("android_vibrate.py", payload)
-  const res = await runPyJson("android_vibrate.py", payload);
-  return res;
+  return await runPyJson("android_signal_complete.py", payload);
 }

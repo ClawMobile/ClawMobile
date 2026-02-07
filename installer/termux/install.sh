@@ -8,7 +8,7 @@ pkg update -y
 pkg upgrade -y
 
 echo "[+] Installing prerequisites..."
-pkg install -y proot-distro git curl
+pkg install -y proot-distro git curl termux-api
 
 echo "[+] Installing proot Ubuntu (${UBUNTU}) if missing..."
 if ! proot-distro list | grep -q "^${UBUNTU}\b"; then

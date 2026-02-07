@@ -75,8 +75,6 @@ Recovery (ADB):
    - `adb shell ime set <your.default.ime/.Service>`
 
 ### Completion signaling
-Chat notifications may not always appear due to Android system behavior.
-
-When available, prefer a device-level completion signal (vibration or sound) to notify the user that a task has finished.
+Chat notifications may not always appear due to Android system behavior, use android_signal_complete as the completion signal.
 
 <!-- CLAWBOT_MOBILE_END -->
