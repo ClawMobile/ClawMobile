@@ -1,5 +1,5 @@
 {
-  "id": "mobile-ui",
+  "id": "openclaw-plugin-mobile-ui",
   "name": "Mobile UI",
   "description": "Android UI tools backed by droidrun (executor/agent).",
   "kind": "tools",

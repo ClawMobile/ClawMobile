@@ -10,7 +10,7 @@ import {
 export default function register(api: any) {
   // ---- basic health ----
   api.registerTool?.({
-    name: "android.health",
+    name: "android_health",
     description: "Check droidrun/python availability (mobile executor health).",
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
     handler: async () => android_health(),
@@ -18,7 +18,7 @@ export default function register(api: any) {
 
   // ---- screenshot ----
   api.registerTool?.({
-    name: "android.screenshot",
+    name: "android_screenshot",
     description: "Take a screenshot on the Android device (via droidrun).",
     inputSchema: {
       type: "object",
@@ -30,7 +30,7 @@ export default function register(api: any) {
 
   // ---- tap ----
   api.registerTool?.({
-    name: "android.tap",
+    name: "android_tap",
     description: "Tap at (x,y) on the Android device (via droidrun).",
     inputSchema: {
       type: "object",
@@ -43,7 +43,7 @@ export default function register(api: any) {
 
   // ---- type ----
   api.registerTool?.({
-    name: "android.type",
+    name: "android_type",
     description: "Type text into the focused field (via droidrun).",
     inputSchema: {
       type: "object",
@@ -56,7 +56,7 @@ export default function register(api: any) {
 
   // ---- swipe ----
   api.registerTool?.({
-    name: "android.swipe",
+    name: "android_swipe",
     description: "Swipe from (x1,y1) to (x2,y2) (via droidrun).",
     inputSchema: {
       type: "object",
@@ -75,7 +75,7 @@ export default function register(api: any) {
 
   // ---- agent task (optional) ----
   api.registerTool?.({
-    name: "android.task",
+    name: "android_task",
     description: "Run a high-level task using droidrun agent mode (placeholder in v1).",
     inputSchema: {
       type: "object",
