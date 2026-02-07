@@ -246,22 +246,25 @@ export default function register(api: any) {
     )
   );
 
-  api.registerTool?.({
-    name: "android_signal_complete",
-    description: "Device-level completion signal (Termux:API vibrate/notification/TTS).",
-    inputSchema: {
-      type: "object",
-      properties: {
-        ms: { type: "integer", minimum: 1, maximum: 5000 },
-        repeat: { type: "integer", minimum: 1, maximum: 5 },
-        gapMs: { type: "integer", minimum: 0, maximum: 2000 },
-        tts: { type: "string" },
-        title: { type: "string" },
-        content: { type: "string" },
+  // ---- completion signal (Termux:API) ----
+  api.registerTool(
+    toolDef(
+      "android_signal_complete",
+      "Device-level completion signal (Termux:API vibrate/notification/TTS).",
+      {
+        type: "object",
+        properties: {
+          ms: { type: "integer", minimum: 1, maximum: 5000 },
+          repeat: { type: "integer", minimum: 1, maximum: 5 },
+          gapMs: { type: "integer", minimum: 0, maximum: 2000 },
+          tts: { type: "string" },
+          title: { type: "string" },
+          content: { type: "string" }
+        },
+        additionalProperties: false
       },
-      additionalProperties: false,
-    },
-    handler: async (args: any) => android_signal_complete(args),
-  });
+      async (args) => android_signal_complete(args)
+    )
+  );
 
 }
