@@ -38,8 +38,37 @@ def cmd_screenshot(args):
     if not ok_import:
         return fail("droidrun not importable", {"import_error": err})
 
-    # TODO: 换成你确认过的 droidrun 截图 API
-    return ok({"path": args.output or "/tmp/screenshot-placeholder.png", "note": "placeholder implementation"})
+    import asyncio
+    import time
+    from droidrun.tools import AdbTools
+
+    async def _run():
+        # 可选：允许用环境变量指定设备与 TCP 模式
+        serial = os.environ.get("DROIDRUN_SERIAL") or None
+        use_tcp = os.environ.get("DROIDRUN_USE_TCP", "0").lower() in ("1", "true", "yes")
+        remote_tcp_port = int(os.environ.get("DROIDRUN_TCP_PORT", "8080"))
+
+        tools = AdbTools(serial=serial, use_tcp=use_tcp, remote_tcp_port=remote_tcp_port)
+
+        fmt, image_bytes = await tools.take_screenshot(hide_overlay=True)  #  [oai_citation:3‡docs.droidrun.ai](https://docs.droidrun.ai/sdk/adb-tools)
+
+        # 输出文件路径：优先用参数 --output；否则写到 /tmp
+        out_path = args.output.strip() if args.output else ""
+        if not out_path:
+            out_path = f"/tmp/screenshot_{int(time.time())}.png"
+
+        # 确保目录存在
+        os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
+        with open(out_path, "wb") as f:
+            f.write(image_bytes)
+
+        return {"format": fmt, "path": out_path, "bytes": len(image_bytes)}
+
+    try:
+        data = asyncio.run(_run())
+        return ok(data)
+    except Exception as e:
+        return fail("screenshot_failed", {"repr": repr(e)})
 
 def cmd_tap(args):
     ok_import, err = ensure_droidrun_importable()
