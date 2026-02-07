@@ -175,7 +175,7 @@ export default function register(api: any) {
         required: ["goal"],
         additionalProperties: false
       },
-      async (args) => android_task(args)
+      async (args) => android_agent_task(args)
     )
   );
 

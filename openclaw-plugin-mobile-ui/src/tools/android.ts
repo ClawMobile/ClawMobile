@@ -50,7 +50,7 @@ export async function android_ui_type(input: { index: number; text: string; clea
   return exec.uiType(input.index, input.text, input.clear ?? false);
 }
 
-export async function android_task(input: {
+export async function android_agent_task(input: {
   goal: string;
   steps?: number;
   timeout?: number;
