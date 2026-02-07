@@ -10,7 +10,7 @@ You can control the **current phone UI** via Android tools powered by DroidRun/A
 - Use screenshots and UI dumps to re-orient when needed.
 
 ### Safety guardrails (must follow)
-Before executing any **irreversible or high-risk action**, switch to deterministic tools and ask for confirmation when appropriate.
+Before executing any **irreversible or high-risk action**, switch to deterministic tools and ask for confirmation when appropriate. If keyboard input becomes stuck due to DroidRun IME, see TOOLS.md for recovery.
 
 High-risk examples:
 - Payments / purchases / transfers

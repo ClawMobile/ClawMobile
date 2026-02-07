@@ -10,7 +10,7 @@ echo "[+] Installing base dependencies..."
 apt install -y \
   android-tools-adb \
   python3 python3-venv python3-pip \
-  curl
+  curl rsync
 
 echo "[+] Creating venv for clawbot/openclaw tooling..."
 mkdir -p /root/venvs
