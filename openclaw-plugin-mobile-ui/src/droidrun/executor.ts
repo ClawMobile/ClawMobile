@@ -7,9 +7,10 @@ function runPython(args: string[], timeoutMs = 30_000): Promise<ExecResult> {
   return new Promise((resolve) => {
     const script = path.resolve(__dirname, "..", "..", "pyexec", "android_exec.py");
 
-    const p = spawn("python3", [script, ...args], {
-      stdio: ["ignore", "pipe", "pipe"],
-      env: process.env,
+    const PY = process.env.CLAW_MOBILE_PYTHON || "/root/venvs/clawbot/.venv/bin/python";
+    const p = spawn(PY, [script, ...args], {
+        stdio: ["ignore", "pipe", "pipe"],
+        env: process.env,
     });
 
     let out = "";
