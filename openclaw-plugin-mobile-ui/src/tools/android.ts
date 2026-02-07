@@ -50,16 +50,14 @@ export async function android_ui_type(input: { index: number; text: string; clea
   return exec.uiType(input.index, input.text, input.clear ?? false);
 }
 
-export async function android_task(input: { task: string }) {
-  if (getMode() === "agent") return agent.runTask(input.task);
-  return {
-    ok: true,
-    data: {
-      mode: "executor",
-      note: "android_task is agent-oriented; set CLAW_MOBILE_MODE=agent to enable agent behavior.",
-      task: input.task,
-    },
-  };
+export async function android_task(input: {
+  goal: string;
+  steps?: number;
+  timeout?: number;
+  deviceSerial?: string;
+  tcp?: boolean;
+}) {
+  return agent.runTask(input);
 }
 
 export async function android_ui_find(input: {

@@ -4,7 +4,7 @@ import {
   android_tap,
   android_type,
   android_swipe,
-  android_task,
+  android_agent_task,
   android_ui_dump,
   android_ui_tap,
   android_ui_type,
@@ -161,13 +161,19 @@ export default function register(api: any) {
 
   api.registerTool(
     toolDef(
-      "android_task",
-      "Run a high-level task using droidrun agent mode (placeholder).",
+      "android_agent_task",
+      "Run a high-level Android task using DroidRun DroidAgent (agent mode).",
       {
         type: "object",
-        properties: { task: { type: "string" } },
-        required: ["task"],
-        additionalProperties: false,
+        properties: {
+          goal: { type: "string" },
+          steps: { type: "integer" },
+          timeout: { type: "integer" },
+          deviceSerial: { type: "string" },
+          tcp: { type: "boolean" }
+        },
+        required: ["goal"],
+        additionalProperties: false
       },
       async (args) => android_task(args)
     )

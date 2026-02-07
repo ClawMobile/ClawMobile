@@ -601,6 +601,57 @@ def cmd_ui_type_find(args):
     except Exception as e:
         return fail("ui_type_find_failed", {"repr": repr(e)})
 
+def cmd_agent_task(args):
+    ok_import, err = ensure_droidrun_importable()
+    if not ok_import:
+        return fail("droidrun not importable", {"import_error": err})
+
+    goal = (args.goal or "").strip()
+    if not goal:
+        return fail("goal is required")
+
+    serial = os.environ.get("DROIDRUN_SERIAL") or None
+    use_tcp = os.environ.get("DROIDRUN_USE_TCP", "0").lower() in ("1", "true", "yes")
+
+    if args.device_serial:
+        serial = args.device_serial
+    if args.tcp:
+        use_tcp = True
+
+    max_steps = int(args.steps)
+    timeout = int(args.timeout)
+
+    async def _run():
+        from droidrun import DroidAgent, DeviceConfig
+        from droidrun.config_manager import DroidrunConfig
+
+        device_cfg = DeviceConfig(serial=serial, use_tcp=use_tcp)
+        cfg = DroidrunConfig(device=device_cfg)
+
+        # best-effort set max_steps if this version exposes agent config
+        if getattr(cfg, "agent", None) is not None and hasattr(cfg.agent, "max_steps"):
+            cfg.agent.max_steps = max_steps
+
+        agent = DroidAgent(goal=goal, config=cfg, timeout=timeout)
+        result = await agent.run()
+
+        out = {
+            "success": bool(getattr(result, "success", False)),
+            "reason": getattr(result, "reason", ""),
+            "steps": int(getattr(result, "steps", 0) or 0),
+        }
+        so = getattr(result, "structured_output", None)
+        if so is not None:
+            out["structured_output"] = so
+        return out
+
+    try:
+        with ImeGuard():
+            data = asyncio.run(_run())
+        return ok(data)
+    except Exception as e:
+        return fail("agent_task_failed", {"repr": repr(e)})
+    
 # -------------------------
 # CLI
 # -------------------------
@@ -677,6 +728,13 @@ def main():
     puif.add_argument("--clear", action="store_true")
     puif.add_argument("text")
 
+    pag = sub.add_parser("agent_task")
+    pag.add_argument("goal")
+    pag.add_argument("--steps", type=int, default=30)
+    pag.add_argument("--timeout", type=int, default=1000)
+    pag.add_argument("--device-serial", dest="device_serial", default="")
+    pag.add_argument("--tcp", action="store_true")
+
     args = p.parse_args()
 
     try:
@@ -704,6 +762,8 @@ def main():
             return cmd_ui_tap_find(args)
         if args.cmd == "ui_type_find":
             return cmd_ui_type_find(args)
+        if args.cmd == "agent_task":
+            return cmd_agent_task(args)
         return fail("unknown cmd")
     except Exception as e:
         return fail("exception", {"repr": repr(e)})
