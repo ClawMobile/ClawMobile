@@ -34,19 +34,11 @@ def cmd_health(_args):
     })
 
 def cmd_screenshot(args):
-    """
-    TODO: 替换为你实际验证过的 droidrun 截图 API。
-    现在先返回一个占位结果，证明链路通。
-    """
     ok_import, err = ensure_droidrun_importable()
     if not ok_import:
         return fail("droidrun not importable", {"import_error": err})
 
-    # TODO: 例如
-    # path = droidrun.screenshot(output=args.output)
-    # return ok({"path": path})
-
-    # 占位：不做实际截图，先验证管道
+    # TODO: 换成你确认过的 droidrun 截图 API
     return ok({"path": args.output or "/tmp/screenshot-placeholder.png", "note": "placeholder implementation"})
 
 def cmd_tap(args):
@@ -54,7 +46,7 @@ def cmd_tap(args):
     if not ok_import:
         return fail("droidrun not importable", {"import_error": err})
 
-    # TODO: droidrun.tap(x=args.x, y=args.y)
+    # TODO: 换成你确认过的 droidrun tap API
     return ok({"x": args.x, "y": args.y, "note": "placeholder implementation"})
 
 def cmd_type(args):
@@ -62,7 +54,7 @@ def cmd_type(args):
     if not ok_import:
         return fail("droidrun not importable", {"import_error": err})
 
-    # TODO: droidrun.type_text(args.text)
+    # TODO: 换成你确认过的 droidrun type API
     return ok({"text": args.text, "note": "placeholder implementation"})
 
 def cmd_swipe(args):
@@ -70,7 +62,7 @@ def cmd_swipe(args):
     if not ok_import:
         return fail("droidrun not importable", {"import_error": err})
 
-    # TODO: droidrun.swipe(x1,y1,x2,y2,duration_ms=args.duration_ms)
+    # TODO: 换成你确认过的 droidrun swipe API
     return ok({
         "x1": args.x1, "y1": args.y1, "x2": args.x2, "y2": args.y2,
         "duration_ms": args.duration_ms,
@@ -98,7 +90,7 @@ def main():
     pw.add_argument("y1", type=int)
     pw.add_argument("x2", type=int)
     pw.add_argument("y2", type=int)
-    pw.add_argument("--duration-ms", type=int, default=300)
+    pw.add_argument("--duration-ms", dest="duration_ms", type=int, default=300)
 
     args = p.parse_args()
 

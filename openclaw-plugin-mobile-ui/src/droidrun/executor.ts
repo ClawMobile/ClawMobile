@@ -16,7 +16,9 @@ function runPython(args: string[], timeoutMs = 30_000): Promise<ExecResult> {
     let err = "";
 
     const timer = setTimeout(() => {
-      try { p.kill("SIGKILL"); } catch {}
+      try {
+        p.kill("SIGKILL");
+      } catch {}
       resolve({ ok: false, error: "timeout", extra: { timeoutMs } });
     }, timeoutMs);
 
@@ -28,7 +30,7 @@ function runPython(args: string[], timeoutMs = 30_000): Promise<ExecResult> {
 
       // 期望 stdout 是 JSON
       try {
-        const parsed = JSON.parse(out.trim() || "{}");
+        const parsed = JSON.parse((out || "").trim() || "{}");
         resolve(parsed);
       } catch {
         resolve({
@@ -61,6 +63,9 @@ export class DroidrunExecutor {
   }
 
   async swipe(x1: number, y1: number, x2: number, y2: number, durationMs = 300) {
-    return runPython(["swipe", String(x1), String(y1), String(x2), String(y2), "--duration-ms", String(durationMs)], 60_000);
+    return runPython(
+      ["swipe", String(x1), String(y1), String(x2), String(y2), "--duration-ms", String(durationMs)],
+      60_000
+    );
   }
 }
