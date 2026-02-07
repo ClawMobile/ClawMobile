@@ -14,9 +14,6 @@ It runs entirely on the phone using:
 - Runs an AI agent on your phone
 - Uses ADB + Accessibility (DroidRun) to interact with the UI
 - Accepts commands via OpenClaw (Telegram is used as an example)
-- Supports both:
-- Deterministic UI tools (find / tap / type)
-- Optional DroidRun agent mode
 
 ⚠️ This system controls the same phone it is running on.
 
@@ -29,18 +26,18 @@ It runs entirely on the phone using:
 On your phone, enable:
 1. Developer options
 2. USB debugging
-3. (Recommended) Wireless debugging
+3. Accessibility service for DroidRun Portal
 
 During installation, Android will show permission dialogs.
-You must accept them (preferably with “Always allow”).
+You should accept them (preferably with “Always allow”).
 
 ---
 
 ### 2. Termux
 
-Install Termux (F-Droid recommended).
+Install Termux.
 
-Open Termux and make sure proot-distro is available.
+Open Termux and make sure to have this project directory available.
 
 ---
 
@@ -70,13 +67,9 @@ To use Telegram:
 
 ---
 
-## Installation (one-time)
+## Installation steps
 
-All commands below are run from the project root directory.
-
----
-
-## Step 1 – Run the installer
+### Step 1 – Run the installer
 
 In Termux, from the project root:
 
@@ -93,7 +86,7 @@ This script will:
 
 ---
 
-## Step 2 – Required manual actions during install
+### Step 2 – Required manual actions during install
 
 While `install.sh` is running, you will be asked to:
 1. Accept Android debugging authorization
@@ -115,11 +108,9 @@ This is expected behavior, not an error.
 
 ---
 
-## Running the system
-
 ### Step 3 – Export model API key (for DroidRun agent)
 
-In Termux, before starting the gateway:
+In Termux, before starting the gateway (use openai as an example):
 
 ```sh
 export OPENAI_API_KEY=sk-xxxxxxxx
@@ -141,7 +132,7 @@ OpenClaw continues to use its own interactive configuration.
 From the project root:
 
 ```sh
-./run.sh
+./installer/termux/run.sh
 ```
 
 This script will:
@@ -160,23 +151,17 @@ You should see output similar to:
 
 Leave this terminal running.
 
+Next time, you can simply run `./installer/termux/run.sh` to start the gateway without going through installation again.
+
 ---
 
-## Telegram pairing (first time only)
-
-### Step 5 – Get pairing code
+### Step 5 – Pair the bot (first time only)
 
 In Telegram:
 1. Send any message to your bot
 2. The bot will respond with a pairing code / ID
-
----
-
-### Step 6 – Pair the bot (second Termux window)
-
-⚠️ Do not stop the running gateway.
-1. Open a new Termux window
-2. From the project root, run:
+3. Open a new Termux window (⚠️ Do not stop the running gateway)
+4. From the project root, run:
 
 ```sh
 ./installer/termux/pairing.sh <CODE>
@@ -185,27 +170,30 @@ In Telegram:
 Example:
 
 ```sh
-./installer/termux/pairing.sh ABCD-1234
+./installer/termux/pairing.sh ABCD1234
 ```
 
 Once paired, you can close this second window.
 
 ---
 
-## Using Clawbot
+### Step 6 – Using Clawbot
 
 After pairing:
 - Return to Telegram
 - Send commands to the bot
 - The agent will interact with the current phone UI
 
-### About UI interaction
+#### Onboarding new interfaces or reconfiguring
+To onboard new interfaces or reconfigure OpenClaw:
+1. Run `./installer/termux/onboard.sh`
+2. Follow the prompts to select interfaces and providers
 
-By default, the system prefers:
-- Accessibility-based UI actions
-- Only falls back to coordinates when needed
-
-This makes automation more stable across devices.
+#### Reset OpenClaw configuration
+To reset OpenClaw configuration and start fresh:
+```sh
+./installer/ubuntu/reset-openclaw.sh
+```
 
 ---
 
@@ -215,14 +203,15 @@ This makes automation more stable across devices.
 installer/
 ├─ termux/
 │  ├─ install.sh
+│  ├─ onboard.sh
 │  ├─ pairing.sh
-│  └─ README.md
+│  └─ run.sh
 ├─ ubuntu/
-│  └─ bootstrap.sh
-
+│  ├─ bootstrap.sh
+│  ├─ env.sh
+│  └─ reset-openclaw.sh
 openclaw-plugin-mobile-ui/
 memory/
-run.sh
 ```
 
 ---
@@ -234,11 +223,11 @@ run.sh
    → configure OpenClaw interactively
    → Ctrl + C
 2. `export OPENAI_API_KEY=...`
-3. `./run.sh`
+3. `./installer/termux/run.sh`
 4. Send message to Telegram bot → get code
 5. New Termux window: `./installer/termux/pairing.sh <code>`
 6. Start chatting
 
 ---
 
-For troubleshooting and common issues, see `FAQ.md`.
+For troubleshooting and common issues, see [FAQ.md](FAQ.md).

@@ -4,6 +4,16 @@ This section lists common problems and platform-specific pitfalls when running C
 
 If something feels “randomly broken”, check here first.
 
+1. [The gateway stops responding after a while](#-the-gateway-stops-responding-after-a-while)
+2. [adb devices shows unauthorized](#-adb-devices-shows-unauthorized)
+3. [No ADB device found / wrong device selected](#-no-adb-device-found--wrong-device-selected)
+4. [Agent mode fails: “No model / no API key”](#-agent-mode-fails-no-model--no-api-key)
+5. [OpenClaw configuration is confusing / too many options](#-openclaw-configuration-is-confusing--too-many-options)
+6. [Input method changes after automation](#input-method-changes-after-automation)
+7. [Plugin changes don’t take effect](#-plugin-changes-dont-take-effect)
+8. [Ctrl + C during installation is this correct](#ctrl--c-during-installation-is-this-correct)
+9. [Final note when in doubt](#final-note-when-in-doubt)
+
 ---
 
 ## 🔋 The gateway stops responding after a while
@@ -31,7 +41,9 @@ On some devices you may also need to:
 - Disable “Background limits”
 - Pin Termux in recent apps
 
-If battery optimization is enabled, the OpenClaw Gateway will be killed silently.
+If battery optimization is enabled, the OpenClaw Gateway could be killed silently.
+
+On the other side, if you keep the Termux app open and active, the power of your device is likely consumed more quickly.
 
 ---
 
@@ -59,7 +71,7 @@ On the phone:
 Then rerun:
 
 ```sh
-./run.sh
+./installer/termux/run.sh
 ```
 
 ---
@@ -130,7 +142,7 @@ Everything else can be skipped or left default.
 
 ---
 
-## ⌨️ Input method changes after automation
+## Input method changes after automation
 
 **Symptom**
 - Keyboard switches to DroidRun input method
@@ -142,7 +154,13 @@ DroidRun temporarily switches the input method to perform automation.
 
 **What we do**
 - The plugin automatically restores the previous input method
-- If something still goes wrong, restart `run.sh`
+- If something still goes wrong, try the following command with wire-connected adb:
+
+```sh
+adb shell ime list -s
+# Find the default input method, for example com.sohu.inputmethod.sogou.xiaomi/.SogouIME
+adb shell ime set com.sohu.inputmethod.sogou.xiaomi/.SogouIME
+```
 
 ---
 
@@ -164,12 +182,12 @@ Always rebuild and restart:
 cd openclaw-plugin-mobile-ui
 npm run build
 cd ..
-./run.sh
+./installer/termux/run.sh
 ```
 
 ---
 
-## 🔁 Ctrl + C during installation — is this correct?
+## Ctrl + C during installation is this correct
 
 Yes.
 
@@ -185,35 +203,7 @@ This is expected and correct behavior.
 
 ---
 
-## 🧪 Agent vs Executor confusion
-
-**Explanation**
-- Executor tools (`ui_find` / `ui_tap` / `ui_type`) → deterministic, stable, preferred
-- Agent mode → higher-level, more autonomous, optional
-
-By default:
-- The system prefers executor tools
-- Agent mode is explicitly invoked
-
-This is intentional for safety and stability.
-
----
-
-## 📦 Re-running run.sh feels redundant
-
-Yes, and that’s on purpose.
-
-`run.sh` is designed to be idempotent:
-- Rebuilds the plugin if needed
-- Re-installs the plugin if needed
-- Re-selects ADB device
-- Re-applies configuration
-
-This trades a bit of startup time for much higher reliability.
-
----
-
-## 🆘 When in doubt
+## Final note when in doubt
 
 If something breaks:
 1. Stop the gateway (Ctrl + C)
@@ -221,20 +211,29 @@ If something breaks:
 1. Run:
 
 ```sh
-./run.sh
+./installer/termux/run.sh
 ```
 
 Most issues are resolved by a clean restart.
 
----
+If problems persist, you can always reset to a clean state:
+```sh
+./installer/termux/reset.sh
+```
 
-## Final note
+And then start fresh:
 
-Running a long-lived AI agent on a phone is fundamentally different from a server.
+```sh
+./installer/termux/onboard.sh
+export OPENAI_API_KEY=sk-...
+./installer/termux/run.sh
+```
 
-The setup here is optimized for:
-- Stability
-- Recoverability
-- Minimal user guesswork
+Or you can just remove the whole proot ubuntu and start over:
 
-If you treat `run.sh` as the single source of truth, you’ll avoid 90% of problems.
+```sh
+proot-distro remove ubuntu
+./installer/termux/install.sh
+export OPENAI_API_KEY=sk-...
+./installer/termux/run.sh
+```

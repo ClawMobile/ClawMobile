@@ -4,8 +4,6 @@ Clawbot Mobile runs entirely on the local Android device.
 
 ## Data handling
 
-- No screen streaming is performed
-- No UI data is uploaded by default
 - API keys are provided by the user via environment variables
 - No credentials are committed to this repository
 
