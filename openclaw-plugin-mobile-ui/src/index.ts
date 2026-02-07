@@ -9,6 +9,8 @@ import {
   android_ui_tap,
   android_ui_type,
   android_ui_find,
+  android_ui_tap_find,
+  android_ui_type_find,
 } from "./tools/android";
 
 type JsonSchema = Record<string, any>;
@@ -192,4 +194,49 @@ export default function register(api: any) {
       async (args) => android_ui_find(args)
     )
   );
+
+  api.registerTool(
+    toolDef(
+      "android_ui_tap_find",
+      "Find a UI element by text/resource-id/desc/class and tap the best match.",
+      {
+        type: "object",
+        properties: {
+          textContains: { type: "string" },
+          descContains: { type: "string" },
+          resourceIdContains: { type: "string" },
+          classContains: { type: "string" },
+          clickableOnly: { type: "boolean" },
+          enabledOnly: { type: "boolean" },
+          limit: { type: "integer" }
+        },
+        additionalProperties: false
+      },
+      async (args) => android_ui_tap_find(args)
+    )
+  );
+
+  api.registerTool(
+    toolDef(
+      "android_ui_type_find",
+      "Find a UI input field and type text into it.",
+      {
+        type: "object",
+        properties: {
+          textContains: { type: "string" },
+          descContains: { type: "string" },
+          resourceIdContains: { type: "string" },
+          classContains: { type: "string" },
+          enabledOnly: { type: "boolean" },
+          limit: { type: "integer" },
+          clear: { type: "boolean" },
+          text: { type: "string" }
+        },
+        required: ["text"],
+        additionalProperties: false
+      },
+      async (args) => android_ui_type_find(args)
+    )
+  );
+
 }

@@ -113,4 +113,46 @@ export class DroidrunExecutor {
 
     return runPython(args, 30_000);
   }
+
+  async uiTapFind(q: {
+    textContains?: string;
+    descContains?: string;
+    resourceIdContains?: string;
+    classContains?: string;
+    clickableOnly?: boolean;
+    enabledOnly?: boolean;
+    limit?: number;
+  }) {
+    const args: string[] = ["ui_tap_find"];
+    if (q?.textContains) args.push("--text-contains", q.textContains);
+    if (q?.descContains) args.push("--desc-contains", q.descContains);
+    if (q?.resourceIdContains) args.push("--resource-id-contains", q.resourceIdContains);
+    if (q?.classContains) args.push("--class-contains", q.classContains);
+    if (q?.clickableOnly) args.push("--clickable-only");
+    if (q?.enabledOnly) args.push("--enabled-only");
+    if (typeof q?.limit === "number") args.push("--limit", String(q.limit));
+    return runPython(args, 30_000);
+  }
+
+  async uiTypeFind(q: {
+    textContains?: string;
+    descContains?: string;
+    resourceIdContains?: string;
+    classContains?: string;
+    enabledOnly?: boolean;
+    limit?: number;
+    clear?: boolean;
+    text: string;
+  }) {
+    const args: string[] = ["ui_type_find"];
+    if (q?.textContains) args.push("--text-contains", q.textContains);
+    if (q?.descContains) args.push("--desc-contains", q.descContains);
+    if (q?.resourceIdContains) args.push("--resource-id-contains", q.resourceIdContains);
+    if (q?.classContains) args.push("--class-contains", q.classContains);
+    if (q?.enabledOnly) args.push("--enabled-only");
+    if (typeof q?.limit === "number") args.push("--limit", String(q.limit));
+    if (q?.clear) args.push("--clear");
+    args.push(q.text ?? "");
+    return runPython(args, 60_000);
+  }
 }

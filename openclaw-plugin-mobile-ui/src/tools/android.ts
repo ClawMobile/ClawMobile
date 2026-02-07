@@ -74,3 +74,28 @@ export async function android_ui_find(input: {
 }) {
   return exec.uiFind(input || {});
 }
+
+export async function android_ui_tap_find(input: {
+  textContains?: string;
+  descContains?: string;
+  resourceIdContains?: string;
+  classContains?: string;
+  clickableOnly?: boolean;
+  enabledOnly?: boolean;
+  limit?: number;
+}) {
+  return exec.uiTapFind(input || {});
+}
+
+export async function android_ui_type_find(input: {
+  textContains?: string;
+  descContains?: string;
+  resourceIdContains?: string;
+  classContains?: string;
+  enabledOnly?: boolean;
+  limit?: number;
+  clear?: boolean;
+  text: string;
+}) {
+  return exec.uiTypeFind(input || ({} as any));
+}

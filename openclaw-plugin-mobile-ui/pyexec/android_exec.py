@@ -473,6 +473,133 @@ def cmd_ui_type(args):
     except Exception as e:
         return fail("ui_type_failed", {"repr": repr(e)})
 
+def cmd_ui_tap_find(args):
+    ok_import, err = ensure_droidrun_importable()
+    if not ok_import:
+        return fail("droidrun not importable", {"import_error": err})
+
+    query = {
+        "textContains": args.text_contains or "",
+        "descContains": args.desc_contains or "",
+        "resourceIdContains": args.resource_id_contains or "",
+        "classContains": args.class_contains or "",
+        "clickableOnly": bool(args.clickable_only),
+        "enabledOnly": bool(args.enabled_only),
+        "preferClickable": True,  # tap 默认偏好 clickable
+        "limit": int(args.limit),
+    }
+
+    async def _run():
+        tools = await _make_tools()
+        _formatted_text, focused_text, a11y_tree, phone_state = await tools.get_state()
+
+        nodes = []
+        seen = set()
+        for n in _iter_nodes(a11y_tree):
+            idx = _to_int(n.get("index"))
+            if idx is None or idx in seen:
+                continue
+            seen.add(idx)
+
+            sn = _simplify_node(n)
+            matched, score, reasons = _score_match(sn, query)
+            if not matched:
+                continue
+            sn["score"] = score
+            sn["reasons"] = reasons
+            nodes.append(sn)
+
+        nodes.sort(key=lambda x: (-int(x.get("score", 0)), x.get("index", 10**9)))
+        nodes = nodes[: query["limit"]]
+
+        if not nodes:
+            return {"success": False, "reason": "no_match", "query": query, "focused_text": focused_text, "phone_state": phone_state}
+
+        top = nodes[0]
+        idx = int(top["index"])
+
+        success = await tools.tap_by_index(idx)
+        return {
+            "success": bool(success),
+            "tapped_index": idx,
+            "candidate": top,
+            "alternates": nodes[1:],
+            "query": query,
+        }
+
+    try:
+        with ImeGuard():
+            data = asyncio.run(_run())
+        return ok(data)
+    except Exception as e:
+        return fail("ui_tap_find_failed", {"repr": repr(e)})
+    
+def cmd_ui_type_find(args):
+    ok_import, err = ensure_droidrun_importable()
+    if not ok_import:
+        return fail("droidrun not importable", {"import_error": err})
+
+    query = {
+        "textContains": args.text_contains or "",
+        "descContains": args.desc_contains or "",
+        "resourceIdContains": args.resource_id_contains or "",
+        "classContains": args.class_contains or "",
+        "clickableOnly": False,     # 输入框不一定 clickable
+        "enabledOnly": bool(args.enabled_only),
+        "preferClickable": False,
+        "limit": int(args.limit),
+    }
+
+    async def _run():
+        tools = await _make_tools()
+        _formatted_text, focused_text, a11y_tree, phone_state = await tools.get_state()
+
+        nodes = []
+        seen = set()
+        for n in _iter_nodes(a11y_tree):
+            idx = _to_int(n.get("index"))
+            if idx is None or idx in seen:
+                continue
+            seen.add(idx)
+
+            sn = _simplify_node(n)
+            matched, score, reasons = _score_match(sn, query)
+            if not matched:
+                continue
+            sn["score"] = score
+            sn["reasons"] = reasons
+            nodes.append(sn)
+
+        nodes.sort(key=lambda x: (-int(x.get("score", 0)), x.get("index", 10**9)))
+        nodes = nodes[: query["limit"]]
+
+        if not nodes:
+            return {"success": False, "reason": "no_match", "query": query, "focused_text": focused_text, "phone_state": phone_state}
+
+        top = nodes[0]
+        idx = int(top["index"])
+
+        # 可选：先 tap 聚焦，再输入
+        await tools.tap_by_index(idx)
+        result = await tools.input_text(args.text, index=idx, clear=args.clear)
+
+        return {
+            "success": True,
+            "typed_index": idx,
+            "result": result,
+            "candidate": top,
+            "alternates": nodes[1:],
+            "query": query,
+            "text_len": len(args.text or ""),
+            "clear": bool(args.clear),
+        }
+
+    try:
+        with ImeGuard():
+            data = asyncio.run(_run())
+        return ok(data)
+    except Exception as e:
+        return fail("ui_type_find_failed", {"repr": repr(e)})
 
 # -------------------------
 # CLI
@@ -529,6 +656,27 @@ def main():
     puf.add_argument("--prefer-clickable", action="store_true")
     puf.add_argument("--limit", type=int, default=8)
 
+    # NEW: ui_tap_find
+    putf = sub.add_parser("ui_tap_find")
+    putf.add_argument("--text-contains", dest="text_contains", default="")
+    putf.add_argument("--desc-contains", dest="desc_contains", default="")
+    putf.add_argument("--resource-id-contains", dest="resource_id_contains", default="")
+    putf.add_argument("--class-contains", dest="class_contains", default="")
+    putf.add_argument("--clickable-only", action="store_true")
+    putf.add_argument("--enabled-only", action="store_true")
+    putf.add_argument("--limit", type=int, default=8)
+
+    # NEW: ui_type_find
+    puif = sub.add_parser("ui_type_find")
+    puif.add_argument("--text-contains", dest="text_contains", default="")
+    puif.add_argument("--desc-contains", dest="desc_contains", default="")
+    puif.add_argument("--resource-id-contains", dest="resource_id_contains", default="")
+    puif.add_argument("--class-contains", dest="class_contains", default="")
+    puif.add_argument("--enabled-only", action="store_true")
+    puif.add_argument("--limit", type=int, default=8)
+    puif.add_argument("--clear", action="store_true")
+    puif.add_argument("text")
+
     args = p.parse_args()
 
     try:
@@ -552,6 +700,10 @@ def main():
             return cmd_ui_type(args)
         if args.cmd == "ui_find":
             return cmd_ui_find(args)
+        if args.cmd == "ui_tap_find":
+            return cmd_ui_tap_find(args)
+        if args.cmd == "ui_type_find":
+            return cmd_ui_type_find(args)
         return fail("unknown cmd")
     except Exception as e:
         return fail("exception", {"repr": repr(e)})
