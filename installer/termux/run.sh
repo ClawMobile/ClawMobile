@@ -188,12 +188,12 @@ RULES_SRC="\$SEED_DIR/rules"
 RULES_DST="\$WORKSPACE/rules"
 mkdir -p "\$RULES_DST/user"
 
-if [ -d "\$RULES_SRC/Clawbot-mobile" ]; then
-  mkdir -p "\$RULES_DST/Clawbot-mobile"
-  rsync -a --delete "\$RULES_SRC/Clawbot-mobile/" "\$RULES_DST/Clawbot-mobile/"
-  echo "[run] synced rules -> \$RULES_DST/Clawbot-mobile (overwrite)"
+if [ -d "\$RULES_SRC/clawbot-mobile" ]; then
+  mkdir -p "\$RULES_DST/clawbot-mobile"
+  rsync -a --delete "\$RULES_SRC/clawbot-mobile/" "\$RULES_DST/clawbot-mobile/"
+  echo "[run] synced rules -> \$RULES_DST/clawbot-mobile (overwrite)"
 else
-  echo "[run] WARNING: seed rules not found at \$RULES_SRC/Clawbot-mobile"
+  echo "[run] WARNING: seed rules not found at \$RULES_SRC/clawbot-mobile"
 fi
 
 exec openclaw gateway --bind ${GATEWAY_BIND} --port ${GATEWAY_PORT} --verbose

@@ -36,6 +36,7 @@ pnpm-debug.log*
 
 # Compiled plugin output (keep source, not build)
 openclaw-plugin-mobile-ui/dist/
+openclaw-plugin-mobile-ui/package-lock.json
 
 # -------------------------
 # OpenClaw runtime data
