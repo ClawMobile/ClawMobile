@@ -90,7 +90,7 @@ This script will:
 
 While `install.sh` is running, you will be asked to:
 1. Accept Android debugging authorization
-2. Allow installation of DroidRun Portal
+2. Allow installation of DroidRun Portal, you can cancle the overlap option if you want to keep using the original screen after installation.
 3. Run OpenClaw interactive configuration (onboard)
 
 During OpenClaw configuration you can:
@@ -210,8 +210,16 @@ installer/
 │  ├─ bootstrap.sh
 │  ├─ env.sh
 │  └─ reset-openclaw.sh
+└─ workspace-seed/
+   ├─ AGENTS.mobile.md
+   ├─ TOOLS.mobile.md
+   └─ rules/
+      └─ clawbot-mobile/
+         ├─ android_basics.md
+         ├─ mobile-ui.md
+         └─ playbooks/
+            └─ open_app.yaml
 openclaw-plugin-mobile-ui/
-memory/
 ```
 
 ---

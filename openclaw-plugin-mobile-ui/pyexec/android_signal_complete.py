@@ -20,8 +20,8 @@ def main():
     except Exception:
         payload = {}
 
-    ms = int(payload.get("ms", 250))
-    repeat = int(payload.get("repeat", 2))
+    ms = int(payload.get("ms", 450))
+    repeat = int(payload.get("repeat", 1))
     gap_ms = int(payload.get("gapMs", 120))
     tts = str(payload.get("tts", "Done"))
     title = str(payload.get("title", "Clawbot"))
