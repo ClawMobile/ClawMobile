@@ -2,14 +2,11 @@
   "name": "openclaw-plugin-mobile-ui",
   "version": "0.1.0",
   "private": true,
-
   "type": "commonjs",
   "main": "dist/index.js",
 
   "openclaw": {
-    "extensions": {
-      "tools": "dist/index.js"
-    }
+    "extensions": ["./dist/index.js"]
   },
 
   "scripts": {
