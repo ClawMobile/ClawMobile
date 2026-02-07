@@ -9,39 +9,51 @@ import {
 
 type JsonSchema = Record<string, any>;
 
+function asContent(obj: any) {
+  return {
+    content: [
+      {
+        type: "text",
+        text: JSON.stringify(obj, null, 2),
+      },
+    ],
+  };
+}
+
 function toolDef(
   name: string,
   description: string,
   schema: JsonSchema,
-  handler: (input: any) => Promise<any>
+  execute: (args: any) => Promise<any>
 ) {
-  // 兼容不同 OpenClaw 版本/不同工具桥接层：
-  // - 有的读 inputSchema
-  // - 有的读 schema
-  // - 有的转成 OpenAI function.parameters 用 parameters
   return {
     name,
     description,
+
+    // schema field used by current OpenClaw
+    schema,
+
+    // keep for backward compatibility (harmless)
     inputSchema: schema,
-    schema,       // <= 关键：避免 “schema undefined”
-    parameters: schema, // <= 关键：有些桥接层用 parameters
-    handler,
+    parameters: schema,
+
+    async execute(_ctx: any, args: any) {
+      return asContent(await execute(args));
+    },
   };
 }
 
 export default function register(api: any) {
-  // ---- basic health ----
-  api.registerTool?.(
+  api.registerTool(
     toolDef(
       "android_health",
       "Check droidrun/python availability (mobile executor health).",
       { type: "object", properties: {}, additionalProperties: false },
-      async (_input: any) => android_health()
+      async () => android_health()
     )
   );
 
-  // ---- screenshot ----
-  api.registerTool?.(
+  api.registerTool(
     toolDef(
       "android_screenshot",
       "Take a screenshot on the Android device (via droidrun).",
@@ -50,12 +62,11 @@ export default function register(api: any) {
         properties: { output: { type: "string" } },
         additionalProperties: false,
       },
-      async (input: any) => android_screenshot(input || {})
+      async (args) => android_screenshot(args || {})
     )
   );
 
-  // ---- tap ----
-  api.registerTool?.(
+  api.registerTool(
     toolDef(
       "android_tap",
       "Tap at (x,y) on the Android device (via droidrun).",
@@ -65,12 +76,11 @@ export default function register(api: any) {
         required: ["x", "y"],
         additionalProperties: false,
       },
-      async (input: any) => android_tap(input)
+      async (args) => android_tap(args)
     )
   );
 
-  // ---- type ----
-  api.registerTool?.(
+  api.registerTool(
     toolDef(
       "android_type",
       "Type text into the focused field (via droidrun).",
@@ -80,12 +90,11 @@ export default function register(api: any) {
         required: ["text"],
         additionalProperties: false,
       },
-      async (input: any) => android_type(input)
+      async (args) => android_type(args)
     )
   );
 
-  // ---- swipe ----
-  api.registerTool?.(
+  api.registerTool(
     toolDef(
       "android_swipe",
       "Swipe from (x1,y1) to (x2,y2) (via droidrun).",
@@ -101,22 +110,21 @@ export default function register(api: any) {
         required: ["x1", "y1", "x2", "y2"],
         additionalProperties: false,
       },
-      async (input: any) => android_swipe(input)
+      async (args) => android_swipe(args)
     )
   );
 
-  // ---- agent task (optional) ----
-  api.registerTool?.(
+  api.registerTool(
     toolDef(
       "android_task",
-      "Run a high-level task using droidrun agent mode (placeholder in v1).",
+      "Run a high-level task using droidrun agent mode (placeholder).",
       {
         type: "object",
         properties: { task: { type: "string" } },
         required: ["task"],
         additionalProperties: false,
       },
-      async (input: any) => android_task(input)
+      async (args) => android_task(args)
     )
   );
 }
