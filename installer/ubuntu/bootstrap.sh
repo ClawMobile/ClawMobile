@@ -45,6 +45,12 @@ else
   exit 1
 fi
 
+echo "[bootstrap] building openclaw-plugin-mobile-ui..."
+cd "openclaw-plugin-mobile-ui"
+npm i -D @types/node
+npm install
+npm run build
+
 echo
 echo "[*] OpenClaw installation"
 echo
