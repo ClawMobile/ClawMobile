@@ -1,7 +1,7 @@
 #!/data/data/com.termux/files/usr/bin/bash
 set -euo pipefail
 
-UBUNTU_DISTRO="${UBUNTU_DISTRO:-ubuntu}"
+UBUNTU_DISTRO="${UBUNTU_DISTRO:-ubuntu-22.04}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
@@ -11,4 +11,14 @@ echo "[clawbot] When you see 'Onboard complete', press Ctrl+C to exit onboard."
 echo
 
 proot-distro login "${UBUNTU_DISTRO}" --shared-tmp -- \
-  bash -lc "cd '${REPO_ROOT}' && openclaw onboard --skip-daemon"
+  bash -lc "
+    set -e
+    cd '${REPO_ROOT}'
+
+    # Ensure Node patch / env fixes are active for non-interactive shells
+    if [ -f installer/ubuntu/env.sh ]; then
+      source installer/ubuntu/env.sh
+    fi
+
+    openclaw onboard --skip-daemon
+  "
