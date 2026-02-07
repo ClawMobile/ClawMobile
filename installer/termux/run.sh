@@ -103,7 +103,7 @@ proot-distro login "${UBUNTU_DISTRO}" --shared-tmp -- bash -lc "
   fi
 
   echo \"[run] droidrun chosen: provider=\${DROIDRUN_PROVIDER:-<empty>} model=\${DROIDRUN_MODEL:-<empty>}\" 
-  echo \"[run] key check: OPENAI_API_KEY=\${OPENAI_API_KEY:+<set>} GEMINI_API_KEY=\${GEMINI_API_KEY:+<set>} ANTHROPIC_API_KEY=\${ANTHROPIC_API_KEY:+<set>} DEEPSEEK_API_KEY=\${DEEPSEEK_API_KEY:+<set>}\
+  echo \"[run] key check: OPENAI_API_KEY=\${OPENAI_API_KEY:+<set>} GEMINI_API_KEY=\${GEMINI_API_KEY:+<set>} ANTHROPIC_API_KEY=\${ANTHROPIC_API_KEY:+<set>} DEEPSEEK_API_KEY=\${DEEPSEEK_API_KEY:+<set>}\"
 
   cd \"\$REPO_ROOT\"
 
