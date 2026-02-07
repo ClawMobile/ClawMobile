@@ -632,8 +632,24 @@ def cmd_agent_task(args):
         if getattr(cfg, "agent", None) is not None and hasattr(cfg.agent, "max_steps"):
             cfg.agent.max_steps = max_steps
 
-        agent = DroidAgent(goal=goal, config=cfg, timeout=timeout)
+        # agent = DroidAgent(goal=goal, config=cfg, timeout=timeout)
+        # result = await agent.run()
+
+        provider = os.environ.get("DROIDRUN_PROVIDER", "").strip()
+        model = os.environ.get("DROIDRUN_MODEL", "").strip()
+
+        llm = None
+        if provider and model:
+            # v2 docs show load_llm(provider_name=..., model=...)
+            try:
+                from droidrun.agent.utils.llm_picker import load_llm
+                llm = load_llm(provider_name=provider, model=model, temperature=0.2)
+            except Exception:
+                llm = None
+
+        agent = DroidAgent(goal=goal, config=cfg, llms=llm, timeout=timeout)
         result = await agent.run()
+
 
         out = {
             "success": bool(getattr(result, "success", False)),
