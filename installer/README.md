@@ -1,178 +1,244 @@
-# Clawbot Mobile (Android / Termux)
+# Clawbot Mobile (Android) – Installation Guide
 
-Clawbot Mobile runs **OpenClaw directly on an Android device** using
-**Termux + proot Ubuntu**, and allows you to control the phone through
-a Telegram bot.
+This project allows you to control the current Android device itself using OpenClaw + DroidRun, typically via a chat interface such as Telegram.
 
-There is **no background daemon** on Android.
-OpenClaw runs as a foreground process when needed.
-
----
-
-## What this project does
-
-- Runs OpenClaw on a real Android phone
-- Executes actions locally on the device
-- Does not rely on a PC, server, or remote runtime
-
----
-
-## Requirements
-
-- Android phone
+It runs entirely on the phone using:
 - Termux
-- Internet connection
-- A Telegram bot token
+- Ubuntu (proot-distro)
+- OpenClaw (agent framework)
+- DroidRun (Android UI automation)
 
 ---
 
-## Project layout
+## What this does
+- Runs an AI agent on your phone
+- Uses ADB + Accessibility (DroidRun) to interact with the UI
+- Accepts commands via OpenClaw (Telegram is used as an example)
+- Supports both:
+- Deterministic UI tools (find / tap / type)
+- Optional DroidRun agent mode
 
-```text
-installer/
-├─ termux/
-│  ├─ install.sh   # One-time installation
-│  ├─ onboard.sh   # Interactive OpenClaw configuration
-│  └─ run.sh       # Start OpenClaw Gateway
-└─ ubuntu/
-   ├─ bootstrap.sh
-   └─ env.sh
+⚠️ This system controls the same phone it is running on.
 
+---
 
-⸻
+## Before you start
 
-Step 1: Install (one-time)
+### 1. Android system requirements
 
-From the project root directory in Termux:
+On your phone, enable:
+1. Developer options
+2. USB debugging
+3. (Recommended) Wireless debugging
 
+During installation, Android will show permission dialogs.
+You must accept them (preferably with “Always allow”).
+
+---
+
+### 2. Termux
+
+Install Termux (F-Droid recommended).
+
+Open Termux and make sure proot-distro is available.
+
+---
+
+### 3. API keys (prepare in advance)
+
+You should have at least one model provider API key ready.
+
+Examples:
+- OpenAI
+- Gemini
+- Anthropic
+- DeepSeek
+
+These keys are required to setting as environment variables in Termux for DroidRun agent mode later.
+OpenClaw itself will still be configured interactively.
+
+---
+
+### 4. Chat interface (example: Telegram)
+
+OpenClaw supports multiple interfaces.
+This guide uses Telegram as an example.
+
+To use Telegram:
+1. Create a bot via @BotFather
+2. Save the Bot Token
+
+---
+
+## Installation (one-time)
+
+All commands below are run from the project root directory.
+
+---
+
+## Step 1 – Run the installer
+
+In Termux, from the project root:
+
+```sh
 ./installer/termux/install.sh
+```
 
 This script will:
-	1.	Install proot-distro
-	2.	Install Ubuntu (ubuntu-22.04) if needed
-	3.	Enter Ubuntu
-	4.	Install OpenClaw and dependencies
+- Enter Ubuntu (proot)
+- Install OpenClaw
+- Install DroidRun dependencies
+- Install the DroidRun Portal (Android will prompt you)
+- Build and install the mobile UI plugin
 
-Important note
+---
 
-The official OpenClaw install script automatically starts
-the interactive configuration (onboard) if no configuration exists.
+## Step 2 – Required manual actions during install
 
-This is expected behavior.
+While `install.sh` is running, you will be asked to:
+1. Accept Android debugging authorization
+2. Allow installation of DroidRun Portal
+3. Run OpenClaw interactive configuration (onboard)
 
-⸻
+During OpenClaw configuration you can:
+- Choose your model provider
+- Configure Telegram (or another interface)
+- Skip features you don’t need
 
-Step 2: Interactive configuration (onboard)
+⚠️ Important
 
-During installation, or when you run:
+When OpenClaw onboarding finishes:
 
-./installer/termux/onboard.sh
+Press Ctrl + C to exit the installer
 
-OpenClaw will ask you to configure:
-	•	Model provider and API key
-	•	Telegram bot token
-	•	Other OpenClaw options
+This is expected behavior, not an error.
 
-When you see:
+---
 
-Onboard complete
+## Running the system
 
-What to do next
-	•	Press Ctrl + C to exit the onboard process
-	•	You will be returned to the Termux shell
+### Step 3 – Export model API key (for DroidRun agent)
 
-This is normal and required on Android.
+In Termux, before starting the gateway:
 
-On Android, OpenClaw cannot install a background daemon.
-The onboard command only writes configuration and performs a temporary check.
+```sh
+export OPENAI_API_KEY=sk-xxxxxxxx
+```
 
-⸻
+Optional (override model):
 
-Step 3: Start the Gateway (required)
+```sh
+export DROIDRUN_MODEL=gpt-5.2
+```
 
-After configuration, you must manually start the OpenClaw Gateway.
+These environment variables are used only by DroidRun agent mode.
+OpenClaw continues to use its own interactive configuration.
 
-Run:
+---
 
-./installer/termux/run.sh
+### Step 4 – Start the Gateway
 
-This will:
-	•	Enter Ubuntu
-	•	Switch to the project directory
-	•	Start openclaw gateway in the foreground
+From the project root:
 
-You should see logs similar to:
+```sh
+./run.sh
+```
 
-Gateway listening on http://127.0.0.1:18789
-Telegram channel initialized
+This script will:
+- Detect the local Android ADB device (prefers the emulator-style device representing this phone)
+- Automatically install/update the plugin (idempotent)
+- Prepare DroidRun + ADB
+- Start the OpenClaw Gateway
 
-As long as this process is running, the Telegram bot will respond.
+You should see output similar to:
 
-Stop it with Ctrl + C.
+```
+[run] adb selected serial: emulator-5554
+[run] droidrun chosen: provider=OpenAI model=gpt-5.2
+[openclaw] Gateway listening on ...
+```
 
-⸻
+Leave this terminal running.
 
-Telegram pairing (first use)
-	1.	Send any message (e.g. hi) to your Telegram bot
-	2.	The bot will reply with a pairing code
+---
 
-⸻
+## Telegram pairing (first time only)
 
-Approving the pairing
+### Step 5 – Get pairing code
 
-Open a second Termux window and run:
+In Telegram:
+1. Send any message to your bot
+2. The bot will respond with a pairing code / ID
 
-proot-distro login ubuntu-22.04 --shared-tmp
-openclaw pairing approve telegram <PAIRING_CODE>
+---
 
-This allows the gateway to keep running.
+### Step 6 – Pair the bot (second Termux window)
 
-⸻
+⚠️ Do not stop the running gateway.
+1. Open a new Termux window
+2. From the project root, run:
 
-Normal usage
+```sh
+./installer/termux/pairing.sh <CODE>
+```
 
-After pairing is approved:
-	•	Send messages to the Telegram bot
-	•	OpenClaw will respond and execute actions on the device
+Example:
 
-⸻
+```sh
+./installer/termux/pairing.sh ABCD-1234
+```
 
-Stopping OpenClaw
+Once paired, you can close this second window.
 
-Press Ctrl + C in the gateway terminal.
+---
 
-There is no background service on Android.
+## Using Clawbot
 
-⸻
+After pairing:
+- Return to Telegram
+- Send commands to the bot
+- The agent will interact with the current phone UI
 
-Important concepts
+### About UI interaction
 
-install.sh
-	•	Ensures the environment exists
-	•	May automatically trigger onboarding on first install
+By default, the system prefers:
+- Accessibility-based UI actions
+- Only falls back to coordinates when needed
 
-onboard.sh
-	•	Runs interactive configuration
-	•	You must exit it manually with Ctrl + C
+This makes automation more stable across devices.
 
+---
+
+## Directory overview
+
+```
+installer/
+├─ termux/
+│  ├─ install.sh
+│  ├─ pairing.sh
+│  └─ README.md
+├─ ubuntu/
+│  └─ bootstrap.sh
+
+openclaw-plugin-mobile-ui/
+memory/
 run.sh
-	•	Starts the actual OpenClaw Gateway
-	•	This is the command you will use most often
+```
 
-⸻
+---
 
-Summary
+## Quick summary
 
-Typical workflow:
+1. `./installer/termux/install.sh`
+   → accept Android permissions and install Droidrun Portal
+   → configure OpenClaw interactively
+   → Ctrl + C
+2. `export OPENAI_API_KEY=...`
+3. `./run.sh`
+4. Send message to Telegram bot → get code
+5. New Termux window: `./installer/termux/pairing.sh <code>`
+6. Start chatting
 
-# One-time
-./installer/termux/install.sh
+---
 
-# If you want to reconfigure
-./installer/termux/onboard.sh
-
-# Every time you want to use the bot
-./installer/termux/run.sh
-
-This behavior is intentional and matches OpenClaw’s design
-when running without a system daemon.
+For troubleshooting and common issues, see `FAQ.md`.

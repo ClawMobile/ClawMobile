@@ -32,19 +32,19 @@ pick_llm_termux() {
 
   if [ -n "${OPENAI_API_KEY:-}" ]; then
     DROIDRUN_PROVIDER_CHOSEN="OpenAI"
-    DROIDRUN_MODEL_CHOSEN="${DROIDRUN_MODEL_CHOSEN:-gpt-4o-mini}"
+    DROIDRUN_MODEL_CHOSEN="${DROIDRUN_MODEL_CHOSEN:-gpt-5.2}"
     return 0
   fi
 
   if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
     DROIDRUN_PROVIDER_CHOSEN="Anthropic"
-    DROIDRUN_MODEL_CHOSEN="${DROIDRUN_MODEL_CHOSEN:-claude-3-5-sonnet-latest}"
+    DROIDRUN_MODEL_CHOSEN="${DROIDRUN_MODEL_CHOSEN:-claude-opus-4-6}"
     return 0
   fi
 
   if [ -n "${DEEPSEEK_API_KEY:-}" ]; then
     DROIDRUN_PROVIDER_CHOSEN="DeepSeek"
-    DROIDRUN_MODEL_CHOSEN="${DROIDRUN_MODEL_CHOSEN:-deepseek-chat}"
+    DROIDRUN_MODEL_CHOSEN="${DROIDRUN_MODEL_CHOSEN:-deepseek-reasoner}"
     return 0
   fi
 
