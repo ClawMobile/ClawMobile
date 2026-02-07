@@ -26,7 +26,7 @@ proot-distro login "${UBUNTU_DISTRO}" --shared-tmp -- \
 
     REPO_RULES='$REPO_ROOT/memory'
     if [ -d '$REPO_RULES' ]; then
-    openclaw config set agents.defaults.memorySearch.extraPaths '[\"$REPO_RULES\"]' >/dev/null 2>&1 || true
+    openclaw config set agents.defaults.memorySearch.extraPaths '$REPO_RULES' > /dev/null 2>&1 || true
       echo '[run] memorySearch.extraPaths set to: $REPO_RULES'
     else
       echo '[run] memory folder not found at $REPO_RULES (ok)'
