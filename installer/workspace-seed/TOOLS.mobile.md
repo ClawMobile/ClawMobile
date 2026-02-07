@@ -64,4 +64,19 @@ Use only when semantic UI tools cannot proceed:
 - The gateway runs on the phone. ADB device selection is handled by `run.sh` and typically targets the **local emulator-like device** representing this phone.
 - If ADB shows `unauthorized`, the user must accept the debugging prompt on the phone.
 - If the UI changes unexpectedly, re-run `android_screenshot` (and optionally `android_ui_dump`) before acting.
+
+### IME (keyboard) note — important
+DroidRun may temporarily switch the default input method (IME).  
+Normally it restores the previous IME when the task finishes, but if the agent pauses to ask for user confirmation, the IME may remain on the DroidRun keyboard, making manual typing difficult.
+
+Recovery (ADB):
+1. List IMEs: `adb shell ime list -s`
+2. Switch back to your preferred IME:
+   - `adb shell ime set <your.default.ime/.Service>`
+
+### Completion signaling
+Chat notifications may not always appear due to Android system behavior.
+
+When available, prefer a device-level completion signal (vibration or sound) to notify the user that a task has finished.
+
 <!-- CLAWBOT_MOBILE_END -->

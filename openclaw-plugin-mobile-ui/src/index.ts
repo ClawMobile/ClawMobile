@@ -11,6 +11,7 @@ import {
   android_ui_find,
   android_ui_tap_find,
   android_ui_type_find,
+  android_vibrate,
 } from "./tools/android";
 
 type JsonSchema = Record<string, any>;
@@ -244,5 +245,20 @@ export default function register(api: any) {
       async (args) => android_ui_type_find(args)
     )
   );
+
+  api.registerTool?.({
+  name: "android_vibrate",
+  description: "Trigger a short device vibration as a completion signal (does not depend on notifications).",
+  inputSchema: {
+    type: "object",
+    properties: {
+      ms: { type: "integer", minimum: 1, maximum: 60000, description: "Vibration duration in milliseconds." },
+      repeat: { type: "integer", minimum: 1, maximum: 10, description: "Number of vibrations." },
+      gapMs: { type: "integer", minimum: 0, maximum: 5000, description: "Gap between vibrations in milliseconds." },
+    },
+    additionalProperties: false,
+  },
+  handler: async (args: any) => android_vibrate(args),
+});
 
 }

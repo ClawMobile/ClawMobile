@@ -1,6 +1,48 @@
 import { DroidrunExecutor } from "../droidrun/executor";
 import { DroidrunAgent } from "../droidrun/agent";
 
+import { spawn } from "child_process";
+import path from "path";
+
+function getPython(): string {
+  // 你现在已经在 run.sh 里 export 了 CLAW_MOBILE_PYTHON
+  return process.env.CLAW_MOBILE_PYTHON || "python3";
+}
+
+async function runPyJson(scriptName: string, payload: any): Promise<any> {
+  const script = path.resolve(__dirname, "..", "..", "pyexec", scriptName);
+  const py = getPython();
+
+  return await new Promise((resolve, reject) => {
+    const p = spawn(py, [script], {
+      env: process.env,
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+
+    let out = "";
+    let err = "";
+
+    p.stdout.on("data", (d) => (out += d.toString()));
+    p.stderr.on("data", (d) => (err += d.toString()));
+
+    p.on("error", reject);
+    p.on("close", (code) => {
+      if (code !== 0) {
+        reject(new Error(`python tool failed (code=${code}): ${err || out}`));
+        return;
+      }
+      try {
+        resolve(JSON.parse(out));
+      } catch {
+        reject(new Error(`invalid json from python: ${out}\nstderr: ${err}`));
+      }
+    });
+
+    p.stdin.write(JSON.stringify(payload ?? {}));
+    p.stdin.end();
+  });
+}
+
 export type Mode = "executor" | "agent";
 
 function getMode(): Mode {
@@ -96,4 +138,17 @@ export async function android_ui_type_find(input: {
   text: string;
 }) {
   return exec.uiTypeFind(input || ({} as any));
+}
+
+export async function android_vibrate(args?: { ms?: number; repeat?: number; gapMs?: number }) {
+  const payload = {
+    ms: args?.ms ?? 200,
+    repeat: args?.repeat ?? 1,
+    gapMs: args?.gapMs ?? 120,
+  };
+
+  // 这里假设你已有一个“执行 pyexec 下脚本并返回 JSON”的封装：
+  // 比如 runPyJson("android_vibrate.py", payload)
+  const res = await runPyJson("android_vibrate.py", payload);
+  return res;
 }

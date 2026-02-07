@@ -10,7 +10,7 @@ You can control the **current phone UI** via Android tools powered by DroidRun/A
 - Use screenshots and UI dumps to re-orient when needed.
 
 ### Safety guardrails (must follow)
-Before executing any **irreversible or high-risk action**, switch to deterministic tools and ask for confirmation when appropriate. If keyboard input becomes stuck due to DroidRun IME, see TOOLS.md for recovery.
+Before executing any **irreversible or high-risk action**, switch to deterministic tools and ask for confirmation when appropriate.
 
 High-risk examples:
 - Payments / purchases / transfers
@@ -32,6 +32,18 @@ If `android_agent_task` fails, loops, or makes no progress:
 3. Use deterministic tools to complete the next critical step:
    - `android_ui_find` → `android_ui_tap_find` / `android_ui_type_find`
 4. Then retry `android_agent_task` with updated context.
+
+### Completion signal (important)
+After completing a user-requested task, ensure the user receives a clear completion signal.
+
+Preferred order:
+1. Trigger a device-level signal (e.g., vibration or sound), if available.
+2. Send a completion message in the chat with a brief summary.
+3. Optionally bring the chat app to the foreground only if it does not disrupt the intended final state.
+
+Do not assume chat notifications will always be delivered.
+
+- If completion requires user confirmation and you pause, restore the user’s keyboard (IME) before pausing so the user can type.
 
 ### Tool usage preference order
 1. **Agent mode (default):** `android_agent_task`
