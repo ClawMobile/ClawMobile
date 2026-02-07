@@ -8,6 +8,7 @@ import {
   android_ui_dump,
   android_ui_tap,
   android_ui_type,
+  android_ui_find,
 } from "./tools/android";
 
 type JsonSchema = Record<string, any>;
@@ -167,6 +168,28 @@ export default function register(api: any) {
         additionalProperties: false,
       },
       async (args) => android_task(args)
+    )
+  );
+
+  api.registerTool(
+    toolDef(
+      "android_ui_find",
+      "Find UI accessibility nodes by text/resource-id/desc/class. Returns ranked candidates with indexes.",
+      {
+        type: "object",
+        properties: {
+          textContains: { type: "string" },
+          descContains: { type: "string" },
+          resourceIdContains: { type: "string" },
+          classContains: { type: "string" },
+          clickableOnly: { type: "boolean" },
+          enabledOnly: { type: "boolean" },
+          preferClickable: { type: "boolean" },
+          limit: { type: "integer" },
+        },
+        additionalProperties: false,
+      },
+      async (args) => android_ui_find(args)
     )
   );
 }

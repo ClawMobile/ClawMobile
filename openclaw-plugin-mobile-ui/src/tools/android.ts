@@ -61,3 +61,16 @@ export async function android_task(input: { task: string }) {
     },
   };
 }
+
+export async function android_ui_find(input: {
+  textContains?: string;
+  descContains?: string;
+  resourceIdContains?: string;
+  classContains?: string;
+  clickableOnly?: boolean;
+  enabledOnly?: boolean;
+  preferClickable?: boolean;
+  limit?: number;
+}) {
+  return exec.uiFind(input || {});
+}

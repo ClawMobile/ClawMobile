@@ -87,4 +87,30 @@ export class DroidrunExecutor {
     if (clear) args.push("--clear");
     return runPython(args, 60_000);
   }
+
+  async uiFind(q: {
+    textContains?: string;
+    descContains?: string;
+    resourceIdContains?: string;
+    classContains?: string;
+    clickableOnly?: boolean;
+    enabledOnly?: boolean;
+    preferClickable?: boolean;
+    limit?: number;
+  }) {
+    const args: string[] = ["ui_find"];
+
+    if (q?.textContains) args.push("--text-contains", q.textContains);
+    if (q?.descContains) args.push("--desc-contains", q.descContains);
+    if (q?.resourceIdContains) args.push("--resource-id-contains", q.resourceIdContains);
+    if (q?.classContains) args.push("--class-contains", q.classContains);
+
+    if (q?.clickableOnly) args.push("--clickable-only");
+    if (q?.enabledOnly) args.push("--enabled-only");
+    if (q?.preferClickable) args.push("--prefer-clickable");
+
+    if (typeof q?.limit === "number") args.push("--limit", String(q.limit));
+
+    return runPython(args, 30_000);
+  }
 }

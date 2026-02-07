@@ -143,6 +143,80 @@ def _simplify_node(node):
         "bounds": _extract_bounds(node),
     }
 
+def _norm(s: str) -> str:
+    return (s or "").strip().lower()
+
+def _contains(hay: str, needle: str) -> bool:
+    hay = _norm(hay)
+    needle = _norm(needle)
+    return bool(needle) and needle in hay
+
+def _score_match(node_s, query):
+    """
+    node_s: simplified node dict
+    query: dict of filters
+    returns (matched: bool, score: int, reasons: list[str])
+    """
+    reasons = []
+    score = 0
+
+    text = node_s.get("text", "")
+    desc = node_s.get("content_desc", "")
+    rid = node_s.get("resource_id", "")
+    cls = node_s.get("class", "")
+
+    # hard filters
+    if query.get("clickableOnly") and node_s.get("clickable") is not True:
+        return False, 0, ["not_clickable"]
+    if query.get("enabledOnly") and node_s.get("enabled") is not True:
+        return False, 0, ["not_enabled"]
+
+    # soft matches add score
+    tc = query.get("textContains") or ""
+    if tc:
+        if _contains(text, tc):
+            score += 50
+            reasons.append("textContains")
+        else:
+            return False, 0, ["text_miss"]
+
+    dc = query.get("descContains") or ""
+    if dc:
+        if _contains(desc, dc):
+            score += 40
+            reasons.append("descContains")
+        else:
+            return False, 0, ["desc_miss"]
+
+    rc = query.get("resourceIdContains") or ""
+    if rc:
+        if _contains(rid, rc):
+            score += 80
+            reasons.append("resourceIdContains")
+        else:
+            return False, 0, ["resource_id_miss"]
+
+    cc = query.get("classContains") or ""
+    if cc:
+        if _contains(cls, cc):
+            score += 20
+            reasons.append("classContains")
+        else:
+            return False, 0, ["class_miss"]
+
+    # preference boosts
+    if query.get("preferClickable") and node_s.get("clickable") is True:
+        score += 10
+        reasons.append("preferClickable+")
+    if node_s.get("focused") is True:
+        score += 5
+        reasons.append("focused+")
+
+    # tiny bias for having bounds
+    if node_s.get("bounds"):
+        score += 1
+
+    return True, score, reasons
 
 # -------------------------
 # Commands
@@ -305,6 +379,61 @@ def cmd_ui_dump(args):
     except Exception as e:
         return fail("ui_dump_failed", {"repr": repr(e)})
 
+def cmd_ui_find(args):
+    ok_import, err = ensure_droidrun_importable()
+    if not ok_import:
+        return fail("droidrun not importable", {"import_error": err})
+
+    query = {
+        "textContains": args.text_contains or "",
+        "descContains": args.desc_contains or "",
+        "resourceIdContains": args.resource_id_contains or "",
+        "classContains": args.class_contains or "",
+        "clickableOnly": bool(args.clickable_only),
+        "enabledOnly": bool(args.enabled_only),
+        "preferClickable": bool(args.prefer_clickable),
+        "limit": int(args.limit),
+    }
+
+    async def _run():
+        tools = await _make_tools()
+        _formatted_text, focused_text, a11y_tree, phone_state = await tools.get_state()
+
+        nodes = []
+        seen = set()
+        for n in _iter_nodes(a11y_tree):
+            idx = _to_int(n.get("index"))
+            if idx is None or idx in seen:
+                continue
+            seen.add(idx)
+
+            sn = _simplify_node(n)
+            matched, score, reasons = _score_match(sn, query)
+            if not matched:
+                continue
+
+            sn["score"] = score
+            sn["reasons"] = reasons
+            nodes.append(sn)
+
+        nodes.sort(key=lambda x: (-int(x.get("score", 0)), x.get("index", 10**9)))
+        nodes = nodes[: query["limit"]]
+
+        return {
+            "query": query,
+            "count": len(nodes),
+            "nodes": nodes,
+            "focused_text": focused_text,
+            "phone_state": phone_state,
+        }
+
+    try:
+        # get_state 会触发 AdbTools 初始化，仍然做 IME guard
+        with ImeGuard():
+            data = asyncio.run(_run())
+        return ok(data)
+    except Exception as e:
+        return fail("ui_find_failed", {"repr": repr(e)})
 
 # ---- NEW: UI tap by index ----
 def cmd_ui_tap(args):
@@ -389,6 +518,17 @@ def main():
     pui.add_argument("text")
     pui.add_argument("--clear", action="store_true")
 
+    # NEW: ui_find
+    puf = sub.add_parser("ui_find")
+    puf.add_argument("--text-contains", dest="text_contains", default="")
+    puf.add_argument("--desc-contains", dest="desc_contains", default="")
+    puf.add_argument("--resource-id-contains", dest="resource_id_contains", default="")
+    puf.add_argument("--class-contains", dest="class_contains", default="")
+    puf.add_argument("--clickable-only", action="store_true")
+    puf.add_argument("--enabled-only", action="store_true")
+    puf.add_argument("--prefer-clickable", action="store_true")
+    puf.add_argument("--limit", type=int, default=8)
+
     args = p.parse_args()
 
     try:
@@ -410,6 +550,8 @@ def main():
             return cmd_ui_tap(args)
         if args.cmd == "ui_type":
             return cmd_ui_type(args)
+        if args.cmd == "ui_find":
+            return cmd_ui_find(args)
         return fail("unknown cmd")
     except Exception as e:
         return fail("exception", {"repr": repr(e)})
