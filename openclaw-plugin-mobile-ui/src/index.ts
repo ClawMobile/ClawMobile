@@ -5,40 +5,32 @@ import {
   android_type,
   android_swipe,
   android_task,
+  android_ui_dump,
+  android_ui_tap,
+  android_ui_type,
 } from "./tools/android";
 
 type JsonSchema = Record<string, any>;
 
 function asContent(obj: any) {
-  return {
-    content: [
-      {
-        type: "text",
-        text: JSON.stringify(obj, null, 2),
-      },
-    ],
-  };
+  return { content: [{ type: "text", text: JSON.stringify(obj, null, 2) }] };
 }
 
 function toolDef(
   name: string,
   description: string,
   schema: JsonSchema,
-  execute: (args: any) => Promise<any>
+  fn: (args: any) => Promise<any>
 ) {
+  // 兼容不同版本字段读取
   return {
     name,
     description,
-
-    // schema field used by current OpenClaw
     schema,
-
-    // keep for backward compatibility (harmless)
     inputSchema: schema,
     parameters: schema,
-
     async execute(_ctx: any, args: any) {
-      return asContent(await execute(args));
+      return asContent(await fn(args ?? {}));
     },
   };
 }
@@ -62,7 +54,7 @@ export default function register(api: any) {
         properties: { output: { type: "string" } },
         additionalProperties: false,
       },
-      async (args) => android_screenshot(args || {})
+      async (args) => android_screenshot(args)
     )
   );
 
@@ -83,10 +75,14 @@ export default function register(api: any) {
   api.registerTool(
     toolDef(
       "android_type",
-      "Type text into the focused field (via droidrun).",
+      "Type text into the focused field (via droidrun). Optional index targets a11y element index.",
       {
         type: "object",
-        properties: { text: { type: "string" } },
+        properties: {
+          text: { type: "string" },
+          index: { type: "integer" },
+          clear: { type: "boolean" },
+        },
         required: ["text"],
         additionalProperties: false,
       },
@@ -111,6 +107,52 @@ export default function register(api: any) {
         additionalProperties: false,
       },
       async (args) => android_swipe(args)
+    )
+  );
+
+  // ---- NEW: a11y-based tools ----
+  api.registerTool(
+    toolDef(
+      "android_ui_dump",
+      "Dump current UI accessibility nodes (a11y). Returns a list with indexes you can tap/type.",
+      {
+        type: "object",
+        properties: { onlyClickable: { type: "boolean" } },
+        additionalProperties: false,
+      },
+      async (args) => android_ui_dump(args)
+    )
+  );
+
+  api.registerTool(
+    toolDef(
+      "android_ui_tap",
+      "Tap an element by accessibility index (stable across screen sizes vs coordinates).",
+      {
+        type: "object",
+        properties: { index: { type: "integer" } },
+        required: ["index"],
+        additionalProperties: false,
+      },
+      async (args) => android_ui_tap(args)
+    )
+  );
+
+  api.registerTool(
+    toolDef(
+      "android_ui_type",
+      "Type text into an element by accessibility index.",
+      {
+        type: "object",
+        properties: {
+          index: { type: "integer" },
+          text: { type: "string" },
+          clear: { type: "boolean" },
+        },
+        required: ["index", "text"],
+        additionalProperties: false,
+      },
+      async (args) => android_ui_type(args)
     )
   );
 

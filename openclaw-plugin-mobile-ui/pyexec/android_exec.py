@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 import argparse
+import asyncio
 import json
 import os
+import subprocess
 import sys
 import time
-import subprocess
-import asyncio
 
 
 # -------------------------
@@ -51,7 +51,6 @@ def set_ime(ime_id: str) -> None:
 
 
 class ImeGuard:
-    """Save default IME and restore it on exit."""
     def __init__(self):
         self.prev_ime = ""
 
@@ -87,6 +86,65 @@ async def _make_tools():
 
 
 # -------------------------
+# a11y_tree parsing helpers
+# -------------------------
+def _iter_nodes(tree):
+    """
+    Best-effort traversal:
+    - If tree is list: iterate elements; recurse into children-like fields
+    - If tree is dict: recurse into values that look like children
+    """
+    if tree is None:
+        return
+    if isinstance(tree, list):
+        for item in tree:
+            yield from _iter_nodes(item)
+    elif isinstance(tree, dict):
+        # Yield this node if it looks like a node
+        yield tree
+        # common children keys
+        for k in ("children", "child", "nodes", "elements"):
+            v = tree.get(k)
+            if isinstance(v, (list, dict)):
+                yield from _iter_nodes(v)
+
+
+def _to_int(x, default=None):
+    try:
+        return int(x)
+    except Exception:
+        return default
+
+
+def _extract_bounds(node):
+    # different portal versions may use different keys
+    for k in ("bounds", "rect", "bbox"):
+        v = node.get(k)
+        if isinstance(v, (list, tuple)) and len(v) == 4:
+            return [int(v[0]), int(v[1]), int(v[2]), int(v[3])]
+        if isinstance(v, dict):
+            # {left, top, right, bottom}
+            if all(t in v for t in ("left", "top", "right", "bottom")):
+                return [int(v["left"]), int(v["top"]), int(v["right"]), int(v["bottom"])]
+    return None
+
+
+def _simplify_node(node):
+    # per community examples, nodes usually carry index/text/etc.  [oai_citation:3‡GitHub](https://github.com/droidrun/droidrun/issues/223?utm_source=chatgpt.com)
+    return {
+        "index": _to_int(node.get("index")),
+        "text": node.get("text") or node.get("label") or "",
+        "content_desc": node.get("contentDescription") or node.get("content_desc") or "",
+        "resource_id": node.get("resourceId") or node.get("resource_id") or node.get("viewIdResourceName") or "",
+        "class": node.get("className") or node.get("class") or node.get("type") or "",
+        "clickable": bool(node.get("clickable")) if "clickable" in node else None,
+        "enabled": bool(node.get("enabled")) if "enabled" in node else None,
+        "focused": bool(node.get("focused")) if "focused" in node else None,
+        "bounds": _extract_bounds(node),
+    }
+
+
+# -------------------------
 # Commands
 # -------------------------
 def cmd_health(_args):
@@ -112,7 +170,7 @@ def cmd_screenshot(args):
 
     async def _run():
         tools = await _make_tools()
-        fmt, image_bytes = await tools.take_screenshot(hide_overlay=True)  #  [oai_citation:1‡docs.droidrun.ai](https://docs.droidrun.ai/sdk/adb-tools)
+        fmt, image_bytes = await tools.take_screenshot(hide_overlay=True)
         out_path = (args.output or "").strip()
         if not out_path:
             out_path = f"/tmp/screenshot_{int(time.time())}.png"
@@ -122,7 +180,6 @@ def cmd_screenshot(args):
         return {"format": fmt, "path": out_path, "bytes": len(image_bytes)}
 
     try:
-        # screenshot 也会触发 portal keyboard setup，所以同样做 IME 恢复
         with ImeGuard():
             data = asyncio.run(_run())
         return ok(data)
@@ -137,7 +194,6 @@ def cmd_tap(args):
 
     async def _run():
         tools = await _make_tools()
-        # 坐标点击：tap_by_coordinates(x, y) -> bool  [oai_citation:2‡docs.droidrun.ai](https://docs.droidrun.ai/sdk/adb-tools)
         success = await tools.tap_by_coordinates(args.x, args.y)
         return {"success": bool(success), "x": args.x, "y": args.y}
 
@@ -156,7 +212,6 @@ def cmd_swipe(args):
 
     async def _run():
         tools = await _make_tools()
-        # swipe(start_x, start_y, end_x, end_y, duration_ms) -> bool  [oai_citation:3‡docs.droidrun.ai](https://docs.droidrun.ai/sdk/adb-tools)
         success = await tools.swipe(args.x1, args.y1, args.x2, args.y2, duration_ms=args.duration_ms)
         return {
             "success": bool(success),
@@ -179,106 +234,15 @@ def cmd_type(args):
 
     async def _run():
         tools = await _make_tools()
-        # input_text(text, index=-1, clear=False) -> str  [oai_citation:4‡docs.droidrun.ai](https://docs.droidrun.ai/sdk/adb-tools)
         result = await tools.input_text(args.text, index=args.index, clear=args.clear)
         return {"result": result, "index": args.index, "clear": bool(args.clear)}
 
     try:
-        # 输入一定会切 portal keyboard，所以务必恢复
         with ImeGuard():
             data = asyncio.run(_run())
         return ok(data)
     except Exception as e:
         return fail("type_failed", {"repr": repr(e)})
-
-
-def cmd_back(_args):
-    ok_import, err = ensure_droidrun_importable()
-    if not ok_import:
-        return fail("droidrun not importable", {"import_error": err})
-
-    async def _run():
-        tools = await _make_tools()
-        result = await tools.back()  #  [oai_citation:5‡docs.droidrun.ai](https://docs.droidrun.ai/sdk/adb-tools)
-        return {"result": result}
-
-    try:
-        with ImeGuard():
-            data = asyncio.run(_run())
-        return ok(data)
-    except Exception as e:
-        return fail("back_failed", {"repr": repr(e)})
-
-
-def cmd_press_key(args):
-    ok_import, err = ensure_droidrun_importable()
-    if not ok_import:
-        return fail("droidrun not importable", {"import_error": err})
-
-    async def _run():
-        tools = await _make_tools()
-        result = await tools.press_key(args.keycode)  #  [oai_citation:6‡docs.droidrun.ai](https://docs.droidrun.ai/sdk/adb-tools)
-        return {"result": result, "keycode": args.keycode}
-
-    try:
-        with ImeGuard():
-            data = asyncio.run(_run())
-        return ok(data)
-    except Exception as e:
-        return fail("press_key_failed", {"repr": repr(e)})
-
-
-def cmd_start_app(args):
-    ok_import, err = ensure_droidrun_importable()
-    if not ok_import:
-        return fail("droidrun not importable", {"import_error": err})
-
-    async def _run():
-        tools = await _make_tools()
-        result = await tools.start_app(args.package, args.activity)  #  [oai_citation:7‡docs.droidrun.ai](https://docs.droidrun.ai/sdk/adb-tools)
-        return {"result": result, "package": args.package, "activity": args.activity or ""}
-
-    try:
-        # 启动 app 本身不一定切键盘，但 AdbTools 初始化会 setup keyboard，所以也保护一下
-        with ImeGuard():
-            data = asyncio.run(_run())
-        return ok(data)
-    except Exception as e:
-        return fail("start_app_failed", {"repr": repr(e)})
-
-
-def cmd_list_packages(args):
-    ok_import, err = ensure_droidrun_importable()
-    if not ok_import:
-        return fail("droidrun not importable", {"import_error": err})
-
-    async def _run():
-        tools = await _make_tools()
-        pkgs = await tools.list_packages(include_system_apps=args.include_system)  #  [oai_citation:8‡docs.droidrun.ai](https://docs.droidrun.ai/sdk/adb-tools)
-        return {"count": len(pkgs), "packages": pkgs}
-
-    try:
-        data = asyncio.run(_run())
-        return ok(data)
-    except Exception as e:
-        return fail("list_packages_failed", {"repr": repr(e)})
-
-
-def cmd_get_apps(args):
-    ok_import, err = ensure_droidrun_importable()
-    if not ok_import:
-        return fail("droidrun not importable", {"import_error": err})
-
-    async def _run():
-        tools = await _make_tools()
-        apps = await tools.get_apps(include_system=args.include_system)  #  [oai_citation:9‡docs.droidrun.ai](https://docs.droidrun.ai/sdk/adb-tools)
-        return {"count": len(apps), "apps": apps}
-
-    try:
-        data = asyncio.run(_run())
-        return ok(data)
-    except Exception as e:
-        return fail("get_apps_failed", {"repr": repr(e)})
 
 
 def cmd_get_state(_args):
@@ -288,7 +252,6 @@ def cmd_get_state(_args):
 
     async def _run():
         tools = await _make_tools()
-        # get_state() 返回 (formatted_text, focused_text, a11y_tree, phone_state)  [oai_citation:10‡docs.droidrun.ai](https://docs.droidrun.ai/sdk/adb-tools)
         formatted_text, focused_text, a11y_tree, phone_state = await tools.get_state()
         return {
             "formatted_text": formatted_text,
@@ -302,6 +265,84 @@ def cmd_get_state(_args):
         return ok(data)
     except Exception as e:
         return fail("get_state_failed", {"repr": repr(e)})
+
+
+# ---- NEW: UI a11y dump ----
+def cmd_ui_dump(args):
+    ok_import, err = ensure_droidrun_importable()
+    if not ok_import:
+        return fail("droidrun not importable", {"import_error": err})
+
+    async def _run():
+        tools = await _make_tools()
+        formatted_text, focused_text, a11y_tree, phone_state = await tools.get_state()
+        nodes = []
+        seen = set()
+        for n in _iter_nodes(a11y_tree):
+            idx = _to_int(n.get("index"))
+            if idx is None:
+                continue
+            if args.only_clickable and not n.get("clickable"):
+                continue
+            if idx in seen:
+                continue
+            seen.add(idx)
+            nodes.append(_simplify_node(n))
+        nodes.sort(key=lambda x: (x["index"] if x["index"] is not None else 10**9))
+        return {
+            "count": len(nodes),
+            "only_clickable": bool(args.only_clickable),
+            "nodes": nodes,
+            # keep a bit of context (helpful for the model)
+            "focused_text": focused_text,
+            "phone_state": phone_state,
+        }
+
+    try:
+        with ImeGuard():
+            data = asyncio.run(_run())
+        return ok(data)
+    except Exception as e:
+        return fail("ui_dump_failed", {"repr": repr(e)})
+
+
+# ---- NEW: UI tap by index ----
+def cmd_ui_tap(args):
+    ok_import, err = ensure_droidrun_importable()
+    if not ok_import:
+        return fail("droidrun not importable", {"import_error": err})
+
+    async def _run():
+        tools = await _make_tools()
+        # tap_by_index(index) ([docs.droidrun.ai](https://docs.droidrun.ai/sdk/adb-tools))
+        success = await tools.tap_by_index(args.index)
+        return {"success": bool(success), "index": args.index}
+
+    try:
+        with ImeGuard():
+            data = asyncio.run(_run())
+        return ok(data)
+    except Exception as e:
+        return fail("ui_tap_failed", {"repr": repr(e)})
+
+
+# ---- NEW: UI type by index ----
+def cmd_ui_type(args):
+    ok_import, err = ensure_droidrun_importable()
+    if not ok_import:
+        return fail("droidrun not importable", {"import_error": err})
+
+    async def _run():
+        tools = await _make_tools()
+        result = await tools.input_text(args.text, index=args.index, clear=args.clear)
+        return {"result": result, "index": args.index, "clear": bool(args.clear)}
+
+    try:
+        with ImeGuard():
+            data = asyncio.run(_run())
+        return ok(data)
+    except Exception as e:
+        return fail("ui_type_failed", {"repr": repr(e)})
 
 
 # -------------------------
@@ -329,25 +370,24 @@ def main():
 
     pty = sub.add_parser("type")
     pty.add_argument("text")
-    pty.add_argument("--index", type=int, default=-1)   # -1 表示用当前 focus
-    pty.add_argument("--clear", action="store_true")    # 是否清空原文本
-
-    pb = sub.add_parser("back")
-
-    pk = sub.add_parser("press_key")
-    pk.add_argument("keycode", type=int)
-
-    pa = sub.add_parser("start_app")
-    pa.add_argument("package")
-    pa.add_argument("--activity", default=None)
-
-    pl = sub.add_parser("list_packages")
-    pl.add_argument("--include-system", action="store_true")
-
-    pg = sub.add_parser("get_apps")
-    pg.add_argument("--include-system", action="store_true")
+    pty.add_argument("--index", type=int, default=-1)
+    pty.add_argument("--clear", action="store_true")
 
     sub.add_parser("get_state")
+
+    # NEW: ui_dump
+    pud = sub.add_parser("ui_dump")
+    pud.add_argument("--only-clickable", action="store_true")
+
+    # NEW: ui_tap
+    put = sub.add_parser("ui_tap")
+    put.add_argument("index", type=int)
+
+    # NEW: ui_type
+    pui = sub.add_parser("ui_type")
+    pui.add_argument("index", type=int)
+    pui.add_argument("text")
+    pui.add_argument("--clear", action="store_true")
 
     args = p.parse_args()
 
@@ -362,18 +402,14 @@ def main():
             return cmd_swipe(args)
         if args.cmd == "type":
             return cmd_type(args)
-        if args.cmd == "back":
-            return cmd_back(args)
-        if args.cmd == "press_key":
-            return cmd_press_key(args)
-        if args.cmd == "start_app":
-            return cmd_start_app(args)
-        if args.cmd == "list_packages":
-            return cmd_list_packages(args)
-        if args.cmd == "get_apps":
-            return cmd_get_apps(args)
         if args.cmd == "get_state":
             return cmd_get_state(args)
+        if args.cmd == "ui_dump":
+            return cmd_ui_dump(args)
+        if args.cmd == "ui_tap":
+            return cmd_ui_tap(args)
+        if args.cmd == "ui_type":
+            return cmd_ui_type(args)
         return fail("unknown cmd")
     except Exception as e:
         return fail("exception", {"repr": repr(e)})
