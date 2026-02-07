@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 # 你的规则目录：如果你实际是 memory/，就把 rules 改成 memory
-REPO_RULES="${REPO_ROOT}/rules"
+REPO_RULES="${REPO_ROOT}/memory"
 
 echo "[clawbot] Starting OpenClaw Gateway..."
 proot-distro login "${UBUNTU_DISTRO}" --shared-tmp -- bash -lc "
@@ -26,16 +26,16 @@ proot-distro login "${UBUNTU_DISTRO}" --shared-tmp -- bash -lc "
   fi
 
   # ---- activate python virtual environment ----
-  # 推荐：不要只 activate，还要显式指定 CLAW_MOBILE_PYTHON，避免 openclaw worker PATH 重置
-  if [ -f \"\$REPO_ROOT/.venv/bin/activate\" ]; then
-    source \"\$REPO_ROOT/.venv/bin/activate\"
-    if [ -x \"\$REPO_ROOT/.venv/bin/python3\" ]; then
-      export CLAW_MOBILE_PYTHON=\"\$REPO_ROOT/.venv/bin/python3\"
+  # 推荐：不要只 activate, 还要显式指定 CLAW_MOBILE_PYTHON, 避免 openclaw worker PATH 重置
+  if [ -f \"/root/venvs/clawbot/bin/activate\" ]; then
+    source \"/root/venvs/clawbot/bin/activate\"
+    if [ -x \"/root/venvs/clawbot/bin/python3\" ]; then
+      export CLAW_MOBILE_PYTHON=\"/root/venvs/clawbot/bin/python3\"
     else
-      export CLAW_MOBILE_PYTHON=\"\$REPO_ROOT/.venv/bin/python\"
+      export CLAW_MOBILE_PYTHON=\"/root/venvs/clawbot/bin/python\"
     fi
   else
-    echo \"[run] WARNING: venv not found at \$REPO_ROOT/.venv; tools may use system python\"
+    echo \"[run] WARNING: venv not found at /root/venvs/clawbot; tools may use system python\"
   fi
 
   echo \"[run] CLAW_MOBILE_PYTHON=\${CLAW_MOBILE_PYTHON:-}\" || true
