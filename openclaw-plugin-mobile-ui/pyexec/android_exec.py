@@ -4,6 +4,7 @@ import json
 import os
 import sys
 import time
+import subprocess
 
 def ok(data):
     print(json.dumps({"ok": True, "data": data}, ensure_ascii=False))
@@ -23,6 +24,20 @@ def ensure_droidrun_importable():
     except Exception as e:
         return False, str(e)
 
+def adb_shell(cmd: str) -> str:
+    # 用系统 adb（确保 PATH 里是你 gateway 运行环境的 adb）
+    out = subprocess.check_output(["adb", "shell", cmd], stderr=subprocess.STDOUT)
+    return out.decode("utf-8", errors="ignore").strip()
+
+def get_default_ime() -> str:
+    # Android 默认输入法 ID
+    return adb_shell("settings get secure default_input_method")
+
+def set_ime(ime_id: str) -> None:
+    if not ime_id:
+        return
+    adb_shell(f"ime set {ime_id}")
+
 def cmd_health(_args):
     ok_import, err = ensure_droidrun_importable()
     return ok({
@@ -38,37 +53,37 @@ def cmd_screenshot(args):
     if not ok_import:
         return fail("droidrun not importable", {"import_error": err})
 
-    import asyncio
-    import time
-    from droidrun.tools import AdbTools
-
-    async def _run():
-        # 可选：允许用环境变量指定设备与 TCP 模式
-        serial = os.environ.get("DROIDRUN_SERIAL") or None
-        use_tcp = os.environ.get("DROIDRUN_USE_TCP", "0").lower() in ("1", "true", "yes")
-        remote_tcp_port = int(os.environ.get("DROIDRUN_TCP_PORT", "8080"))
-
-        tools = AdbTools(serial=serial, use_tcp=use_tcp, remote_tcp_port=remote_tcp_port)
-
-        fmt, image_bytes = await tools.take_screenshot(hide_overlay=True)  #  [oai_citation:3‡docs.droidrun.ai](https://docs.droidrun.ai/sdk/adb-tools)
-
-        # 输出文件路径：优先用参数 --output；否则写到 /tmp
-        out_path = args.output.strip() if args.output else ""
-        if not out_path:
-            out_path = f"/tmp/screenshot_{int(time.time())}.png"
-
-        # 确保目录存在
-        os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
-        with open(out_path, "wb") as f:
-            f.write(image_bytes)
-
-        return {"format": fmt, "path": out_path, "bytes": len(image_bytes)}
-
+    prev_ime = ""
     try:
+        prev_ime = get_default_ime()
+
+        import asyncio, time
+        from droidrun.tools import AdbTools  # SDK  [oai_citation:1‡docs.droidrun.ai](https://docs.droidrun.ai/sdk/adb-tools)
+
+        async def _run():
+            tools = AdbTools()
+            fmt, image_bytes = await tools.take_screenshot(hide_overlay=True)  #  [oai_citation:2‡docs.droidrun.ai](https://docs.droidrun.ai/sdk/adb-tools)
+
+            out_path = args.output.strip() if args.output else f"/tmp/screenshot_{int(time.time())}.png"
+            os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
+            with open(out_path, "wb") as f:
+                f.write(image_bytes)
+
+            return {"format": fmt, "path": out_path, "bytes": len(image_bytes)}
+
         data = asyncio.run(_run())
         return ok(data)
+
     except Exception as e:
         return fail("screenshot_failed", {"repr": repr(e)})
+
+    finally:
+        # 强制恢复原输入法
+        try:
+            if prev_ime:
+                set_ime(prev_ime)
+        except Exception:
+            pass
 
 def cmd_tap(args):
     ok_import, err = ensure_droidrun_importable()
