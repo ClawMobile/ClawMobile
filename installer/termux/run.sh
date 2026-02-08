@@ -112,7 +112,7 @@ else
 fi
 echo "[run] CLAW_MOBILE_PYTHON=\${CLAW_MOBILE_PYTHON:-}" || true
 
-# ---- ADB prep: pick a usable device serial automatically (prefer emulator-*) ----
+# ---- ADB prep: pick a usable device serial automatically (prefer tcpip with port 5555) ----
 if command -v adb >/dev/null 2>&1; then
   adb start-server >/dev/null 2>&1 || true
   mapfile -t DEVICES < <(adb devices | awk 'NR>1 && \$2=="device" {print \$1}')
@@ -126,7 +126,7 @@ if command -v adb >/dev/null 2>&1; then
     if [ -z "\${DROIDRUN_SERIAL:-}" ]; then
       PICK=""
       for s in "\${DEVICES[@]}"; do
-        if [[ "\$s" == emulator-* ]]; then
+        if [[ "\$s" == 127.0.0.1:5555 ]]; then
           PICK="\$s"
           break
         fi

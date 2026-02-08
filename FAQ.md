@@ -25,7 +25,7 @@ If something feels “randomly broken”, check here first.
 
 **Cause**
 
-Android battery optimization killed Termux in the background.
+Android battery optimization stops Termux in the background.
 
 **Fix (Required)**
 
@@ -85,20 +85,15 @@ Then rerun:
 
 **Explanation**
 
-In this setup, the current phone appears as a local emulator device inside Ubuntu (proot).
+In this setup, the current phone can be connected with wireless ADB.
 
-**What the system does**
-- `run.sh` automatically selects a usable ADB device
-- It prefers `emulator-*` devices, which usually represent the current phone
+You need to use pair mode to connect it first and it only works when the pairing code is in the foreground when you enter it.
 
-**If you want to override**
+You need split screen or floating window to keep the pairing code visible while running the command in Termux.
 
-You can force a specific device:
+After successful pairing, the device will be connected and selected automatically in `run.sh`.
 
-```sh
-export DROIDRUN_SERIAL=emulator-5554
-./run.sh
-```
+You can also use tcpip to keep a more stable connection.
 
 ---
 

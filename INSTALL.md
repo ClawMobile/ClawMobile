@@ -25,7 +25,7 @@ It runs entirely on the phone using:
 
 On your phone, enable:
 1. Developer options
-2. USB debugging
+2. USB debugging and wireless debugging (ADB)
 3. Accessibility service for DroidRun Portal
 
 During installation, Android will show permission dialogs.
@@ -108,7 +108,7 @@ This is expected behavior, not an error.
 
 ---
 
-### Step 3 – Export model API key (for DroidRun agent)
+### Step 3 – Export model API key and connect wirelessly (for DroidRun agent)
 
 In Termux, before starting the gateway (use openai as an example):
 
@@ -124,6 +124,38 @@ export DROIDRUN_MODEL=gpt-5.2
 
 These environment variables are used only by DroidRun agent mode.
 OpenClaw continues to use its own interactive configuration.
+
+If you cannot find the device with adb in Termux, you should also connect wirelessly using ADB if you want to use DroidRun agent mode remotely. First, test if adb can see the device:
+
+```sh
+adb devices
+```
+
+If you see your device (e.g. `emulator-5554`), you can skip wireless setup.
+If not, connect wirelessly:
+
+1. Find the pairing code on your phone, usually in the Developer options under Wireless debugging
+2. In Termux, run:
+
+```sh
+adb pair 127.0.0.1:<PAIRING_PORT> <PAIRING_CODE>
+```
+
+Please note that the pairing port may vary and different with connect port. It will also change when you change to another app like Termux, so you need to use split screen or floating window to keep the pairing code visible while running the command in Termux. *
+
+After successful pairing, connect to the device:
+
+```sh
+adb connect 127.0.0.1:<CONNECT_PORT>
+```
+
+3. You can also then use tcpip to keep more stable connection:
+
+```sh
+adb tcpip 5555
+adb connect 127.0.0.1:5555
+adb disconnect 127.0.0.1:<CONNECT_PORT> # you can disconnect the original connect port after tcpip connection is successful
+```
 
 ---
 
@@ -144,7 +176,7 @@ This script will:
 You should see output similar to:
 
 ```
-[run] adb selected serial: emulator-5554
+[run] adb selected serial: 127.0.0.1:5555
 [run] droidrun chosen: provider=OpenAI model=gpt-5.2
 [openclaw] Gateway listening on ...
 ```
@@ -183,6 +215,8 @@ After pairing:
 - Return to Telegram
 - Send commands to the bot
 - The agent will interact with the current phone UI
+
+If you find the bot is not responding, you may need to stop the battery optimization for Termux in Android settings to allow it to run in the background.
 
 #### Onboarding new interfaces or reconfiguring
 To onboard new interfaces or reconfigure OpenClaw:
