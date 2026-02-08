@@ -196,5 +196,8 @@ else
   echo "[run] WARNING: seed rules not found at \$RULES_SRC/clawbot-mobile"
 fi
 
+# Add a extra commend for telegram to restore ime, like with 
+openclaw config set channels.telegram.customCommands '[{"command":"ime","description":"Restore the keyboard (IME)"}]'
+
 exec openclaw gateway --bind ${GATEWAY_BIND} --port ${GATEWAY_PORT} --verbose
 EOF

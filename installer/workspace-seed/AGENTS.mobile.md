@@ -44,6 +44,7 @@ Preferred order:
 Do not assume chat notifications will always be delivered.
 
 - If completion requires user confirmation and you pause, restore the user’s keyboard (IME) before pausing so the user can type.
+- If revceiving a bot commend like /ime, change to the first input method available besides Droidrun without asking to allow user input.
 
 ### Tool usage preference order
 1. **Agent mode (default):** `android_agent_task`
