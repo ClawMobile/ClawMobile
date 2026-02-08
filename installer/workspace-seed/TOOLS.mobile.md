@@ -61,7 +61,7 @@ Use only when semantic UI tools cannot proceed:
   Type text (general). Prefer `android_ui_type` when possible.
 
 ### Notes
-- The gateway runs on the phone. ADB device selection is handled by `run.sh` and typically targets the **local emulator-like device** representing this phone.
+- The gateway runs on the phone. ADB device selection is handled by `run.sh` and typically targets the **local wireless connected device** representing this phone.
 - If ADB shows `unauthorized`, the user must accept the debugging prompt on the phone.
 - If the UI changes unexpectedly, re-run `android_screenshot` (and optionally `android_ui_dump`) before acting.
 
@@ -69,12 +69,7 @@ Use only when semantic UI tools cannot proceed:
 DroidRun may temporarily switch the default input method (IME).  
 Normally it restores the previous IME when the task finishes, but if the agent pauses to ask for user confirmation, the IME may remain on the DroidRun keyboard, making manual typing difficult.
 
-Recovery (ADB):
-1. List IMEs: `adb shell ime list -s`
-2. Switch back to your preferred IME:
-   - `adb shell ime set <your.default.ime/.Service>`
-
 ### Completion signaling
-Chat notifications may not always appear due to Android system behavior, use android_signal_complete as the completion signal.
+Chat notifications may not always appear due to Android system behavior, use android_signal_complete as the completion signal, default signaling is a 400ms vibration.
 
 <!-- CLAWBOT_MOBILE_END -->
