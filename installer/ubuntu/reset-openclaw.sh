@@ -8,8 +8,8 @@ set -euo pipefail
 # Levels:
 #   soft     Stop gateway only (default)
 #   workspace Clear only workspace content that affects memory/bootstrap (AGENTS/TOOLS/rules/workspace cache)
-#   state    Clear OpenClaw state dir (keeps workspace by default)
-#   full     Clear both state dir and workspace (nuclear)
+#   state    Clear OpenClaw state dir
+#   full     Clear both state dir and workspace
 #
 # Options:
 #   --level <soft|workspace|state|full>
@@ -155,6 +155,8 @@ case "$LEVEL" in
   full)
     reset_state
     reset_workspace
+    run "openclaw uninstall --all --yes --non-interactive || true"
+    run "npm rm -g openclaw || true"
     log "Done (full reset)."
     ;;
 esac
