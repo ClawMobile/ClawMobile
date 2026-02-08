@@ -153,8 +153,6 @@ case "$LEVEL" in
     log "Done (state reset)."
     ;;
   full)
-    reset_state
-    reset_workspace
     run "openclaw uninstall --all --yes --non-interactive || true"
     run "npm rm -g openclaw || true"
     log "Done (full reset)."

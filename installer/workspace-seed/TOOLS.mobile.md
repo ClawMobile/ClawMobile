@@ -69,7 +69,12 @@ Use only when semantic UI tools cannot proceed:
 DroidRun may temporarily switch the default input method (IME).  
 Normally it restores the previous IME when the task finishes, but if the agent pauses to ask for user confirmation, the IME may remain on the DroidRun keyboard, making manual typing difficult.
 
+Recovery (ADB):
+1. List IMEs: `adb shell ime list -s`
+2. Switch back to your preferred IME:
+   - `adb shell ime set <your.default.ime/.Service>`
+
 ### Completion signaling
-Chat notifications may not always appear due to Android system behavior, use android_signal_complete as the completion signal, default signaling is a 400ms vibration.
+Chat notifications may not always appear due to Android system behavior, use android_signal_complete as the completion signal, default signaling is a single 400ms vibration.
 
 <!-- CLAWBOT_MOBILE_END -->
