@@ -35,7 +35,7 @@ You should accept them (preferably with “Always allow”).
 
 ### 2. Termux
 
-Install Termux.
+Install Termux with the latest version.
 
 Open Termux and make sure to have this project directory available.
 
@@ -90,7 +90,7 @@ This script will:
 
 While `install.sh` is running, you will be asked to:
 1. Accept Android debugging authorization
-2. Allow installation of DroidRun Portal, you can cancle the overlap option if you want to keep using the original screen after installation.
+2. Allow installation of DroidRun Portal, you can cancle the overlay option if you want to keep using the original screen after installation.
 3. Run OpenClaw interactive configuration (onboard)
 
 During OpenClaw configuration you can:
@@ -193,6 +193,16 @@ To onboard new interfaces or reconfigure OpenClaw:
 To reset OpenClaw configuration and start fresh:
 ```sh
 ./installer/ubuntu/reset-openclaw.sh
+```
+
+Optional levels:
+- `--level workspace` resets seeded workspace files (AGENTS/TOOLS/rules)
+- `--level state` wipes OpenClaw state/config cache
+- `--level full` wipes both state and workspace
+
+Example:
+```sh
+./installer/ubuntu/reset-openclaw.sh --level workspace
 ```
 
 ---

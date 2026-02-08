@@ -218,7 +218,7 @@ Most issues are resolved by a clean restart.
 
 If problems persist, you can always reset to a clean state:
 ```sh
-./installer/termux/reset.sh
+./installer/ubuntu/reset-openclaw.sh --level workspace
 ```
 
 And then start fresh:

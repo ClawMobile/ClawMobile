@@ -8,7 +8,7 @@ pkg update -y
 pkg upgrade -y
 
 echo "[+] Installing prerequisites..."
-pkg install -y proot-distro git curl termux-api
+pkg install -y proot-distro git curl termux-api android-tools
 
 echo "[+] Installing proot Ubuntu (${UBUNTU}) if missing..."
 if ! proot-distro list | grep -q "^${UBUNTU}\b"; then
@@ -32,8 +32,8 @@ echo
 echo "[✓] Install finished."
 echo
 echo "Next steps:"
-echo "  1) Run onboarding (interactive):"
-echo "     ${REPO_ROOT}/installer/termux/onboard.sh"
-echo
-echo "  2) Start gateway anytime:"
+echo "  1) Start gateway anytime:"
 echo "     ${REPO_ROOT}/installer/termux/run.sh"
+echo
+echo "  2) Run onboarding to reconfigure when needed (interactive):"
+echo "     ${REPO_ROOT}/installer/termux/onboard.sh"
