@@ -70,10 +70,13 @@ export default function register(api: any) {
   api.registerTool(
     toolDef(
       "android_screenshot",
-      "Take a screenshot on the Android device (via droidrun).",
+      "Take a screenshot on the Android device (via droidrun or adb).",
       {
         type: "object",
-        properties: { output: { type: "string" } },
+        properties: {
+          output: { type: "string" },
+          backend: { type: "string", enum: ["auto", "adb", "droidrun"] },
+        },
         additionalProperties: false,
       },
       async (args) => android_screenshot(args)
@@ -83,10 +86,14 @@ export default function register(api: any) {
   api.registerTool(
     toolDef(
       "android_tap",
-      "Tap at (x,y) on the Android device (via droidrun).",
+      "Tap at (x,y) on the Android device (via droidrun or adb).",
       {
         type: "object",
-        properties: { x: { type: "integer" }, y: { type: "integer" } },
+        properties: {
+          x: { type: "integer" },
+          y: { type: "integer" },
+          backend: { type: "string", enum: ["auto", "adb", "droidrun"] },
+        },
         required: ["x", "y"],
         additionalProperties: false,
       },
@@ -97,13 +104,14 @@ export default function register(api: any) {
   api.registerTool(
     toolDef(
       "android_type",
-      "Type text into the focused field (via droidrun). Optional index targets a11y element index.",
+      "Type text into the focused field (via droidrun or adb). Optional index targets a11y element index.",
       {
         type: "object",
         properties: {
           text: { type: "string" },
           index: { type: "integer" },
           clear: { type: "boolean" },
+          backend: { type: "string", enum: ["auto", "adb", "droidrun"] },
         },
         required: ["text"],
         additionalProperties: false,
@@ -115,7 +123,7 @@ export default function register(api: any) {
   api.registerTool(
     toolDef(
       "android_swipe",
-      "Swipe from (x1,y1) to (x2,y2) (via droidrun).",
+      "Swipe from (x1,y1) to (x2,y2) (via droidrun or adb).",
       {
         type: "object",
         properties: {
@@ -124,6 +132,7 @@ export default function register(api: any) {
           x2: { type: "integer" },
           y2: { type: "integer" },
           durationMs: { type: "integer" },
+          backend: { type: "string", enum: ["auto", "adb", "droidrun"] },
         },
         required: ["x1", "y1", "x2", "y2"],
         additionalProperties: false,

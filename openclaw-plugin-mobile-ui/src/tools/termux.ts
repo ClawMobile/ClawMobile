@@ -63,6 +63,13 @@ export async function tx_notify(input: { title: string; content: string }) {
   return runTermux("termux-notification", ["--title", input?.title ?? "", "--content", input?.content ?? ""]);
 }
 
+export async function tx_vibrate(input: { ms: number; force?: boolean }) {
+  const ms = Math.max(1, Number(input?.ms ?? 1));
+  const args = ["-d", String(ms)];
+  if (input?.force ?? true) args.push("-f");
+  return runTermux("termux-vibrate", args);
+}
+
 export async function tx_tts(input: { text: string }) {
   if (input?.text == null) return { ok: false, code: -1, stdout: "", stderr: "text is required" };
   return runTermux("termux-tts-speak", [String(input.text)], 30_000);
