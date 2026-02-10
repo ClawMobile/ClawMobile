@@ -13,6 +13,24 @@ import {
   android_ui_type_find,
   android_signal_complete,
 } from "./tools/android";
+import {
+  adb_devices,
+  adb_keyevent,
+  adb_ui_dump_xml,
+  adb_screenshot,
+  adb_tap,
+  adb_type,
+  adb_swipe,
+} from "./tools/adb";
+import {
+  tx_notify,
+  tx_tts,
+  tx_toast,
+  tx_clipboard_get,
+  tx_clipboard_set,
+  tx_battery_status,
+} from "./tools/termux";
+import { android_shell } from "./tools/shell";
 
 type JsonSchema = Record<string, any>;
 
@@ -264,6 +282,193 @@ export default function register(api: any) {
         additionalProperties: false
       },
       async (args) => android_signal_complete(args)
+    )
+  );
+
+  // ---- adb tools ----
+  api.registerTool(
+    toolDef(
+      "adb_devices",
+      "List adb devices and connection state.",
+      { type: "object", properties: {}, additionalProperties: false },
+      async () => adb_devices()
+    )
+  );
+
+  api.registerTool(
+    toolDef(
+      "adb_keyevent",
+      "Send a key event via adb (HOME/BACK/RECENTS/ENTER or numeric keycode).",
+      {
+        type: "object",
+        properties: {
+          key: { type: "string", enum: ["HOME", "BACK", "RECENTS", "ENTER"] },
+          keycode: { type: "integer" },
+        },
+        additionalProperties: false,
+        anyOf: [{ required: ["key"] }, { required: ["keycode"] }],
+      },
+      async (args) => adb_keyevent(args)
+    )
+  );
+
+  api.registerTool(
+    toolDef(
+      "adb_ui_dump_xml",
+      "Dump UIAutomator XML via adb and return the XML text.",
+      { type: "object", properties: { compressed: { type: "boolean" } }, additionalProperties: false },
+      async (args) => adb_ui_dump_xml(args)
+    )
+  );
+
+  api.registerTool(
+    toolDef(
+      "adb_screenshot",
+      "Take a screenshot via adb (returns base64 PNG).",
+      { type: "object", properties: {}, additionalProperties: false },
+      async () => adb_screenshot()
+    )
+  );
+
+  api.registerTool(
+    toolDef(
+      "adb_tap",
+      "Tap at (x,y) via adb input.",
+      {
+        type: "object",
+        properties: { x: { type: "integer" }, y: { type: "integer" } },
+        required: ["x", "y"],
+        additionalProperties: false,
+      },
+      async (args) => adb_tap(args)
+    )
+  );
+
+  api.registerTool(
+    toolDef(
+      "adb_type",
+      "Type text via adb input.",
+      {
+        type: "object",
+        properties: { text: { type: "string" } },
+        required: ["text"],
+        additionalProperties: false,
+      },
+      async (args) => adb_type(args)
+    )
+  );
+
+  api.registerTool(
+    toolDef(
+      "adb_swipe",
+      "Swipe via adb input.",
+      {
+        type: "object",
+        properties: {
+          x1: { type: "integer" },
+          y1: { type: "integer" },
+          x2: { type: "integer" },
+          y2: { type: "integer" },
+          durationMs: { type: "integer" },
+        },
+        required: ["x1", "y1", "x2", "y2"],
+        additionalProperties: false,
+      },
+      async (args) => adb_swipe(args)
+    )
+  );
+
+  // ---- termux-api tools ----
+  api.registerTool(
+    toolDef(
+      "tx_notify",
+      "Send a local Termux notification.",
+      {
+        type: "object",
+        properties: { title: { type: "string" }, content: { type: "string" } },
+        required: ["title", "content"],
+        additionalProperties: false,
+      },
+      async (args) => tx_notify(args)
+    )
+  );
+
+  api.registerTool(
+    toolDef(
+      "tx_tts",
+      "Speak text using Termux TTS.",
+      {
+        type: "object",
+        properties: { text: { type: "string" } },
+        required: ["text"],
+        additionalProperties: false,
+      },
+      async (args) => tx_tts(args)
+    )
+  );
+
+  api.registerTool(
+    toolDef(
+      "tx_toast",
+      "Show a Termux toast message.",
+      {
+        type: "object",
+        properties: { text: { type: "string" } },
+        required: ["text"],
+        additionalProperties: false,
+      },
+      async (args) => tx_toast(args)
+    )
+  );
+
+  api.registerTool(
+    toolDef(
+      "tx_clipboard_get",
+      "Read text from the Termux clipboard.",
+      { type: "object", properties: {}, additionalProperties: false },
+      async () => tx_clipboard_get()
+    )
+  );
+
+  api.registerTool(
+    toolDef(
+      "tx_clipboard_set",
+      "Write text to the Termux clipboard.",
+      {
+        type: "object",
+        properties: { text: { type: "string" } },
+        required: ["text"],
+        additionalProperties: false,
+      },
+      async (args) => tx_clipboard_set(args)
+    )
+  );
+
+  api.registerTool(
+    toolDef(
+      "tx_battery_status",
+      "Read battery status from Termux.",
+      { type: "object", properties: {}, additionalProperties: false },
+      async () => tx_battery_status()
+    )
+  );
+
+  // ---- fallback shell ----
+  api.registerTool(
+    toolDef(
+      "android_shell",
+      "Fallback shell execution via backend: adb | termux | bash (denylists dangerous commands).",
+      {
+        type: "object",
+        properties: {
+          backend: { type: "string", enum: ["adb", "termux", "bash"] },
+          cmd: { type: "string" },
+          timeoutMs: { type: "integer" },
+        },
+        required: ["backend", "cmd"],
+        additionalProperties: false,
+      },
+      async (args) => android_shell(args)
     )
   );
 

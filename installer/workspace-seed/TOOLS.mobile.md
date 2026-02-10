@@ -12,6 +12,11 @@ This runtime provides Android UI automation tools.
 
 ### Tool catalog
 
+#### Backends overview
+- `droidrun` (semantic UI): preferred for UI automation and safe element targeting.
+- `adb` (low-level control): direct input, screenshots, and UIAutomator XML.
+- `termux-api` (device UX): notifications, TTS, clipboard, battery, vibration.
+
 #### Health / observation
 - `android_health`  
   Verify environment readiness.
@@ -59,6 +64,42 @@ Use only when semantic UI tools cannot proceed:
 
 - `android_type`  
   Type text (general). Prefer `android_ui_type` when possible.
+
+#### ADB tools (low-level)
+- `adb_devices`  
+  List connected adb devices and states.
+
+- `adb_screenshot`  
+  Capture screen via adb (base64 PNG).
+
+- `adb_ui_dump_xml`  
+  Dump UIAutomator XML via adb.
+
+- `adb_tap` / `adb_swipe` / `adb_type`  
+  Direct input commands.
+
+- `adb_keyevent`  
+  HOME/BACK/RECENTS/ENTER or numeric keycodes.
+
+#### Termux:API tools (device UX)
+- `tx_notify`  
+  Local notification.
+
+- `tx_tts`  
+  Text-to-speech.
+
+- `tx_toast`  
+  Toast message.
+
+- `tx_clipboard_get` / `tx_clipboard_set`  
+  Clipboard access.
+
+- `tx_battery_status`  
+  Battery status JSON.
+
+#### Fallback shell
+- `android_shell`  
+  Execute a command via backend `adb`, `termux`, or `bash` (dangerous commands are blocked; outputs truncated).
 
 ### Notes
 - The gateway runs on the phone. ADB device selection is handled by `run.sh` and typically targets the **local wireless connected device** representing this phone.
