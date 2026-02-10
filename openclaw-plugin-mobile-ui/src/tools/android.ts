@@ -1,7 +1,9 @@
+import fs from "fs";
 import { DroidrunExecutor } from "../droidrun/executor";
 import { DroidrunAgent } from "../droidrun/agent";
 import { adb_devices, adb_screenshot, adb_tap, adb_type, adb_swipe } from "./adb";
 import { tx_notify, tx_tts, tx_vibrate } from "./termux";
+import { makeScreenshotPath, pngDimensions, truncateLargeStrings } from "./workspace";
 
 export type Mode = "executor" | "agent";
 
@@ -20,14 +22,14 @@ export async function android_health() {
 export async function android_screenshot(input: { output?: string; backend?: "auto" | "adb" | "droidrun" }) {
   const backend = input?.backend ?? "auto";
   if (backend === "adb") return adb_screenshot();
-  if (backend === "droidrun") return exec.screenshot(input?.output);
+  if (backend === "droidrun") return await droidrunScreenshot();
 
   const hasAdb = await hasAdbDevice();
   if (hasAdb) {
     const res = await adb_screenshot();
     if ((res as any)?.ok) return res;
   }
-  return exec.screenshot(input?.output);
+  return await droidrunScreenshot();
 }
 
 export async function android_tap(input: { x: number; y: number; backend?: "auto" | "adb" | "droidrun" }) {
@@ -83,7 +85,8 @@ export async function android_swipe(input: {
 
 // ---- NEW: a11y-based ----
 export async function android_ui_dump(input: { onlyClickable?: boolean }) {
-  return exec.uiDump(input?.onlyClickable ?? true);
+  const res = await exec.uiDump(input?.onlyClickable ?? true);
+  return truncateLargeStrings(res);
 }
 
 export async function android_ui_tap(input: { index: number }) {
@@ -201,6 +204,34 @@ export async function android_signal_complete(args?: {
   details.push({ step: "termux-tts-speak", ok: false, err: t.stderr || t.stdout });
 
   return { ok: false, method: null, details };
+}
+
+async function droidrunScreenshot() {
+  const outPath = makeScreenshotPath();
+  const res = await exec.screenshot(outPath);
+  const ok = (res as any)?.ok === true;
+  if (!ok) {
+    console.warn("[android_screenshot] droidrun screenshot failed");
+    return { ok: false, path: "", bytes: 0, width: 0, height: 0 };
+  }
+
+  let bytes = 0;
+  let width = 0;
+  let height = 0;
+
+  try {
+    const buf = fs.readFileSync(outPath);
+    bytes = buf.length;
+    const dims = pngDimensions(buf);
+    width = dims.width;
+    height = dims.height;
+  } catch (e: any) {
+    console.warn(`[android_screenshot] read failed: ${String(e?.message || e)}`);
+    return { ok: false, path: "", bytes: 0, width: 0, height: 0 };
+  }
+
+  console.log(`[android_screenshot] saved to ${outPath}. If attachments are unavailable, use the path.`);
+  return { ok: true, path: outPath, bytes, width, height };
 }
 
 async function hasAdbDevice() {

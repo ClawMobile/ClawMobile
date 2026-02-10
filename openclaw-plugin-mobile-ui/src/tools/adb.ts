@@ -1,4 +1,6 @@
 import { spawn } from "child_process";
+import fs from "fs";
+import { makeScreenshotPath, pngDimensions, truncateString, DEFAULT_MAX_OUTPUT_BYTES } from "./workspace";
 
 export type AdbResult = {
   ok: boolean;
@@ -114,7 +116,7 @@ export async function adb_ui_dump_xml(input: { compressed?: boolean }) {
   const catRes = await runAdb(["shell", "cat", dumpPath], 25_000);
   if (!catRes.ok) return { ...catRes, xml: "" };
 
-  return { ...catRes, xml: catRes.stdout };
+  return { ...catRes, xml: truncateString(catRes.stdout, DEFAULT_MAX_OUTPUT_BYTES) };
 }
 
 export async function adb_screenshot() {
@@ -134,7 +136,7 @@ export async function adb_screenshot() {
       try {
         p.kill("SIGKILL");
       } catch {}
-      resolve({ ok: false, code: -1, stderr: "timeout", base64: "" });
+      resolve({ ok: false, path: "", bytes: 0, width: 0, height: 0 });
     }, 30_000);
 
     p.on("error", (e: any) => {
@@ -142,7 +144,8 @@ export async function adb_screenshot() {
       done = true;
       clearTimeout(timer);
       const msg = e?.code === "ENOENT" ? "adb not found in PATH" : String(e?.message || e);
-      resolve({ ok: false, code: -1, stderr: msg, base64: "" });
+      console.warn(`[adb_screenshot] ${msg}`);
+      resolve({ ok: false, path: "", bytes: 0, width: 0, height: 0 });
     });
 
     p.stdout.on("data", (d) => chunks.push(Buffer.from(d)));
@@ -153,13 +156,21 @@ export async function adb_screenshot() {
       done = true;
       clearTimeout(timer);
       const buf = Buffer.concat(chunks);
-      resolve({
-        ok: code === 0,
-        code: typeof code === "number" ? code : -1,
-        stderr,
-        base64: buf.length ? buf.toString("base64") : "",
-        bytes: buf.length,
-      });
+      const outPath = makeScreenshotPath();
+      try {
+        fs.writeFileSync(outPath, buf);
+      } catch (e: any) {
+        console.warn(`[adb_screenshot] write failed: ${String(e?.message || e || "write failed")}`);
+        resolve({ ok: false, path: "", bytes: 0, width: 0, height: 0 });
+        return;
+      }
+      const dims = pngDimensions(buf);
+      if (code !== 0) {
+        console.warn(`[adb_screenshot] adb exited with code ${code}: ${stderr}`);
+        resolve({ ok: false, path: "", bytes: 0, width: 0, height: 0 });
+        return;
+      }
+      resolve({ ok: true, path: outPath, bytes: buf.length, width: dims.width, height: dims.height });
     });
   });
 }
