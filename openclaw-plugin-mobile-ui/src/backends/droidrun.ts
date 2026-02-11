@@ -1,13 +1,13 @@
 import fs from "fs";
-import { DroidrunExecutor } from "../droidrun/executor";
-import { DroidrunAgent } from "../droidrun/agent";
+import { DroidrunExecutor } from "../internal/droidrun/executor";
+import { DroidrunAgent } from "../internal/droidrun/agent";
 import {
   makeScreenshotPath,
   pngDimensions,
   truncateLargeStrings,
   ensureLogsDir,
   writeLog,
-} from "./workspace";
+} from "../tools/workspace";
 
 const exec = new DroidrunExecutor();
 const agent = new DroidrunAgent();

@@ -183,6 +183,7 @@ append_block_if_missing() {
 
 append_block_if_missing "\$WORKSPACE/AGENTS.md" "\$SEED_DIR/AGENTS.mobile.md"
 append_block_if_missing "\$WORKSPACE/TOOLS.md"  "\$SEED_DIR/TOOLS.mobile.md"
+append_block_if_missing "\$WORKSPACE/CAPABILITIES.md" "\$SEED_DIR/CAPABILITIES.mobile.md"
 
 RULES_SRC="\$SEED_DIR/rules"
 RULES_DST="\$WORKSPACE/rules"

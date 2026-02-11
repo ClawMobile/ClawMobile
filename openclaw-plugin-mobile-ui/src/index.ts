@@ -11,8 +11,8 @@ import {
   android_ui_find,
   android_ui_tap_find,
   android_ui_type_find,
-  android_signal_complete,
 } from "./tools/android";
+import { signalComplete as android_signal_complete } from "./tools/attention";
 import {
   adb_devices,
   adb_keyevent,
@@ -21,7 +21,7 @@ import {
   adb_tap,
   adb_type,
   adb_swipe,
-} from "./tools/adb";
+} from "./backends/adb";
 import {
   tx_notify,
   tx_tts,
@@ -29,8 +29,9 @@ import {
   tx_clipboard_get,
   tx_clipboard_set,
   tx_battery_status,
-} from "./tools/termux";
+} from "./backends/termux";
 import { android_shell } from "./tools/shell";
+import { mobile_capabilities } from "./tools/capabilities";
 
 type JsonSchema = Record<string, any>;
 
@@ -478,6 +479,19 @@ export default function register(api: any) {
         additionalProperties: false,
       },
       async (args) => android_shell(args)
+    )
+  );
+
+  api.registerTool(
+    toolDef(
+      "mobile_capabilities",
+      "Return the mobile capability catalog or filter by query.",
+      {
+        type: "object",
+        properties: { query: { type: "string" } },
+        additionalProperties: false,
+      },
+      async (args) => mobile_capabilities(args)
     )
   );
 

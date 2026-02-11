@@ -14,7 +14,11 @@ function resolveTermuxCmd(cmd: string) {
   return "";
 }
 
-function runTermux(cmd: string, args: string[], timeoutMs = DEFAULT_TIMEOUT_MS): Promise<TermuxResult> {
+export function runTermuxCommand(
+  cmd: string,
+  args: string[],
+  timeoutMs = DEFAULT_TIMEOUT_MS
+): Promise<TermuxResult> {
   const resolved = resolveTermuxCmd(cmd);
   if (!resolved) {
     return Promise.resolve({
@@ -60,37 +64,35 @@ function runTermux(cmd: string, args: string[], timeoutMs = DEFAULT_TIMEOUT_MS):
 }
 
 export async function tx_notify(input: { title: string; content: string }) {
-  return runTermux("termux-notification", ["--title", input?.title ?? "", "--content", input?.content ?? ""]);
-}
-
-export async function tx_vibrate(input: { ms: number; force?: boolean }) {
-  const ms = Math.max(1, Number(input?.ms ?? 1));
-  const args = ["-d", String(ms)];
-  if (input?.force ?? true) args.push("-f");
-  return runTermux("termux-vibrate", args);
+  return runTermuxCommand("termux-notification", [
+    "--title",
+    input?.title ?? "",
+    "--content",
+    input?.content ?? "",
+  ]);
 }
 
 export async function tx_tts(input: { text: string }) {
   if (input?.text == null) return { ok: false, code: -1, stdout: "", stderr: "text is required" };
-  return runTermux("termux-tts-speak", [String(input.text)], 30_000);
+  return runTermuxCommand("termux-tts-speak", [String(input.text)], 30_000);
 }
 
 export async function tx_toast(input: { text: string }) {
   if (input?.text == null) return { ok: false, code: -1, stdout: "", stderr: "text is required" };
-  return runTermux("termux-toast", [String(input.text)]);
+  return runTermuxCommand("termux-toast", [String(input.text)]);
 }
 
 export async function tx_clipboard_get() {
-  return runTermux("termux-clipboard-get", []);
+  return runTermuxCommand("termux-clipboard-get", []);
 }
 
 export async function tx_clipboard_set(input: { text: string }) {
   if (input?.text == null) return { ok: false, code: -1, stdout: "", stderr: "text is required" };
-  return runTermux("termux-clipboard-set", [String(input.text)]);
+  return runTermuxCommand("termux-clipboard-set", [String(input.text)]);
 }
 
 export async function tx_battery_status() {
-  const res = await runTermux("termux-battery-status", []);
+  const res = await runTermuxCommand("termux-battery-status", []);
   if (!res.ok) return res;
   try {
     return { ...res, data: JSON.parse(res.stdout) };

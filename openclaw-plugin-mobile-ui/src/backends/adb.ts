@@ -1,6 +1,6 @@
 import { spawn } from "child_process";
 import fs from "fs";
-import { makeScreenshotPath, pngDimensions, truncateString, DEFAULT_MAX_OUTPUT_BYTES } from "./workspace";
+import { makeScreenshotPath, pngDimensions, truncateString, DEFAULT_MAX_OUTPUT_BYTES } from "../tools/workspace";
 
 export type AdbResult = {
   ok: boolean;

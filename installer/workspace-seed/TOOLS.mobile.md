@@ -11,12 +11,14 @@ This runtime provides Android UI automation tools.
   Direct device control: `adb_*` tools and `android_*` with `backend=auto|adb`.
 - **Termux:API (device UX signals)**  
   Local device UX: `tx_*` and `android_signal_complete` (vibrate/notification/TTS).
+  Low-level hardware actions are available via Termux commands (e.g., `termux-vibrate`, `termux-notification`) and/or `android_shell` with `backend=termux`.
 
 ### Tool selection rules
 1. Prefer semantic UI tools (`android_ui_*`) or `android_agent_task` for navigation and high-level tasks.
 2. Use ADB for deterministic input/screen capture or when Portal is unstable.
 3. Use Termux:API only for device-level signals (notifications, TTS, clipboard, battery).
 4. Use `android_shell` only for advanced debugging and disable it by default via OpenClaw tool allow/deny config.
+5. Consult `CAPABILITIES.md` for a backend-first catalog and command examples.
 
 ### Quick start (recommended)
 1. `android_health` — verify toolchain (python/droidrun/adb)
@@ -42,6 +44,10 @@ This runtime provides Android UI automation tools.
   Dump the UI hierarchy for semantic targeting (useful when screenshots are not enough).
   If Portal is unstable, may return `{ ok:false, logPath }` with a log file under workspace `logs/`.
   Fallback: use `adb_ui_dump_xml`.
+
+#### Completion alerts (attention layer)
+- `android_signal_complete`  
+  Handles task-completion alerts via an attention layer. It may use Termux primitives or ADB internally, but only this tool is exposed.
 
 #### Agent mode (default)
 - `android_agent_task`  
@@ -136,3 +142,4 @@ Recovery (ADB):
 Chat notifications may not always appear due to Android system behavior, use android_signal_complete as the completion signal, default signaling is a single 400ms vibration.
 
 <!-- CLAWBOT_MOBILE_END -->
+Í›

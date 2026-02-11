@@ -1,5 +1,5 @@
-import { adb_devices, adb_screenshot, adb_tap, adb_type, adb_swipe } from "./adb";
-import { tx_notify, tx_tts, tx_vibrate } from "./termux";
+import { adb_devices, adb_screenshot, adb_tap, adb_type, adb_swipe } from "../backends/adb";
+import { signalComplete } from "./attention";
 import {
   droidrun_health,
   droidrun_screenshot,
@@ -13,7 +13,7 @@ import {
   droidrun_ui_tap_find,
   droidrun_ui_type_find,
   droidrun_agent_task,
-} from "./droidrun";
+} from "../backends/droidrun";
 
 export type Mode = "executor" | "agent";
 
@@ -159,57 +159,7 @@ export async function android_signal_complete(args?: {
   title?: string;
   content?: string;
 }) {
-  const ms = Math.max(1, Math.min(args?.ms ?? 250, 5000));
-  const repeat = Math.max(1, Math.min(args?.repeat ?? 2, 5));
-  const gapMs = Math.max(0, Math.min(args?.gapMs ?? 120, 2000));
-  const tts = args?.tts ?? "Done";
-  const title = args?.title ?? "Clawbot";
-  const content = args?.content ?? "Task completed.";
-
-  const details: any[] = [];
-
-  const sleep = (n: number) => new Promise((r) => setTimeout(r, n));
-
-  // 1) Vibrate
-  let ok = true;
-  for (let i = 0; i < repeat; i++) {
-    const r = await tx_vibrate({ ms, force: true });
-    if (!r.ok) {
-      ok = false;
-      details.push({ step: "termux-vibrate", ok: false, err: r.stderr || r.stdout });
-      break;
-    }
-    if (i < repeat - 1 && gapMs > 0) await sleep(gapMs);
-  }
-  if (ok) {
-    details.push({ step: "termux-vibrate", ok: true, repeat, ms });
-    return { ok: true, method: "termux-vibrate", details };
-  }
-  if (!details.length) {
-    details.push({
-      step: "termux-vibrate",
-      ok: false,
-      err: "not found (install pkg termux-api + Termux:API app)",
-    });
-  }
-
-  // 2) Notification
-  const n = await tx_notify({ title, content });
-  if (n.ok) {
-    details.push({ step: "termux-notification", ok: true });
-    return { ok: true, method: "termux-notification", details };
-  }
-  details.push({ step: "termux-notification", ok: false, err: n.stderr || n.stdout });
-
-  // 3) TTS
-  const t = await tx_tts({ text: tts });
-  if (t.ok) {
-    details.push({ step: "termux-tts-speak", ok: true });
-    return { ok: true, method: "termux-tts-speak", details };
-  }
-  details.push({ step: "termux-tts-speak", ok: false, err: t.stderr || t.stdout });
-
-  return { ok: false, method: null, details };
+  return signalComplete(args);
 }
 
 async function hasAdbDevice() {
