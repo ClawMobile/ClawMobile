@@ -7,20 +7,7 @@ pass() { echo "PASS: $*"; }
 fail() { echo "FAIL: $*"; STATUS=1; }
 section() { echo ""; echo "== $* =="; }
 
-# 1) proot-distro ubuntu installed
-section "proot-distro"
-if command -v proot-distro >/dev/null 2>&1; then
-  LIST=$(proot-distro list 2>/dev/null || true)
-  if echo "$LIST" | grep -i "ubuntu" >/dev/null 2>&1; then
-    pass "ubuntu rootfs found"
-  else
-    fail "ubuntu rootfs not found (run: proot-distro install ubuntu)"
-  fi
-else
-  fail "proot-distro not installed"
-fi
-
-# 2) openclaw available
+# 1) openclaw available
 section "openclaw"
 if command -v openclaw >/dev/null 2>&1; then
   VERSION=$(openclaw --version 2>/dev/null || true)
@@ -33,7 +20,7 @@ else
   fail "openclaw not found in PATH"
 fi
 
-# 3) plugin installed
+# 2) plugin installed
 section "plugin"
 if command -v openclaw >/dev/null 2>&1; then
   if openclaw plugins list >/dev/null 2>&1; then
@@ -52,7 +39,7 @@ else
   fail "openclaw unavailable, cannot check plugin"
 fi
 
-# 4) adb available + devices output
+# 3) adb available + devices output
 section "adb"
 if command -v adb >/dev/null 2>&1; then
   pass "adb available"
@@ -63,7 +50,7 @@ else
   fail "adb not found in PATH"
 fi
 
-# 5) portal state query
+# 4) portal state query
 section "droidrun portal"
 if command -v adb >/dev/null 2>&1; then
   PORTAL_OUT=$(adb shell content query --uri content://com.droidrun.portal/state 2>/dev/null | head -n 20)
@@ -78,8 +65,16 @@ else
   fail "adb unavailable; cannot query portal"
 fi
 
-# 6) python venv import droidrun
+# 5) python venv import droidrun
 section "python droidrun"
+if [ -f "/root/venvs/clawbot/bin/activate" ]; then
+  # shellcheck disable=SC1091
+  source /root/venvs/clawbot/bin/activate
+  pass "activated venv: /root/venvs/clawbot"
+else
+  fail "venv not found: /root/venvs/clawbot/bin/activate"
+fi
+
 PY=${CLAW_MOBILE_PYTHON:-python3}
 if command -v "$PY" >/dev/null 2>&1; then
   if "$PY" -c "import droidrun; print('ok')" >/dev/null 2>&1; then
@@ -91,7 +86,7 @@ else
   fail "python not found: $PY"
 fi
 
-# 7) termux-api availability
+# 6) termux-api availability
 section "termux-api"
 TERMUX_BIN=${CLAW_MOBILE_TERMUX_BIN:-/data/data/com.termux/files/usr/bin}
 if [ -x "$TERMUX_BIN/termux-notification" ] || [ -x "$TERMUX_BIN/termux-info" ] || command -v termux-notification >/dev/null 2>&1; then
