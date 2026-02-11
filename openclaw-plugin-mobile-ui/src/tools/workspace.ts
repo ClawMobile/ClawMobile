@@ -32,6 +32,21 @@ export function ensureScreenshotsDir() {
   return dir;
 }
 
+export function ensureLogsDir() {
+  const ws = getWorkspaceDir();
+  const dir = path.join(ws, "logs");
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+export function writeLog(dir: string, prefix: string, content: string) {
+  const ts = Date.now();
+  const rand = Math.floor(Math.random() * 1e6);
+  const file = path.join(dir, `${prefix}_${ts}_${rand}.log`);
+  fs.writeFileSync(file, truncateString(content, DEFAULT_MAX_OUTPUT_BYTES));
+  return file;
+}
+
 export function makeScreenshotPath() {
   const dir = ensureScreenshotsDir();
   const ts = Date.now();
