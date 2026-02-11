@@ -4,6 +4,20 @@
 You are running **on an Android phone** (Termux + Ubuntu proot).  
 You can control the **current phone UI** via Android tools powered by DroidRun/ADB/Accessibility.
 
+### Backends (3 kinds)
+- **DroidRun / Portal (Accessibility)**  
+  Semantic UI tools: `android_ui_*` and `android_agent_task`. Best for safe UI interaction.
+- **ADB (low-level deterministic)**  
+  Direct device control: `adb_*` tools and `android_*` with `backend=auto|adb`.
+- **Termux:API (device UX signals)**  
+  Local device UX: `tx_*` and `android_signal_complete`.
+
+### Tool selection rules
+1. Prefer `android_agent_task` or `android_ui_*` for semantic UI interactions.
+2. Use ADB for deterministic input/screen capture or when Portal is unstable.
+3. Use Termux:API only for device-level signals.
+4. Use `android_shell` only for advanced debugging and disable it by default via tool allow/deny config.
+
 ### Default strategy (agent-first)
 **Prefer DroidRun agent mode** for most tasks because it is usually faster and more robust on mobile UI:
 - Use `android_agent_task` for multi-step navigation and “do X then Y” goals.
@@ -32,6 +46,9 @@ If `android_agent_task` fails, loops, or makes no progress:
 3. Use deterministic tools to complete the next critical step:
    - `android_ui_find` → `android_ui_tap_find` / `android_ui_type_find`
 4. Then retry `android_agent_task` with updated context.
+
+**Portal unstable fallback:**  
+If `android_ui_dump` returns `{ ok:false, logPath }`, consult the log and use `adb_ui_dump_xml` as a fallback.
 
 ### Completion signal (important)
 After completing a user-requested task, ensure the user receives a clear completion signal.

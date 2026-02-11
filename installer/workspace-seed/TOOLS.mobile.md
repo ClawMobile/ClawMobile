@@ -4,6 +4,20 @@
 This runtime provides Android UI automation tools.  
 **Default: agent-first** (DroidRun agent mode is usually faster on mobile UI).
 
+### Backends (3 kinds)
+- **DroidRun / Portal (Accessibility)**  
+  Semantic UI tools: `android_ui_*` and `android_agent_task`. Best for safe, human-like UI interaction.
+- **ADB (low-level deterministic)**  
+  Direct device control: `adb_*` tools and `android_*` with `backend=auto|adb`.
+- **Termux:API (device UX signals)**  
+  Local device UX: `tx_*` and `android_signal_complete` (vibrate/notification/TTS).
+
+### Tool selection rules
+1. Prefer semantic UI tools (`android_ui_*`) or `android_agent_task` for navigation and high-level tasks.
+2. Use ADB for deterministic input/screen capture or when Portal is unstable.
+3. Use Termux:API only for device-level signals (notifications, TTS, clipboard, battery).
+4. Use `android_shell` only for advanced debugging and disable it by default via OpenClaw tool allow/deny config.
+
 ### Quick start (recommended)
 1. `android_health` — verify toolchain (python/droidrun/adb)
 2. `android_agent_task` — attempt the user goal (multi-step)
@@ -26,6 +40,8 @@ This runtime provides Android UI automation tools.
 
 - `android_ui_dump`  
   Dump the UI hierarchy for semantic targeting (useful when screenshots are not enough).
+  If Portal is unstable, may return `{ ok:false, logPath }` with a log file under workspace `logs/`.
+  Fallback: use `adb_ui_dump_xml`.
 
 #### Agent mode (default)
 - `android_agent_task`  
@@ -100,6 +116,7 @@ Use only when semantic UI tools cannot proceed:
 #### Fallback shell
 - `android_shell`  
   Execute a command via backend `adb`, `termux`, or `bash` (dangerous commands are blocked; outputs truncated).
+  **Advanced / potentially dangerous**. Recommended to disable by default via OpenClaw tool allow/deny config.
 
 ### Notes
 - The gateway runs on the phone. ADB device selection is handled by `run.sh` and typically targets the **local wireless connected device** representing this phone.
