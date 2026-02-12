@@ -3,6 +3,21 @@ import path from "path";
 
 type ExecResult = { ok: boolean; data?: any; error?: string; extra?: any };
 
+function buildEnv(py: string) {
+  return {
+    ...process.env,
+    CLAW_MOBILE_PYTHON: py,
+    DROIDRUN_SERIAL: process.env.DROIDRUN_SERIAL || "",
+    DROIDRUN_PROVIDER: process.env.DROIDRUN_PROVIDER || "",
+    DROIDRUN_MODEL: process.env.DROIDRUN_MODEL || "",
+    DROIDRUN_USE_TCP: process.env.DROIDRUN_USE_TCP || "",
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY || "",
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY || "",
+    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY || "",
+    DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY || "",
+  };
+}
+
 function runPython(args: string[], timeoutMs = 120_000): Promise<ExecResult> {
   return new Promise((resolve) => {
     const script = path.resolve(__dirname, "..", "..", "pyexec", "android_exec.py");
@@ -10,7 +25,7 @@ function runPython(args: string[], timeoutMs = 120_000): Promise<ExecResult> {
 
     const p = spawn(PY, [script, ...args], {
       stdio: ["ignore", "pipe", "pipe"],
-      env: process.env,
+      env: buildEnv(PY),
     });
 
     let out = "";
@@ -62,7 +77,17 @@ export class DroidrunAgent {
     if (input.tcp) args.push("--tcp");
 
     // agent may take longer than executor actions
-    const timeoutMs = Math.max(60_000, (input.timeout ?? 1000) * 2);
+    const envDefaultS = Number(process.env.CLAW_MOBILE_AGENT_TIMEOUT_S || 600);
+    const defaultS = Number.isFinite(envDefaultS) && envDefaultS > 0 ? envDefaultS : 600;
+    const maxS = 1800;
+    const requestedS = typeof input.timeout === "number" ? input.timeout : defaultS;
+    const clampedS = Math.min(Math.max(requestedS, 1), maxS);
+
+    // Pass to python in seconds
+    args.push("--timeout", String(clampedS));
+
+    // Node-side timeout should exceed python timeout by 10s
+    const timeoutMs = clampedS * 1000 + 10_000;
     return runPython(args, timeoutMs);
   }
 }

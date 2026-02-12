@@ -263,6 +263,9 @@ export async function android_ui_dump(input: { onlyClickable?: boolean }) {
     stderr: (res as any)?.extra?.stderr_snip || (res as any)?.stderr,
     exit_code: (res as any)?.extra?.exit_code,
   });
+  if ((res as any)?.error === "timeout") {
+    return { ok: false, error: "timeout", elapsed_s: Math.round((Date.now() - start) / 1000), timeout_s: undefined, logPath: (res as any)?.logPath };
+  }
   return res;
 }
 
@@ -282,6 +285,10 @@ export async function android_agent_task(input: {
   tcp?: boolean;
 }) {
   const start = Date.now();
+  const envDefaultS = Number(process.env.CLAW_MOBILE_AGENT_TIMEOUT_S || 600);
+  const defaultS = Number.isFinite(envDefaultS) && envDefaultS > 0 ? envDefaultS : 600;
+  const maxS = 1800;
+  const timeoutS = Math.min(Math.max(input?.timeout ?? defaultS, 1), maxS);
   appendToolAudit({
     time: new Date(start).toISOString(),
     tool: "android_agent_task",
@@ -291,6 +298,7 @@ export async function android_agent_task(input: {
     env: envFlags(),
   });
   const res = await droidrun_agent_task(input);
+  const elapsedS = Math.round((Date.now() - start) / 1000);
   appendToolAudit({
     time: new Date().toISOString(),
     tool: "android_agent_task",
@@ -301,6 +309,9 @@ export async function android_agent_task(input: {
     stderr: (res as any)?.extra?.stderr_snip || (res as any)?.stderr,
     exit_code: (res as any)?.extra?.exit_code,
   });
+  if ((res as any)?.error === "timeout") {
+    return { ok: false, error: "timeout", elapsed_s: elapsedS, timeout_s: timeoutS, logPath: (res as any)?.logPath };
+  }
   return res;
 }
 
