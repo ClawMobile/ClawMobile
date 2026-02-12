@@ -10,8 +10,9 @@
   },
 
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "dev": "tsc -p tsconfig.json -w"
+    "build": "tsc -p tsconfig.json && node scripts/copy-assets.mjs",
+    "dev": "tsc -p tsconfig.json -w",
+    "copy-assets": "node scripts/copy-assets.mjs"
   },
 
   "devDependencies": {

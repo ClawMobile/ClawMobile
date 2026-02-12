@@ -142,8 +142,8 @@ fi
 
 # ---- build plugin if needed, then plugins install ----
 if [ -d "\$PLUGIN_DIR" ]; then
-  if [ ! -d "\$PLUGIN_DIR/dist" ]; then
-    echo "[run] building plugin (dist missing)..."
+  if [ ! -d "\$PLUGIN_DIR/dist" ] || [ ! -f "\$PLUGIN_DIR/dist/pyexec/android_exec.py" ]; then
+    echo "[run] building plugin (dist or pyexec missing)..."
     cd "\$PLUGIN_DIR"
     npm install
     npm run build
