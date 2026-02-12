@@ -3,6 +3,7 @@ import os from "os";
 import path from "path";
 
 export const DEFAULT_MAX_OUTPUT_BYTES = 8 * 1024;
+const AUDIT_MAX_BYTES = 2000;
 
 export function getWorkspaceDir() {
   if (process.env.OPENCLAW_WORKSPACE) return process.env.OPENCLAW_WORKSPACE;
@@ -44,6 +45,29 @@ export function writeLog(dir: string, prefix: string, content: string) {
   const rand = Math.floor(Math.random() * 1e6);
   const file = path.join(dir, `${prefix}_${ts}_${rand}.log`);
   fs.writeFileSync(file, truncateString(content, DEFAULT_MAX_OUTPUT_BYTES));
+  return file;
+}
+
+function safeJsonLine(obj: any, maxBytes = AUDIT_MAX_BYTES) {
+  let line = "";
+  try {
+    line = JSON.stringify(obj);
+  } catch {
+    line = JSON.stringify({ tool: obj?.tool, time: obj?.time, error: "stringify_failed" });
+  }
+  if (line.length <= maxBytes) return line;
+  return JSON.stringify({
+    truncated: true,
+    original_len: line.length,
+    head: line.slice(0, maxBytes - 100),
+  });
+}
+
+export function appendToolAudit(entry: any) {
+  const dir = ensureLogsDir();
+  const file = path.join(dir, "tool-audit.jsonl");
+  const line = safeJsonLine(entry, AUDIT_MAX_BYTES);
+  fs.appendFileSync(file, line + "\n");
   return file;
 }
 

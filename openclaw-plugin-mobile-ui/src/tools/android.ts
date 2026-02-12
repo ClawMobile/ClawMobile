@@ -14,6 +14,21 @@ import {
   droidrun_ui_type_find,
   droidrun_agent_task,
 } from "../backends/droidrun";
+import { appendToolAudit } from "./workspace";
+
+function envFlags() {
+  return {
+    DROIDRUN_SERIAL: process.env.DROIDRUN_SERIAL || "",
+    DROIDRUN_PROVIDER: process.env.DROIDRUN_PROVIDER || "",
+    DROIDRUN_MODEL: process.env.DROIDRUN_MODEL || "",
+    CLAW_MOBILE_PYTHON: process.env.CLAW_MOBILE_PYTHON || "",
+    DROIDRUN_USE_TCP: process.env.DROIDRUN_USE_TCP || "",
+    OPENAI_API_KEY: Boolean(process.env.OPENAI_API_KEY),
+    GEMINI_API_KEY: Boolean(process.env.GEMINI_API_KEY),
+    ANTHROPIC_API_KEY: Boolean(process.env.ANTHROPIC_API_KEY),
+    DEEPSEEK_API_KEY: Boolean(process.env.DEEPSEEK_API_KEY),
+  };
+}
 
 export type Mode = "executor" | "agent";
 
@@ -27,29 +42,95 @@ export async function android_health() {
 }
 
 export async function android_screenshot(input: { output?: string; backend?: "auto" | "adb" | "droidrun" }) {
+  const start = Date.now();
   const backend = input?.backend ?? "auto";
-  if (backend === "adb") return adb_screenshot();
-  if (backend === "droidrun") return await droidrun_screenshot();
-
-  const hasAdb = await hasAdbDevice();
-  if (hasAdb) {
-    const res = await adb_screenshot();
-    if ((res as any)?.ok) return res;
+  appendToolAudit({
+    time: new Date(start).toISOString(),
+    tool: "android_screenshot",
+    phase: "start",
+    backend,
+    cwd: process.cwd(),
+    env: envFlags(),
+  });
+  let res: any;
+  let resolvedBackend = backend;
+  if (backend === "adb") {
+    res = await adb_screenshot();
+  } else if (backend === "droidrun") {
+    res = await droidrun_screenshot();
+  } else {
+    const hasAdb = await hasAdbDevice();
+    if (hasAdb) {
+      const adbRes = await adb_screenshot();
+      if ((adbRes as any)?.ok) {
+        res = adbRes;
+        resolvedBackend = "adb";
+      } else {
+        res = await droidrun_screenshot();
+        resolvedBackend = "droidrun";
+      }
+    } else {
+      res = await droidrun_screenshot();
+      resolvedBackend = "droidrun";
+    }
   }
-  return await droidrun_screenshot();
+  appendToolAudit({
+    time: new Date().toISOString(),
+    tool: "android_screenshot",
+    phase: "end",
+    resolved_backend: resolvedBackend,
+    ok: Boolean((res as any)?.ok),
+    elapsed_ms: Date.now() - start,
+    error: (res as any)?.error,
+    stderr: (res as any)?.extra?.stderr_snip || (res as any)?.stderr,
+  });
+  return res;
 }
 
 export async function android_tap(input: { x: number; y: number; backend?: "auto" | "adb" | "droidrun" }) {
+  const start = Date.now();
   const backend = input?.backend ?? "auto";
-  if (backend === "adb") return adb_tap({ x: input.x, y: input.y });
-  if (backend === "droidrun") return droidrun_tap(input.x, input.y);
-
-  const hasAdb = await hasAdbDevice();
-  if (hasAdb) {
-    const res = await adb_tap({ x: input.x, y: input.y });
-    if ((res as any)?.ok) return res;
+  appendToolAudit({
+    time: new Date(start).toISOString(),
+    tool: "android_tap",
+    phase: "start",
+    backend,
+    cwd: process.cwd(),
+    env: envFlags(),
+  });
+  let res: any;
+  let resolvedBackend = backend;
+  if (backend === "adb") {
+    res = await adb_tap({ x: input.x, y: input.y });
+  } else if (backend === "droidrun") {
+    res = await droidrun_tap(input.x, input.y);
+  } else {
+    const hasAdb = await hasAdbDevice();
+    if (hasAdb) {
+      const adbRes = await adb_tap({ x: input.x, y: input.y });
+      if ((adbRes as any)?.ok) {
+        res = adbRes;
+        resolvedBackend = "adb";
+      } else {
+        res = await droidrun_tap(input.x, input.y);
+        resolvedBackend = "droidrun";
+      }
+    } else {
+      res = await droidrun_tap(input.x, input.y);
+      resolvedBackend = "droidrun";
+    }
   }
-  return droidrun_tap(input.x, input.y);
+  appendToolAudit({
+    time: new Date().toISOString(),
+    tool: "android_tap",
+    phase: "end",
+    resolved_backend: resolvedBackend,
+    ok: Boolean((res as any)?.ok),
+    elapsed_ms: Date.now() - start,
+    error: (res as any)?.error,
+    stderr: (res as any)?.extra?.stderr_snip || (res as any)?.stderr,
+  });
+  return res;
 }
 
 export async function android_type(input: {
@@ -58,16 +139,49 @@ export async function android_type(input: {
   clear?: boolean;
   backend?: "auto" | "adb" | "droidrun";
 }) {
+  const start = Date.now();
   const backend = input?.backend ?? "auto";
-  if (backend === "adb") return adb_type({ text: input.text });
-  if (backend === "droidrun") return droidrun_type(input.text, input.index ?? -1, input.clear ?? false);
-
-  const hasAdb = await hasAdbDevice();
-  if (hasAdb) {
-    const res = await adb_type({ text: input.text });
-    if ((res as any)?.ok) return res;
+  appendToolAudit({
+    time: new Date(start).toISOString(),
+    tool: "android_type",
+    phase: "start",
+    backend,
+    cwd: process.cwd(),
+    env: envFlags(),
+  });
+  let res: any;
+  let resolvedBackend = backend;
+  if (backend === "adb") {
+    res = await adb_type({ text: input.text });
+  } else if (backend === "droidrun") {
+    res = await droidrun_type(input.text, input.index ?? -1, input.clear ?? false);
+  } else {
+    const hasAdb = await hasAdbDevice();
+    if (hasAdb) {
+      const adbRes = await adb_type({ text: input.text });
+      if ((adbRes as any)?.ok) {
+        res = adbRes;
+        resolvedBackend = "adb";
+      } else {
+        res = await droidrun_type(input.text, input.index ?? -1, input.clear ?? false);
+        resolvedBackend = "droidrun";
+      }
+    } else {
+      res = await droidrun_type(input.text, input.index ?? -1, input.clear ?? false);
+      resolvedBackend = "droidrun";
+    }
   }
-  return droidrun_type(input.text, input.index ?? -1, input.clear ?? false);
+  appendToolAudit({
+    time: new Date().toISOString(),
+    tool: "android_type",
+    phase: "end",
+    resolved_backend: resolvedBackend,
+    ok: Boolean((res as any)?.ok),
+    elapsed_ms: Date.now() - start,
+    error: (res as any)?.error,
+    stderr: (res as any)?.extra?.stderr_snip || (res as any)?.stderr,
+  });
+  return res;
 }
 
 export async function android_swipe(input: {
@@ -78,21 +192,73 @@ export async function android_swipe(input: {
   durationMs?: number;
   backend?: "auto" | "adb" | "droidrun";
 }) {
+  const start = Date.now();
   const backend = input?.backend ?? "auto";
-  if (backend === "adb") return adb_swipe(input);
-  if (backend === "droidrun") return droidrun_swipe(input.x1, input.y1, input.x2, input.y2, input.durationMs ?? 300);
-
-  const hasAdb = await hasAdbDevice();
-  if (hasAdb) {
-    const res = await adb_swipe(input);
-    if ((res as any)?.ok) return res;
+  appendToolAudit({
+    time: new Date(start).toISOString(),
+    tool: "android_swipe",
+    phase: "start",
+    backend,
+    cwd: process.cwd(),
+    env: envFlags(),
+  });
+  let res: any;
+  let resolvedBackend = backend;
+  if (backend === "adb") {
+    res = await adb_swipe(input);
+  } else if (backend === "droidrun") {
+    res = await droidrun_swipe(input.x1, input.y1, input.x2, input.y2, input.durationMs ?? 300);
+  } else {
+    const hasAdb = await hasAdbDevice();
+    if (hasAdb) {
+      const adbRes = await adb_swipe(input);
+      if ((adbRes as any)?.ok) {
+        res = adbRes;
+        resolvedBackend = "adb";
+      } else {
+        res = await droidrun_swipe(input.x1, input.y1, input.x2, input.y2, input.durationMs ?? 300);
+        resolvedBackend = "droidrun";
+      }
+    } else {
+      res = await droidrun_swipe(input.x1, input.y1, input.x2, input.y2, input.durationMs ?? 300);
+      resolvedBackend = "droidrun";
+    }
   }
-  return droidrun_swipe(input.x1, input.y1, input.x2, input.y2, input.durationMs ?? 300);
+  appendToolAudit({
+    time: new Date().toISOString(),
+    tool: "android_swipe",
+    phase: "end",
+    resolved_backend: resolvedBackend,
+    ok: Boolean((res as any)?.ok),
+    elapsed_ms: Date.now() - start,
+    error: (res as any)?.error,
+    stderr: (res as any)?.extra?.stderr_snip || (res as any)?.stderr,
+  });
+  return res;
 }
 
 // ---- NEW: a11y-based ----
 export async function android_ui_dump(input: { onlyClickable?: boolean }) {
-  return droidrun_ui_dump(input?.onlyClickable ?? true);
+  const start = Date.now();
+  appendToolAudit({
+    time: new Date(start).toISOString(),
+    tool: "android_ui_dump",
+    phase: "start",
+    backend: "droidrun",
+    cwd: process.cwd(),
+    env: envFlags(),
+  });
+  const res = await droidrun_ui_dump(input?.onlyClickable ?? true);
+  appendToolAudit({
+    time: new Date().toISOString(),
+    tool: "android_ui_dump",
+    phase: "end",
+    ok: Boolean((res as any)?.ok),
+    elapsed_ms: Date.now() - start,
+    error: (res as any)?.error,
+    stderr: (res as any)?.extra?.stderr_snip || (res as any)?.stderr,
+  });
+  return res;
 }
 
 export async function android_ui_tap(input: { index: number }) {
@@ -110,7 +276,26 @@ export async function android_agent_task(input: {
   deviceSerial?: string;
   tcp?: boolean;
 }) {
-  return droidrun_agent_task(input);
+  const start = Date.now();
+  appendToolAudit({
+    time: new Date(start).toISOString(),
+    tool: "android_agent_task",
+    phase: "start",
+    backend: "droidrun",
+    cwd: process.cwd(),
+    env: envFlags(),
+  });
+  const res = await droidrun_agent_task(input);
+  appendToolAudit({
+    time: new Date().toISOString(),
+    tool: "android_agent_task",
+    phase: "end",
+    ok: Boolean((res as any)?.ok),
+    elapsed_ms: Date.now() - start,
+    error: (res as any)?.error,
+    stderr: (res as any)?.extra?.stderr_snip || (res as any)?.stderr,
+  });
+  return res;
 }
 
 export async function android_ui_find(input: {

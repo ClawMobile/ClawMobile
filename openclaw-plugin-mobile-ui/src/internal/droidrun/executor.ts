@@ -3,6 +3,22 @@ import path from "path";
 
 export type ExecResult = { ok: boolean; data?: any; error?: string; extra?: any };
 
+function truncate(s: string, max = 2000) {
+  if (!s) return "";
+  return s.length > max ? s.slice(0, max) : s;
+}
+
+function buildEnv(py: string) {
+  return {
+    ...process.env,
+    CLAW_MOBILE_PYTHON: py,
+    DROIDRUN_SERIAL: process.env.DROIDRUN_SERIAL || "",
+    DROIDRUN_PROVIDER: process.env.DROIDRUN_PROVIDER || "",
+    DROIDRUN_MODEL: process.env.DROIDRUN_MODEL || "",
+    DROIDRUN_USE_TCP: process.env.DROIDRUN_USE_TCP || "",
+  };
+}
+
 function runPython(args: string[], timeoutMs = 30_000): Promise<ExecResult> {
   return new Promise((resolve) => {
     const script = path.resolve(__dirname, "..", "..", "pyexec", "android_exec.py");
@@ -10,7 +26,7 @@ function runPython(args: string[], timeoutMs = 30_000): Promise<ExecResult> {
 
     const p = spawn(PY, [script, ...args], {
       stdio: ["ignore", "pipe", "pipe"],
-      env: process.env,
+      env: buildEnv(PY),
     });
 
     let out = "";
@@ -35,9 +51,16 @@ function runPython(args: string[], timeoutMs = 30_000): Promise<ExecResult> {
       clearTimeout(timer);
       try {
         const parsed = JSON.parse((out || "").trim() || "{}");
+        if (parsed && typeof parsed === "object" && err) {
+          parsed.extra = { ...(parsed.extra || {}), stderr_snip: truncate(err) };
+        }
         resolve(parsed);
       } catch {
-        resolve({ ok: false, error: "invalid_json", extra: { stdout: out, stderr: err } });
+        resolve({
+          ok: false,
+          error: "invalid_json",
+          extra: { stdout: truncate(out), stderr: truncate(err), stderr_snip: truncate(err) },
+        });
       }
     });
   });
