@@ -641,11 +641,22 @@ def cmd_agent_task(args):
         llm = None
         if provider and model:
             # v2 docs show load_llm(provider_name=..., model=...)
+            load_errs = []
             try:
                 from droidrun.agent.utils.llm_picker import load_llm
                 llm = load_llm(provider_name=provider, model=model, temperature=0.2)
-            except Exception:
-                llm = None
+            except Exception as e:
+                load_errs.append(f"llm_picker: {repr(e)}")
+
+            if llm is None:
+                try:
+                    from droidrun.agent.utils.llm import load_llm  # alt path in some versions
+                    llm = load_llm(provider_name=provider, model=model, temperature=0.2)
+                except Exception as e:
+                    load_errs.append(f"llm: {repr(e)}")
+
+            if llm is None:
+                return fail("llm_load_failed", {"provider": provider, "model": model, "errors": load_errs})
 
         agent = DroidAgent(goal=goal, config=cfg, llms=llm, timeout=timeout)
         result = await agent.run()

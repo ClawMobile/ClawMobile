@@ -31,12 +31,16 @@ function runPython(args: string[], timeoutMs = 120_000): Promise<ExecResult> {
     p.stdout.on("data", (d) => (out += d.toString()));
     p.stderr.on("data", (d) => (err += d.toString()));
 
-    p.on("close", () => {
+    p.on("close", (code) => {
       clearTimeout(timer);
       try {
-        resolve(JSON.parse((out || "").trim() || "{}"));
+        const parsed = JSON.parse((out || "").trim() || "{}");
+        if (parsed && typeof parsed === "object") {
+          parsed.extra = { ...(parsed.extra || {}), exit_code: code };
+        }
+        resolve(parsed);
       } catch {
-        resolve({ ok: false, error: "invalid_json", extra: { stdout: out, stderr: err } });
+        resolve({ ok: false, error: "invalid_json", extra: { stdout: out, stderr: err, exit_code: code } });
       }
     });
   });

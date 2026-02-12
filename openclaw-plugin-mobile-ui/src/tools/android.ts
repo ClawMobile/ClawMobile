@@ -83,6 +83,7 @@ export async function android_screenshot(input: { output?: string; backend?: "au
     elapsed_ms: Date.now() - start,
     error: (res as any)?.error,
     stderr: (res as any)?.extra?.stderr_snip || (res as any)?.stderr,
+    exit_code: (res as any)?.extra?.exit_code,
   });
   return res;
 }
@@ -129,6 +130,7 @@ export async function android_tap(input: { x: number; y: number; backend?: "auto
     elapsed_ms: Date.now() - start,
     error: (res as any)?.error,
     stderr: (res as any)?.extra?.stderr_snip || (res as any)?.stderr,
+    exit_code: (res as any)?.extra?.exit_code,
   });
   return res;
 }
@@ -180,6 +182,7 @@ export async function android_type(input: {
     elapsed_ms: Date.now() - start,
     error: (res as any)?.error,
     stderr: (res as any)?.extra?.stderr_snip || (res as any)?.stderr,
+    exit_code: (res as any)?.extra?.exit_code,
   });
   return res;
 }
@@ -233,6 +236,7 @@ export async function android_swipe(input: {
     elapsed_ms: Date.now() - start,
     error: (res as any)?.error,
     stderr: (res as any)?.extra?.stderr_snip || (res as any)?.stderr,
+    exit_code: (res as any)?.extra?.exit_code,
   });
   return res;
 }
@@ -257,6 +261,7 @@ export async function android_ui_dump(input: { onlyClickable?: boolean }) {
     elapsed_ms: Date.now() - start,
     error: (res as any)?.error,
     stderr: (res as any)?.extra?.stderr_snip || (res as any)?.stderr,
+    exit_code: (res as any)?.extra?.exit_code,
   });
   return res;
 }
@@ -294,6 +299,7 @@ export async function android_agent_task(input: {
     elapsed_ms: Date.now() - start,
     error: (res as any)?.error,
     stderr: (res as any)?.extra?.stderr_snip || (res as any)?.stderr,
+    exit_code: (res as any)?.extra?.exit_code,
   });
   return res;
 }

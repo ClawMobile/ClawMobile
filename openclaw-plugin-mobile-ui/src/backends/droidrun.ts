@@ -53,16 +53,17 @@ async function audit<T>(tool: string, fn: () => Promise<T>) {
   });
   try {
     const res: any = await fn();
-    appendToolAudit({
-      time: new Date().toISOString(),
-      tool,
-      backend: "droidrun",
-      phase: "end",
-      ok: Boolean(res?.ok),
-      elapsed_ms: Date.now() - start,
-      error: res?.error,
-      stderr: res?.extra?.stderr_snip,
-    });
+  appendToolAudit({
+    time: new Date().toISOString(),
+    tool,
+    backend: "droidrun",
+    phase: "end",
+    ok: Boolean(res?.ok),
+    elapsed_ms: Date.now() - start,
+    error: res?.error,
+    stderr: res?.extra?.stderr_snip,
+    exit_code: res?.extra?.exit_code,
+  });
     return res as T;
   } catch (e: any) {
     appendToolAudit({

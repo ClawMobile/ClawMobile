@@ -47,19 +47,22 @@ function runPython(args: string[], timeoutMs = 30_000): Promise<ExecResult> {
     p.stdout.on("data", (d) => (out += d.toString()));
     p.stderr.on("data", (d) => (err += d.toString()));
 
-    p.on("close", () => {
+    p.on("close", (code) => {
       clearTimeout(timer);
       try {
         const parsed = JSON.parse((out || "").trim() || "{}");
         if (parsed && typeof parsed === "object" && err) {
           parsed.extra = { ...(parsed.extra || {}), stderr_snip: truncate(err) };
         }
+        if (parsed && typeof parsed === "object") {
+          parsed.extra = { ...(parsed.extra || {}), exit_code: code };
+        }
         resolve(parsed);
       } catch {
         resolve({
           ok: false,
           error: "invalid_json",
-          extra: { stdout: truncate(out), stderr: truncate(err), stderr_snip: truncate(err) },
+          extra: { stdout: truncate(out), stderr: truncate(err), stderr_snip: truncate(err), exit_code: code },
         });
       }
     });
