@@ -36,6 +36,7 @@ Purpose: ensure real tool execution and verified UI state changes.
 
 ## Completion Rule
 After a successful task which leaves the chat view, call `android_signal_complete` (unless user explicitly disables it).
+Demo completion uses a single 500ms vibrate + toast and is suppressed if the UI did not change (e.g., still in Telegram).
 
 ---
 

@@ -1,5 +1,5 @@
 import { spawn } from "child_process";
-import { runTermuxCommand, tx_notify, tx_tts } from "../backends/termux";
+import { runTermuxCommand, tx_toast } from "../backends/termux";
 
 type AdbResult = { ok: boolean; code: number; stdout: string; stderr: string };
 
@@ -54,56 +54,39 @@ export async function signalComplete(args?: {
   title?: string;
   content?: string;
 }) {
-  const ms = Math.max(1, Math.min(args?.ms ?? 250, 5000));
-  const repeat = Math.max(1, Math.min(args?.repeat ?? 2, 5));
-  const gapMs = Math.max(0, Math.min(args?.gapMs ?? 120, 2000));
-  const tts = args?.tts ?? "Done";
+  const envMs = Number(process.env.CLAW_MOBILE_NOTIFY_VIBRATE_MS || 500);
+  const ms = Math.max(1, Math.min(args?.ms ?? envMs, 5000));
   const title = args?.title ?? "Clawbot";
   const content = args?.content ?? "Task completed.";
+  const toastEnabled = String(process.env.CLAW_MOBILE_NOTIFY_TOAST || "1").toLowerCase() !== "0";
 
   const details: any[] = [];
-  const sleep = (n: number) => new Promise((r) => setTimeout(r, n));
 
-  // 1) Try Termux vibrate (low-level hardware), if available
-  let ok = true;
-  for (let i = 0; i < repeat; i++) {
-    const r = await runTermuxCommand("termux-vibrate", ["-d", String(ms), "-f"]);
-    if (!r.ok) {
-      ok = false;
-      details.push({ step: "termux-vibrate", ok: false, err: r.stderr || r.stdout });
-      break;
+  // 1) Single Termux vibrate (low-level hardware)
+  const v = await runTermuxCommand("termux-vibrate", ["-d", String(ms), "-f"]);
+  if (v.ok) {
+    details.push({ step: "termux-vibrate", ok: true, ms });
+  } else {
+    details.push({ step: "termux-vibrate", ok: false, err: v.stderr || v.stdout });
+  }
+
+  // 2) Toast via Termux (demo-stable visibility)
+  if (toastEnabled) {
+    const text = title ? `${title}: ${content}` : content;
+    const t = await tx_toast({ text });
+    if (t.ok) {
+      details.push({ step: "termux-toast", ok: true });
+    } else {
+      details.push({ step: "termux-toast", ok: false, err: t.stderr || t.stdout });
     }
-    if (i < repeat - 1 && gapMs > 0) await sleep(gapMs);
-  }
-  if (ok) {
-    details.push({ step: "termux-vibrate", ok: true, repeat, ms });
-    return { ok: true, method: "termux-vibrate", details };
   }
 
-  // 2) Notification via Termux
-  const n = await tx_notify({ title, content });
-  if (n.ok) {
-    details.push({ step: "termux-notification", ok: true });
-    return { ok: true, method: "termux-notification", details };
-  }
-  details.push({ step: "termux-notification", ok: false, err: n.stderr || n.stdout });
-
-  // 3) TTS via Termux
-  const t = await tx_tts({ text: tts });
-  if (t.ok) {
-    details.push({ step: "termux-tts-speak", ok: true });
-    return { ok: true, method: "termux-tts-speak", details };
-  }
-  details.push({ step: "termux-tts-speak", ok: false, err: t.stderr || t.stdout });
-
-  // 4) ADB notification fallback (best-effort)
+  // 3) ADB notification fallback (best-effort)
   const a = await adb_notify({ title, content });
-  if (a.ok) {
-    details.push({ step: "adb-notification", ok: true });
-    return { ok: true, method: "adb-notification", details };
-  }
-  details.push({ step: "adb-notification", ok: false, err: a.stderr || a.stdout });
+  if (a.ok) details.push({ step: "adb-notification", ok: true });
+  else details.push({ step: "adb-notification", ok: false, err: a.stderr || a.stdout });
 
   // Final fallback: return a safe response (no crash)
-  return { ok: false, method: null, details };
+  const ok = details.some((d) => d.ok);
+  return { ok, method: ok ? "demo-signal" : null, details };
 }
