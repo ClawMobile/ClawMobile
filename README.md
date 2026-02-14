@@ -11,15 +11,23 @@ ClawMobile turns your phone into a pocket-sized agent that goes beyond OpenClawâ
     <td align="center"><strong>Hardware demo</strong></td>
     <td align="center"><strong>Chrome demo</strong></td>
     <td align="center"><strong>Python demo</strong></td>
-    <td align="center"><strong>Talabat demo</strong></td>
+    <td align="center"><strong>Ice cream demo</strong></td>
   </tr>
   <tr>
-    <td><video src="assets/hardware.mp4" controls width="280"></video></td>
-    <td><video src="assets/chrome.mp4" controls width="280"></video></td>
-    <td><video src="assets/randomnumber.mp4" controls width="280"></video></td>
-    <td><video src="assets/ice_cream.mp4" controls width="280"></video></td>
+    <td><video src="https://github.com/user-attachments/assets/8ade1871-27f4-4d51-a9d8-62e51bfe8e04" controls width="320"></video></td>
+    <td><video src="https://github.com/user-attachments/assets/328691ed-2148-45c3-a5f6-e67246747f8e" controls width="320"></video></td>
+    <td><video src="https://github.com/user-attachments/assets/ea31da98-5b43-4b2e-9dd3-3c5ee04c4490" controls width="320"></video></td>
+    <td><video src="https://github.com/user-attachments/assets/d0e4c8b7-d018-4022-aa7f-f4b621b7a5bc" controls width="320"></video></td>
   </tr>
 </table>
+
+
+
+
+
+
+
+
 
 
 ## It combines
