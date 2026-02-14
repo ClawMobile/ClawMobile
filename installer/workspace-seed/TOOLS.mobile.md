@@ -9,11 +9,11 @@ This runtime provides Android UI automation tools.
 - **Termux:API (device UX)**: `tx_*` tools; completion alerts via `android_signal_complete`.
 
 ### Tool selection rules (strict)
-1. Prefer command-line (Termux/ADB) only when it can **COMPLETE** and/or **VERIFY** the task.
+1. Prefer command-line (Termux/ADB) only when it can **COMPLETE** and/or **VERIFY** the task or part of the task.
 2. If command is **BOOTSTRAP** only, run it once then switch to `android_agent_task` to finish and verify.
 3. Use DroidRun agent mode for multi-step UI workflows.
 4. Use manual `android_ui_*` only if agent mode fails or is unsafe.
-5. Verify stage-level UI changes (screen transitions or workflow milestones) with android_ui_dump or android_screenshot.
+5. Verify task-level UI changes (screen transitions or workflow milestones) with android_ui_dump or android_screenshot.
 
 ### Quick start
 1. `android_health`

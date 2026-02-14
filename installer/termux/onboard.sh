@@ -19,6 +19,6 @@ proot-distro login "${UBUNTU_DISTRO}" --shared-tmp -- \
     if [ -f installer/ubuntu/env.sh ]; then
       source installer/ubuntu/env.sh
     fi
-
-    openclaw onboard --skip-daemon
+    
+    openclaw onboard --skip-daemon ${*:-}
   "

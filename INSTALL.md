@@ -82,29 +82,32 @@ This script will:
 - Install OpenClaw
 - Install DroidRun dependencies
 - Install the DroidRun Portal (Android will prompt you)
-- Build and install the mobile UI plugin
-
----
-
-### Step 2 – Required manual actions during install
 
 While `install.sh` is running, you will be asked to:
 1. Accept Android debugging authorization
-2. Allow installation of DroidRun Portal, you can cancle the overlay option if you want to keep using the original screen after installation.
-3. Run OpenClaw interactive configuration (onboard)
+2. Allow installation of DroidRun Portal, you can cancel the overlay option if you want to keep using the original screen after installation.
 
 During OpenClaw configuration you can:
-- Choose your model provider
 - Configure Telegram (or another interface)
 - Skip features you don’t need
 
-⚠️ Important
+---
 
-When OpenClaw onboarding finishes:
+### Step 2 – Configure OpenClaw interactively
 
-Press Ctrl + C to exit the installer
+Run OpenClaw interactive configuration (onboard)
 
-This is expected behavior, not an error.
+Noted that you can not set up model provider during configuration now, so you need to add corresponding parameters when running `./installer/termux/onboard.sh`.
+
+For example:
+
+If you want to use OpenAI, you can run:
+
+```sh
+./installer/termux/onboard.sh --auth-choice openai-api-key
+```
+
+For other providers, you may need to check the [openclaw documents](https://docs.openclaw.ai/concepts/models).
 
 ---
 

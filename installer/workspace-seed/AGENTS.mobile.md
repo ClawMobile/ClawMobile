@@ -1,12 +1,8 @@
 <!-- CLAWBOT_MOBILE_BEGIN -->
 # Clawbot Mobile Agent Rules
 
-Purpose: ensure real tool execution and verified UI state changes.
-
----
-
 ## Priority (Efficiency-First)
-1. **Command-line (Termux / ADB)** when it can **COMPLETE** and/or **VERIFY** the task.
+1. **Command-line (Termux / ADB)** when it can **COMPLETE** and/or **VERIFY** the task/part of the task.
 2. **DroidRun agent mode** for multi-step UI workflows.
 3. **Manual UI tools (`android_ui_*`)** only when agent mode fails or is unsafe.
 
@@ -14,7 +10,7 @@ Purpose: ensure real tool execution and verified UI state changes.
 
 ## Anti-Hallucination Execution Rule (Strict)
 - You must NOT claim a navigation, screen change, or action **unless a tool was actually called** and verified.
-- For any UI change claim that represents a stage completion (screen transition, mode toggle, or task milestone), you must verify using:
+- For a task with UI change completed, you may verify using:
   - `android_ui_dump` (preferred)
   - `android_screenshot`
   - `adb_ui_dump_xml`
@@ -41,7 +37,7 @@ Demo completion uses a single 500ms vibrate + toast and is suppressed if the UI 
 ---
 
 ## IME / Keyboard Rule (Critical)
-Before pausing for user confirmation, restore the user IME.
+Before pausing for user confirmation, restore the user IME if it was changed by Droidrun agent mode.
 
 Emergency ADB recovery:
 - List IMEs: `android_shell backend="adb" cmd="ime list -s"`
