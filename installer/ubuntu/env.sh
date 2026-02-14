@@ -26,19 +26,6 @@ EOF
 export NODE_OPTIONS="--require=${PATCH_JS} ${NODE_OPTIONS:-}"
 echo "[env] NODE_OPTIONS=${NODE_OPTIONS}"
 
-# # ---- Optional: Python venv cache/tmp hardening (safe even if not needed now) ----
-# # If you later install Python deps, this prevents Android filesystem/cache issues.
-# if [[ -n "${VIRTUAL_ENV:-}" ]]; then
-#   mkdir -p "${VIRTUAL_ENV}/.cache/pip" "${VIRTUAL_ENV}/.cache/tmp" "${VIRTUAL_ENV}/.cache/uv"
-#   export XDG_CACHE_HOME="${VIRTUAL_ENV}/.cache"
-#   export PIP_CACHE_DIR="${XDG_CACHE_HOME}/pip"
-#   export TMPDIR="${XDG_CACHE_HOME}/tmp"
-#   export PATH="${VIRTUAL_ENV}/bin:${PATH}"
-#   echo "[env] Python venv detected: ${VIRTUAL_ENV}"
-#   echo "[env] XDG_CACHE_HOME=${XDG_CACHE_HOME}"
-#   echo "[env] TMPDIR=${TMPDIR}"
-# fi
-
 # ---- Optional: persist to .bashrc for future shells ----
 # This block only appends once (idempotent).
 BASHRC="/root/.bashrc"
