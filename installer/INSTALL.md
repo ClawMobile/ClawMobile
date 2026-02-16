@@ -127,8 +127,8 @@ If you cannot find the device with adb in Termux, you should also connect wirele
 adb devices
 ```
 
-If you see your device (e.g. `emulator-5554`), you can skip wireless setup.
-If not, connect wirelessly:
+If you see your device (e.g. `emulator-5554`), you can skip wireless setup, go to step 4.
+If not, you need to connect wirelessly and setup Droidrun again to use the wireless device:
 
 1. Find the pairing code on your phone, usually in the Developer options under Wireless debugging
 2. In Termux, run:
@@ -151,6 +151,14 @@ adb connect 127.0.0.1:<CONNECT_PORT>
 adb tcpip 5555
 adb connect 127.0.0.1:5555
 adb disconnect 127.0.0.1:<CONNECT_PORT> # you can disconnect the original connect port after tcpip connection is successful
+```
+
+To setup the Droidrun with the wireless device, you need to install the Droidrun Portal with the following command in Termux:
+
+```sh
+proot-distro login ubuntu
+source /root/venvs/clawbot/bin/activate
+droidrun setup
 ```
 
 ---

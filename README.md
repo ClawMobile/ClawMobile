@@ -8,27 +8,34 @@ ClawMobile turns your phone into a pocket-sized agent that goes beyond OpenClawâ
 
 <table>
   <tr>
-    <td align="center"><strong>Hardware demo</strong></td>
-    <td align="center"><strong>Chrome demo</strong></td>
-    <td align="center"><strong>Python demo</strong></td>
-    <td align="center"><strong>Ice cream demo</strong></td>
+    <td align="center">
+      <strong>Hardware demo</strong><br>
+      <video src="https://github.com/user-attachments/assets/98f4eb0c-57a4-4ee6-aa18-06b7b721e41c" controls width="320"></video>
+    </td>
+    <td align="center">
+      <strong>System demo</strong><br>
+      <video src="https://github.com/user-attachments/assets/56ea6594-4cca-4e5c-9421-6ee195ac608b" controls width="320"></video>
+    </td>
+    <td align="center">
+      <strong>Script demo</strong><br>
+      <video src="https://github.com/user-attachments/assets/3d04f10e-c64e-4298-a78e-d2e3c3d106f3" controls width="320"></video>
+    </td>
   </tr>
   <tr>
-    <td><video src="https://github.com/user-attachments/assets/8ade1871-27f4-4d51-a9d8-62e51bfe8e04" controls width="320"></video></td>
-    <td><video src="https://github.com/user-attachments/assets/328691ed-2148-45c3-a5f6-e67246747f8e" controls width="320"></video></td>
-    <td><video src="https://github.com/user-attachments/assets/ea31da98-5b43-4b2e-9dd3-3c5ee04c4490" controls width="320"></video></td>
-    <td><video src="https://github.com/user-attachments/assets/d0e4c8b7-d018-4022-aa7f-f4b621b7a5bc" controls width="320"></video></td>
+    <td align="center">
+      <strong>Chrome demo</strong><br>
+      <video src="https://github.com/user-attachments/assets/5a54672b-86fe-4f79-aa05-063a4e12453d" controls width="320"></video>
+    </td>
+    <td align="center">
+      <strong>Maps demo</strong><br>
+      <video src="https://github.com/user-attachments/assets/778b64e7-d524-433d-a81c-c3b13cc0799d" controls width="320"></video>
+    </td>
+    <td align="center">
+      <strong>Icecream demo</strong><br>
+      <video src="https://github.com/user-attachments/assets/afe9d09d-4f61-4243-95d0-5ff14699dd66" controls width="320"></video>
+    </td>
   </tr>
 </table>
-
-
-
-
-
-
-
-
-
 
 ## It combines
 - OpenClaw â€” an extensible agent framework
