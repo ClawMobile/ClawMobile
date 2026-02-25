@@ -98,9 +98,8 @@ export class DroidrunExecutor {
   }
 
   // ---- NEW: ui dump / tap / type (a11y index based) ----
-  async uiDump(onlyClickable = true) {
+  async uiDump() {
     const args = ["ui_dump"];
-    if (onlyClickable) args.push("--only-clickable");
     return runPython(args, 30_000);
   }
 

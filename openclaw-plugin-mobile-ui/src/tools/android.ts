@@ -242,7 +242,7 @@ export async function android_swipe(input: {
 }
 
 // ---- NEW: a11y-based ----
-export async function android_ui_dump(input: { onlyClickable?: boolean }) {
+export async function android_ui_dump(input: {}) {
   const start = Date.now();
   appendToolAudit({
     time: new Date(start).toISOString(),
@@ -252,7 +252,7 @@ export async function android_ui_dump(input: { onlyClickable?: boolean }) {
     cwd: process.cwd(),
     env: envFlags(),
   });
-  const res = await droidrun_ui_dump(input?.onlyClickable ?? true);
+  const res = await droidrun_ui_dump();
   appendToolAudit({
     time: new Date().toISOString(),
     tool: "android_ui_dump",

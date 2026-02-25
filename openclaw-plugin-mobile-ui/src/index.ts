@@ -149,10 +149,10 @@ export default function register(api: any) {
       "Dump current UI accessibility nodes (a11y). Returns a list with indexes you can tap/type.",
       {
         type: "object",
-        properties: { onlyClickable: { type: "boolean" } },
+        properties: {},
         additionalProperties: false,
       },
-      async (args) => android_ui_dump(args)
+      async () => android_ui_dump()
     )
   );
 

@@ -137,10 +137,10 @@ export async function droidrun_swipe(x1: number, y1: number, x2: number, y2: num
   return withFailureLog("droidrun_swipe", res);
 }
 
-export async function droidrun_ui_dump(onlyClickable = true) {
+export async function droidrun_ui_dump() {
   const res = await audit("droidrun_ui_dump", () =>
     withPortal(async () => {
-    const res = await exec.uiDump(onlyClickable);
+    const res = await exec.uiDump();
     const ok = (res as any)?.ok === true;
     if (!ok) {
       const logDir = ensureLogsDir();
