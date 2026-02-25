@@ -33,6 +33,7 @@
 | Go Back | ADB | BOOTSTRAP | `adb_keyevent BACK` |
 | Open Wi‑Fi settings | ADB | BOOTSTRAP | `android_shell backend="adb" cmd="shell am start -a android.settings.WIFI_SETTINGS"` |
 | Open app by package | ADB | BOOTSTRAP | `android_shell backend="adb" cmd="shell monkey -p <package> -c android.intent.category.LAUNCHER 1"` |
+| Change the dark mode | ADB | BOOTSTRAP | `android_shell backend="adb" cmd="shell cmd uimode night yes"` (yes for on, no for off) |
 
 ---
 

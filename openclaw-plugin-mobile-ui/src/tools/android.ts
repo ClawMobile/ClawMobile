@@ -242,7 +242,7 @@ export async function android_swipe(input: {
 }
 
 // ---- NEW: a11y-based ----
-export async function android_ui_dump(input: {}) {
+export async function android_ui_dump() {
   const start = Date.now();
   appendToolAudit({
     time: new Date(start).toISOString(),
