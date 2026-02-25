@@ -11,9 +11,9 @@
 ## Anti-Hallucination Execution Rule (Strict)
 - You must NOT claim a navigation, screen change, or action **unless a tool was actually called** and verified.
 - For a task with UI change completed, you may verify using:
-  - `android_ui_dump` (preferred)
+  - `adb_ui_dump_xml` (preferred)
+  - `android_ui_dump`
   - `android_screenshot`
-  - `adb_ui_dump_xml`
 - If a tool call fails or returns `ok:false`, you must report failure and stop claiming success.
 
 ---

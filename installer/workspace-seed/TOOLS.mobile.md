@@ -15,11 +15,6 @@ This runtime provides Android UI automation tools.
 4. Use manual `android_ui_*` only if agent mode fails or is unsafe.
 5. Verify task-level UI changes (screen transitions or workflow milestones) with android_ui_dump or android_screenshot.
 
-### Quick start
-1. `android_health`
-2. `android_agent_task`
-3. If stuck: `android_screenshot` and `android_ui_dump`
-
 ### Tool catalog (selected)
 
 #### Health / observation
@@ -31,7 +26,7 @@ This runtime provides Android UI automation tools.
 - `android_signal_complete` — attention layer; may use Termux or ADB internally (only one exposed tool).
 
 #### Agent mode
-- `android_agent_task` — preferred for multi-step UI workflows. DroidRun agent mode remains the primary engine for semantic UI workflows.
+- `android_agent_task` — preferred for multi-step UI workflows. DroidRun agent mode remains the primary engine for semantic UI workflows. If `android_agent_task` stuck, try `android_screenshot` or `android_ui_dump` to diagnose and recover.
 
 #### Semantic UI tools
 - `android_ui_find`, `android_ui_tap_find`, `android_ui_type_find`
