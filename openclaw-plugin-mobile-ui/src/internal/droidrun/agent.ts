@@ -18,6 +18,29 @@ function buildEnv(py: string) {
   };
 }
 
+function truncate(s: string, max = 4000) {
+  if (!s) return "";
+  return s.length > max ? s.slice(0, max) : s;
+}
+
+function parseJsonFromStdout(stdout: string): any | null {
+  const trimmed = (stdout || "").trim();
+  if (!trimmed) return null;
+
+  try {
+    return JSON.parse(trimmed);
+  } catch {}
+
+  const lines = trimmed.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  for (let i = lines.length - 1; i >= 0; i -= 1) {
+    try {
+      return JSON.parse(lines[i]);
+    } catch {}
+  }
+
+  return null;
+}
+
 function runPython(args: string[], timeoutMs = 120_000): Promise<ExecResult> {
   return new Promise((resolve) => {
     const script = path.resolve(__dirname, "..", "..", "pyexec", "android_exec.py");
@@ -48,15 +71,28 @@ function runPython(args: string[], timeoutMs = 120_000): Promise<ExecResult> {
 
     p.on("close", (code) => {
       clearTimeout(timer);
-      try {
-        const parsed = JSON.parse((out || "").trim() || "{}");
-        if (parsed && typeof parsed === "object") {
-          parsed.extra = { ...(parsed.extra || {}), exit_code: code };
-        }
+      const parsed = parseJsonFromStdout(out);
+      if (parsed && typeof parsed === "object") {
+        parsed.extra = { ...(parsed.extra || {}), exit_code: code };
         resolve(parsed);
-      } catch {
-        resolve({ ok: false, error: "invalid_json", extra: { stdout: out, stderr: err, exit_code: code } });
+        return;
       }
+
+      const exitCode = typeof code === "number" ? code : -1;
+      if (exitCode === 0) {
+        resolve({
+          ok: true,
+          data: { output: (out || "").trim() },
+          extra: { stdout: truncate(out), stderr: truncate(err), exit_code: exitCode, output_format: "text" },
+        });
+        return;
+      }
+
+      resolve({
+        ok: false,
+        error: "python_failed",
+        extra: { stdout: truncate(out), stderr: truncate(err), exit_code: exitCode, output_format: "text" },
+      });
     });
   });
 }
