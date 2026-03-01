@@ -116,3 +116,17 @@ Installation involves:
 ## Where to go next
 - Install & run: [INSTALL.md](installer/INSTALL.md)
 - FAQ: [FAQ.md](installer/FAQ.md)
+- Paper: https://arxiv.org/abs/2602.22942
+
+## Citation
+
+```bibtex
+@misc{du2026clawmobile,
+  title        = {ClawMobile: Rethinking Smartphone-Native Agentic Systems},
+  author       = {Du, Hongchao and Wu, Shangyu and Li, Qiao and Pan, Riwei and Li, Jinheng and Sun, Youcheng and Xue, Chun Jason},
+  year         = {2026},
+  eprint       = {2602.22942},
+  archivePrefix= {arXiv},
+  primaryClass = {cs.MA},
+  doi          = {10.48550/arXiv.2602.22942}
+}
