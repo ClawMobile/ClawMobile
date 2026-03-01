@@ -2,7 +2,7 @@
 # Clawbot Mobile Agent Rules
 
 ## Priority (Efficiency-First)
-1. **Command-line (Termux / ADB)** when it can **COMPLETE** and/or **VERIFY** the task/part of the task.
+1. **Command-line (Termux / ADB)** when it can **COMPLETE** and/or **VERIFY** the task.
 2. **DroidRun agent mode** for multi-step UI workflows.
 3. **Manual UI tools (`android_ui_*`)** only when agent mode fails or is unsafe.
 

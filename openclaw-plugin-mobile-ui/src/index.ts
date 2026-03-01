@@ -45,7 +45,6 @@ function toolDef(
   schema: JsonSchema,
   fn: (args: any) => Promise<any>
 ) {
-  // 兼容不同版本字段读取
   return {
     name,
     description,
