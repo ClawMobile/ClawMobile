@@ -1,8 +1,21 @@
-# ClawMobile
+<p align="center">
+  <img src="assets/clawmobile-logo.png" width="240" alt="ClawMobile logo" />
+</p>
 
-TL;DR: **OpenClaw on your mobile — an AI agent in your pocket**.
+<h1 align="center">ClawMobile</h1>
 
-ClawMobile turns your phone into a pocket-sized agent that goes beyond OpenClaw’s server‑style automation: it runs locally, drives the Android UI with semantic actions, and completes on‑device tasks by interacting with apps, settings, and system UI wherever you are.
+<p align="center">
+  <b>OpenClaw on your mobile — an AI agent in your pocket.</b>
+</p>
+
+<p align="center">
+  <a href="http://clawmobile.ae/">Website</a> ·
+  <a href="https://arxiv.org/abs/2602.22942">Paper</a> ·
+  <a href="installer/INSTALL.md">Install</a> ·
+  <a href="installer/FAQ.md">FAQ</a> ·
+  <a href="https://www.linkedin.com/in/clawmobile-mbzuai/">LinkedIn</a> ·
+  <a href="https://www.youtube.com/@ClawMobile-l4x">YouTube</a>
+</p>
 
 ## Demo videos
 
