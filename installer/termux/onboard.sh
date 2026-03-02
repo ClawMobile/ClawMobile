@@ -14,9 +14,11 @@ proot-distro login "${UBUNTU_DISTRO}" --shared-tmp -- \
   bash -lc "
     set -e
     cd '${REPO_ROOT}'
-    # Make sure our Node patch is active even in non-interactive shells
+
+    # Ensure Node patch / env fixes are active for non-interactive shells
     if [ -f installer/ubuntu/env.sh ]; then
       source installer/ubuntu/env.sh
     fi
+    
     openclaw onboard --skip-daemon ${*:-}
   "

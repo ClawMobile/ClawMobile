@@ -8,13 +8,15 @@ pkg update -y
 pkg upgrade -y
 
 echo "[+] Installing prerequisites..."
-pkg install -y proot-distro git curl
+pkg install -y proot-distro git curl termux-api android-tools
 
 echo "[+] Installing proot Ubuntu (${UBUNTU}) if missing..."
-if ! proot-distro list | grep -q "^${UBUNTU}\b"; then
-  proot-distro install "${UBUNTU}"
+UBUNTU_ROOTFS="/data/data/com.termux/files/usr/var/lib/proot-distro/installed-rootfs/ubuntu"
+if [ ! -d "$UBUNTU_ROOTFS" ]; then
+  echo "[install] Ubuntu not found, installing..."
+  proot-distro install "$UBUNTU"
 else
-  echo "    - ${UBUNTU} already installed."
+  echo "[install] Ubuntu already installed, skipping"
 fi
 
 echo "[+] Entering Ubuntu and running bootstrap..."

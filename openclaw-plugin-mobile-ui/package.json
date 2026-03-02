@@ -1,0 +1,22 @@
+{
+  "name": "openclaw-plugin-mobile-ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "main": "dist/index.js",
+
+  "openclaw": {
+    "extensions": ["./dist/index.js"]
+  },
+
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/copy-assets.mjs",
+    "dev": "tsc -p tsconfig.json -w",
+    "copy-assets": "node scripts/copy-assets.mjs"
+  },
+
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  }
+}
