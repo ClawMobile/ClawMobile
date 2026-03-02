@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/clawmobile-logo.png" width="250" alt="ClawMobile logo" />
+  <img src="assets/clawmobile-logo-whitebg.png" width="250" alt="ClawMobile logo" />
 </p>
 
 <p align="center">
