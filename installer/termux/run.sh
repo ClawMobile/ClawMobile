@@ -188,11 +188,11 @@ SKILLS_SRC="\$SEED_DIR/skills"
 SKILLS_DST="\$WORKSPACE"
 
 if [ -d "\$SKILLS_SRC" ]; then
-  if ! rsync -a --delete "\$SKILLS_SRC" "\$SKILLS_DST/"; then
+  if ! rsync -a "\$SKILLS_SRC" "\$SKILLS_DST/"; then
     echo "[run] ERROR: failed to sync skills from \$SKILLS_SRC to \$SKILLS_DST -- gateway will not start" >&2
     exit 1
   fi
-  echo "[run] synced skills -> \$SKILLS_DST (overwrite)"
+  echo "[run] synced skills -> \$SKILLS_DST"
 else
   echo "[run] WARNING: seed skills not found at \$SKILLS_SRC/"
 fi
