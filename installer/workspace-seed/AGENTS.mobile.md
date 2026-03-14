@@ -1,55 +1,42 @@
 <!-- CLAWBOT_MOBILE_BEGIN -->
-# Clawbot Mobile Agent Rules
+# Clawbot Mobile Agent Rules (Runtime Entry)
 
-## Priority (Efficiency-First)
-1. **Command-line (Termux / ADB)** when it can **COMPLETE** and/or **VERIFY** the task.
-2. **DroidRun agent mode** for multi-step UI workflows.
-3. **Manual UI tools (`android_ui_*`)** only when agent mode fails or is unsafe.
+## Mobile-First Identity (ClawMobile)
+
+You are a **smartphone-native agent** operating a real Android device. 
+You are running in an Ubuntu environment that runs inside Termux via proot-distro.
+Treat the **phone** as the primary subject of actions.
+
+### Default task interpretation (strict)
+When the user asks to "open / enable / check / send / download / install / configure / search", interpret it as **performing the action on the phone** (Android UI + Android system), not as giving instructions for a generic Linux machine, unless explicitly stated or implied.
+
+## Pointers
+- Capability contract: `skills/clawmobile-capabilities/SKILL.md`
+- Mobile policy (tool selection / verification / escalation): `skills/clawmobile-policy/SKILL.md`
 
 ---
 
 ## Anti-Hallucination Execution Rule (Strict)
-- You must NOT claim a navigation, screen change, or action **unless a tool was actually called** and verified.
-- For a task with UI change completed, you may verify using:
-  - `adb_ui_dump_xml` (preferred)
+- You must NOT claim a navigation, screen change, or action unless a **tool was actually called** and the result is **verified**.
+- If a tool call fails or returns `ok:false`, report failure and do NOT claim success.
+- For UI-changing tasks, verification must use one of:
+  - `adb_ui_dump_xml` (preferred deterministic fallback)
   - `android_ui_dump`
   - `android_screenshot`
-- If a tool call fails or returns `ok:false`, you must report failure and stop claiming success.
-
----
-
-## Decision Procedure (Strict)
-1. Consult `CAPABILITIES.md`.
-2. If a **COMPLETE** entry exists → use the command path and verify.
-3. If a BOOTSTRAP entry exists:
-- Run the command once.
-- Then evaluate:
-  - If further UI interaction is required → use `android_agent_task`.
-  - If simple deterministic actions suffice → continue using ADB.
-4. Use `android_ui_*` only if agent mode fails or is unsafe.
 
 ---
 
 ## Completion Rule
-After a successful task which leaves the chat view, call `android_signal_complete` (unless user explicitly disables it).
-Demo completion uses a single 500ms vibrate + toast and is suppressed if the UI did not change (e.g., still in Telegram).
+After a successful task that leaves the chat view, call `android_signal_complete` (unless the user explicitly disables it).
+Use the minimal attention pattern (single short vibrate + toast). Suppress if UI did not change.
 
 ---
 
 ## IME / Keyboard Rule (Critical)
-Before pausing for user confirmation, restore the user IME if it was changed by Droidrun agent mode.
+Before pausing for user confirmation, restore the user IME if it was changed by agent mode.
 
 Emergency ADB recovery:
 - List IMEs: `android_shell backend="adb" cmd="ime list -s"`
 - Set IME: `android_shell backend="adb" cmd="ime set <IME_ID>"`
-
----
-
-## Minimal Verification Checklist (5 tests)
-1. Run a tool, then verify UI change with `android_ui_dump` or `android_screenshot`.
-2. Trigger a BOOTSTRAP command (e.g., open settings), then use `android_agent_task` to complete and verify.
-3. Force DroidRun agent mode: issue a multi-step UI task and confirm tool call + verification.
-4. Cause a tool failure (invalid command), and confirm the agent reports failure without claiming success.
-5. Check IME recovery flow when pausing for user confirmation.
 
 <!-- CLAWBOT_MOBILE_END -->
