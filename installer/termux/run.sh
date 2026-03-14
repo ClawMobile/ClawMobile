@@ -183,22 +183,24 @@ append_block_if_missing() {
 
 append_block_if_missing "\$WORKSPACE/AGENTS.md" "\$SEED_DIR/AGENTS.mobile.md"
 append_block_if_missing "\$WORKSPACE/TOOLS.md"  "\$SEED_DIR/TOOLS.mobile.md"
-append_block_if_missing "\$WORKSPACE/CAPABILITIES.md" "\$SEED_DIR/CAPABILITIES.mobile.md"
 
-RULES_SRC="\$SEED_DIR/rules"
-RULES_DST="\$WORKSPACE/rules"
-mkdir -p "\$RULES_DST/user"
+SKILLS_SRC="\$SEED_DIR/skills"
+SKILLS_DST="\$WORKSPACE"
 
-if [ -d "\$RULES_SRC/clawbot-mobile" ]; then
-  mkdir -p "\$RULES_DST/clawbot-mobile"
-  rsync -a --delete "\$RULES_SRC/clawbot-mobile/" "\$RULES_DST/clawbot-mobile/"
-  echo "[run] synced rules -> \$RULES_DST/clawbot-mobile (overwrite)"
+if [ -d "\$SKILLS_SRC" ]; then
+  if ! rsync -a "\$SKILLS_SRC" "\$SKILLS_DST/"; then
+    echo "[run] ERROR: failed to sync skills from \$SKILLS_SRC to \$SKILLS_DST -- gateway will not start" >&2
+    exit 1
+  fi
+  echo "[run] synced skills -> \$SKILLS_DST"
 else
-  echo "[run] WARNING: seed rules not found at \$RULES_SRC/clawbot-mobile"
+  echo "[run] WARNING: seed skills not found at \$SKILLS_SRC/"
 fi
 
-# Add a extra commend for telegram to restore ime, like with 
+# Add an extra command for Telegram to restore the IME (input method editor).
 openclaw config set channels.telegram.customCommands '[{"command":"ime","description":"Restore the keyboard (IME)"}]'
+
+openclaw config set tools.profile full
 
 exec openclaw gateway --bind ${GATEWAY_BIND} --port ${GATEWAY_PORT} --verbose
 EOF
