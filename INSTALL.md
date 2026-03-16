@@ -233,7 +233,7 @@ To reset OpenClaw configuration and start fresh:
 ```
 
 Optional levels:
-- `--level workspace` resets seeded workspace files (AGENTS/TOOLS/rules)
+- `--level workspace` resets seeded workspace files (AGENTS/TOOLS/skills)
 - `--level state` wipes OpenClaw state/config cache
 - `--level full` wipes both state and workspace
 
@@ -260,12 +260,11 @@ installer/
 └─ workspace-seed/
    ├─ AGENTS.mobile.md
    ├─ TOOLS.mobile.md
-   └─ rules/
-      └─ clawbot-mobile/
-         ├─ android_basics.md
-         ├─ mobile-ui.md
-         └─ playbooks/
-            └─ open_app.yaml
+   └─ skills/
+      ├─ clawmobile-capabilities/
+      │  └─ SKILL.md
+      └─ clawmobile-policy/
+         └─ SKILL.md
 openclaw-plugin-mobile-ui/
 ```
 

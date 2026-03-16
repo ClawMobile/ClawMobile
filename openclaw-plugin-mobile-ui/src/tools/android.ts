@@ -30,13 +30,6 @@ function envFlags() {
   };
 }
 
-export type Mode = "executor" | "agent";
-
-function getMode(): Mode {
-  const m = (process.env.CLAW_MOBILE_MODE || "executor").toLowerCase();
-  return m === "agent" ? "agent" : "executor";
-}
-
 export async function android_health() {
   return droidrun_health();
 }
@@ -54,6 +47,7 @@ export async function android_screenshot(input: { output?: string; backend?: "au
   });
   let res: any;
   let resolvedBackend = backend;
+  // TODO: move backend-selection policy out of runtime wrappers into a narrower execution layer.
   if (backend === "adb") {
     res = await adb_screenshot();
   } else if (backend === "droidrun") {

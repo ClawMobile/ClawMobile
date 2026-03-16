@@ -3,13 +3,13 @@ set -euo pipefail
 
 # reset-openclaw.sh
 #
-# Reset OpenClaw state with different levels, useful for testing memory/workspace seeding.
+# Reset OpenClaw state with different levels, useful for testing workspace seeding.
 #
 # Levels:
 #   soft     Stop gateway only (default)
-#   workspace Clear only workspace content that affects memory/bootstrap (AGENTS/TOOLS/rules/workspace cache)
+#   workspace Clear seeded workspace content (AGENTS/TOOLS/skills/cache)
 #   state    Clear OpenClaw state dir
-#   full     Clear both state dir and workspace
+#   full     Uninstall OpenClaw and clear state/workspace
 #
 # Options:
 #   --level <soft|workspace|state|full>
@@ -19,8 +19,8 @@ set -euo pipefail
 #
 # Notes:
 # - "state" is usually ~/.openclaw (config/cache/indexes)
-# - "workspace" is where AGENTS.md/TOOLS.md/rules live (and where you seed files)
-# - For memory injection testing, "workspace" level is usually what you want.
+# - "workspace" is where AGENTS.md/TOOLS.md/skills live (and where you seed files)
+# - For seed testing, "workspace" level is usually what you want.
 
 LEVEL="soft"
 DRY_RUN=0
@@ -38,7 +38,7 @@ Examples:
   # stop gateway only
   ./reset-openclaw.sh
 
-  # reset injected memory/bootstrap files but keep openclaw config
+  # reset injected workspace seed files but keep openclaw config
   ./reset-openclaw.sh --level workspace
 
   # wipe ~/.openclaw (cache/config/index), but keep workspace content
@@ -113,19 +113,56 @@ log "Level: $LEVEL"
 log "State dir: $STATE_DIR"
 log "Workspace: $WORKSPACE"
 
+clean_seeded_prompt_file() {
+  local file="$1"
+
+  # If dry-run, just report what would happen.
+  if [ "$DRY_RUN" -eq 1 ]; then
+    if [ -f "$file" ] && grep -q 'CLAWBOT_MOBILE_BEGIN' "$file"; then
+      echo "[DRY-RUN] Would remove CLAWBOT_MOBILE_BEGIN/END seeded block from '$file'"
+    else
+      echo "[DRY-RUN] No CLAWBOT_MOBILE_BEGIN/END seeded block found in '$file'; nothing to do"
+    fi
+    return 0
+  fi
+
+  # If the file doesn't exist, nothing to clean.
+  if [ ! -f "$file" ]; then
+    return 0
+  fi
+
+  # If there's no seeded block marker, leave the file untouched.
+  if ! grep -q 'CLAWBOT_MOBILE_BEGIN' "$file"; then
+    return 0
+  fi
+
+  local tmp="${file}.tmp.reset"
+
+  # Strip lines between CLAWBOT_MOBILE_BEGIN and CLAWBOT_MOBILE_END (exclusive).
+  awk '
+/CLAWBOT_MOBILE_BEGIN/ {inblock=1; next}
+/CLAWBOT_MOBILE_END/ {inblock=0; next}
+!inblock {print}
+' "$file" > "$tmp"
+
+  # If the resulting file is empty or only whitespace, delete the original.
+  if [ ! -s "$tmp" ] || ! grep -q '[^[:space:]]' "$tmp"; then
+    rm -f "$file" "$tmp"
+  else
+    mv "$tmp" "$file"
+  fi
+}
+
 reset_workspace() {
-  # Remove only what affects your injected behavior/tests:
-  # - AGENTS.md / TOOLS.md: bootstrap instructions
-  # - rules/Clawbot-mobile: seeded rules (keep rules/user)
-  # - optional workspace caches/logs you might create
-  log "Resetting workspace (bootstrap + seeded rules) ..."
+  # Remove only files seeded by installer/workspace-seed plus local caches.
+  log "Resetting workspace seed files ..."
 
-  # Bootstrap files
-  run "rm -f '$WORKSPACE/AGENTS.md' '$WORKSPACE/TOOLS.md' '$WORKSPACE/BOOTSTRAP.md' '$WORKSPACE/USER.md' '$WORKSPACE/SOUL.md' 2>/dev/null || true"
+  # Seeded prompt files: remove only CLAWBOT_MOBILE_BEGIN/END seeded blocks.
+  clean_seeded_prompt_file "$WORKSPACE/AGENTS.md"
+  clean_seeded_prompt_file "$WORKSPACE/TOOLS.md"
 
-  # Seeded rules folder (overwriteable). Keep user rules.
-  run "rm -rf '$WORKSPACE/rules/Clawbot-mobile' 2>/dev/null || true"
-  run "mkdir -p '$WORKSPACE/rules/user' 2>/dev/null || true"
+  # Seeded skills copied from installer/workspace-seed/skills.
+  run "rm -rf '$WORKSPACE/skills/clawmobile-capabilities' '$WORKSPACE/skills/clawmobile-policy' 2>/dev/null || true"
 
   # If you keep any project-generated caches in workspace:
   run "rm -rf '$WORKSPACE/.cache' '$WORKSPACE/tmp' '$WORKSPACE/.openclaw-cache' 2>/dev/null || true"
@@ -155,6 +192,8 @@ case "$LEVEL" in
   full)
     run "openclaw uninstall --all --yes --non-interactive || true"
     run "npm rm -g openclaw || true"
+    reset_workspace
+    reset_state
     log "Done (full reset)."
     ;;
 esac

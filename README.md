@@ -6,9 +6,9 @@ Clawbot Mobile turns your phone into a pocket‑size agent that goes beyond Open
 - OpenClaw — an extensible agent framework
 - DroidRun — Android UI automation via ADB + Accessibility
 - Termux + Ubuntu (proot) — a fully local runtime on the phone
-- Workspace seed — memory/rules pack for mobile workflows
+- Workspace seed — AGENTS/TOOLS/skills pack for mobile workflows
 
-The result is a self‑hosted, portable gateway that can orchestrate tools and drive the Android UI without any remote control server. Workspace seeds provide shared agent presets, tool hints, and playbooks for common mobile tasks.
+The result is a self‑hosted, portable gateway that can orchestrate tools and drive the Android UI without any remote control server. Workspace seeds provide shared agent presets, tool hints, and mobile policy/capability skills for common tasks.
 
 ---
 
