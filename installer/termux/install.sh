@@ -34,8 +34,8 @@ echo
 echo "[✓] Install finished."
 echo
 echo "Next steps:"
-echo "  1) Start gateway anytime:"
-echo "     ${REPO_ROOT}/installer/termux/run.sh"
-echo
-echo "  2) Run onboarding to reconfigure when needed (interactive):"
+echo "  1) Run onboarding (interactive):"
 echo "     ${REPO_ROOT}/installer/termux/onboard.sh"
+echo
+echo "  2) Start gateway anytime:"
+echo "     ${REPO_ROOT}/installer/termux/run.sh"

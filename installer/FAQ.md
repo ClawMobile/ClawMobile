@@ -8,11 +8,7 @@ If something feels “randomly broken”, check here first.
 2. [adb devices shows unauthorized](#-adb-devices-shows-unauthorized)
 3. [No ADB device found / wrong device selected](#-no-adb-device-found--wrong-device-selected)
 4. [Agent mode fails: “No model / no API key”](#-agent-mode-fails-no-model--no-api-key)
-5. [OpenClaw configuration is confusing / too many options](#-openclaw-configuration-is-confusing--too-many-options)
-6. [Input method changes after automation](#input-method-changes-after-automation)
-7. [Plugin changes don’t take effect](#-plugin-changes-dont-take-effect)
-8. [Ctrl + C during installation is this correct](#ctrl--c-during-installation-is-this-correct)
-9. [Final note when in doubt](#final-note-when-in-doubt)
+5. [Final note when in doubt](#final-note-when-in-doubt)
 
 ---
 
@@ -122,82 +118,6 @@ export DROIDRUN_MODEL=gpt-5.2
 
 ---
 
-## 🤖 OpenClaw configuration is confusing / too many options
-
-**Explanation**
-
-OpenClaw supports many features and integrations.
-You do not need to configure everything.
-
-**Minimum required**
-- Choose a model provider
-- Configure one interface (Telegram is used in this guide)
-
-Everything else can be skipped or left default.
-
----
-
-## Input method changes after automation
-
-**Symptom**
-- Keyboard switches to DroidRun input method
-- You cannot type manually afterward
-
-**Explanation**
-
-DroidRun temporarily switches the input method to perform automation.
-
-**What we do**
-- The plugin automatically restores the previous input method
-- If something still goes wrong, try the following command with wire-connected adb:
-
-```sh
-adb shell ime list -s
-# Find the default input method, for example com.sohu.inputmethod.sogou.xiaomi/.SogouIME
-adb shell ime set com.sohu.inputmethod.sogou.xiaomi/.SogouIME
-```
-
----
-
-## 🧩 Plugin changes don’t take effect
-
-**Symptom**
-- You changed code, but behavior didn’t change
-- New tools are not available
-
-**Cause**
-
-OpenClaw loads the compiled plugin, not TypeScript source.
-
-**Fix**
-
-Always rebuild and restart:
-
-```sh
-cd openclaw-plugin-mobile-ui
-npm run build
-cd ..
-./installer/termux/run.sh
-```
-
----
-
-## Ctrl + C during installation is this correct
-
-Yes.
-
-During installation:
-- `openclaw onboard` is interactive
-- When onboarding finishes, the installer will not exit automatically
-
-You must press:
-
-Ctrl + C
-
-This is expected and correct behavior.
-
----
-
 ## Final note when in doubt
 
 If something breaks:
@@ -213,7 +133,7 @@ Most issues are resolved by a clean restart.
 
 If problems persist, you can always reset to a clean state:
 ```sh
-./installer/ubuntu/reset-openclaw.sh --level workspace
+./installer/ubuntu/reset-openclaw.sh
 ```
 
 And then start fresh:
@@ -229,6 +149,5 @@ Or you can just remove the whole proot ubuntu and start over:
 ```sh
 proot-distro remove ubuntu
 ./installer/termux/install.sh
-export OPENAI_API_KEY=sk-...
-./installer/termux/run.sh
+...
 ```
