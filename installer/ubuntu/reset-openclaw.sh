@@ -119,7 +119,15 @@ clean_seeded_prompt_file() {
   # If dry-run, just report what would happen.
   if [ "$DRY_RUN" -eq 1 ]; then
     if [ -f "$file" ] && grep -q 'CLAWBOT_MOBILE_BEGIN' "$file"; then
-      echo "[DRY-RUN] Would remove CLAWBOT_MOBILE_BEGIN/END seeded block from '$file'"
+      # Verify that an END marker exists after the BEGIN marker.
+      local begin_line end_line
+      begin_line=$(grep -n 'CLAWBOT_MOBILE_BEGIN' "$file" | head -n1 | cut -d: -f1 || true)
+      end_line=$(grep -n 'CLAWBOT_MOBILE_END' "$file" | head -n1 | cut -d: -f1 || true)
+      if [ -n "${begin_line:-}" ] && [ -n "${end_line:-}" ] && [ "$end_line" -gt "$begin_line" ]; then
+        echo "[DRY-RUN] Would remove CLAWBOT_MOBILE_BEGIN/END seeded block from '$file'"
+      else
+        echo "[DRY-RUN] Found CLAWBOT_MOBILE_BEGIN but missing or misordered CLAWBOT_MOBILE_END in '$file'; would skip cleanup to avoid truncating content"
+      fi
     else
       echo "[DRY-RUN] No CLAWBOT_MOBILE_BEGIN/END seeded block found in '$file'; nothing to do"
     fi
@@ -133,6 +141,15 @@ clean_seeded_prompt_file() {
 
   # If there's no seeded block marker, leave the file untouched.
   if ! grep -q 'CLAWBOT_MOBILE_BEGIN' "$file"; then
+    return 0
+  fi
+
+  # Ensure there is a matching END marker after the BEGIN marker to avoid truncating content.
+  local begin_line end_line
+  begin_line=$(grep -n 'CLAWBOT_MOBILE_BEGIN' "$file" | head -n1 | cut -d: -f1 || true)
+  end_line=$(grep -n 'CLAWBOT_MOBILE_END' "$file" | head -n1 | cut -d: -f1 || true)
+  if [ -z "${end_line:-}" ] || [ -z "${begin_line:-}" ] || [ "$end_line" -le "$begin_line" ]; then
+    echo "WARNING: Skipping CLAWBOT_MOBILE seeded block cleanup for '$file' because CLAWBOT_MOBILE_END is missing or appears before CLAWBOT_MOBILE_BEGIN." >&2
     return 0
   fi
 
