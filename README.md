@@ -1,63 +1,82 @@
-# Clawbot Mobile
+<p align="center">
+  <img src="assets/clawmobile-logo-whitebg.png" width="250" alt="ClawMobile logo" />
+</p>
 
-Clawbot Mobile turns your phone into a pocket‑size agent that goes beyond OpenClaw’s server‑style automation: it runs locally, drives the Android UI with semantic actions, and completes on‑device tasks by interacting with apps, settings, and system UI wherever you are.
+<p align="center">
+  <b>OpenClaw on your mobile — an AI agent in your pocket.</b>
+</p>
+
+<p align="center">
+  <a href="https://clawmobile.ae/">Website</a> ·
+  <a href="https://arxiv.org/abs/2602.22942">Paper</a> ·
+  <a href="installer/INSTALL.md">Install</a> ·
+  <a href="installer/FAQ.md">FAQ</a> ·
+  <a href="https://www.linkedin.com/in/clawmobile-mbzuai/">LinkedIn</a> ·
+  <a href="https://www.youtube.com/@ClawMobile-l4x">YouTube</a>
+</p>
+
+## Demo videos
+
+<table>
+  <tr>
+    <td align="center">
+      <strong>Hardware demo</strong><br>
+      <video src="https://github.com/user-attachments/assets/98f4eb0c-57a4-4ee6-aa18-06b7b721e41c" controls width="320"></video>
+    </td>
+    <td align="center">
+      <strong>System demo</strong><br>
+      <video src="https://github.com/user-attachments/assets/56ea6594-4cca-4e5c-9421-6ee195ac608b" controls width="320"></video>
+    </td>
+    <td align="center">
+      <strong>Script demo</strong><br>
+      <video src="https://github.com/user-attachments/assets/3d04f10e-c64e-4298-a78e-d2e3c3d106f3" controls width="320"></video>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <strong>Chrome demo</strong><br>
+      <video src="https://github.com/user-attachments/assets/5a54672b-86fe-4f79-aa05-063a4e12453d" controls width="320"></video>
+    </td>
+    <td align="center">
+      <strong>Maps demo</strong><br>
+      <video src="https://github.com/user-attachments/assets/778b64e7-d524-433d-a81c-c3b13cc0799d" controls width="320"></video>
+    </td>
+    <td align="center">
+      <strong>Icecream demo</strong><br>
+      <video src="https://github.com/user-attachments/assets/afe9d09d-4f61-4243-95d0-5ff14699dd66" controls width="320"></video>
+    </td>
+  </tr>
+</table>
 
 ## It combines
 - OpenClaw — an extensible agent framework
-- DroidRun — Android UI automation via ADB + Accessibility
+- On-device Android automation — Android UI automation via ADB + Accessibility
 - Termux + Ubuntu (proot) — a fully local runtime on the phone
-- Workspace seed — AGENTS/TOOLS/skills pack for mobile workflows
+- Mobile Workspace (To be released…)
 
-The result is a self‑hosted, portable gateway that can orchestrate tools and drive the Android UI without any remote control server. Workspace seeds provide shared agent presets, tool hints, and mobile policy/capability skills for common tasks.
+The result is a self‑hosted, portable gateway that can orchestrate tools and drive the Android UI without any remote control server.
 
 ---
 
-## What makes this different?
+## How ClawMobile works
 
-The mobile agent space is growing quickly, with systems that can drive apps via UI and run multi-step flows. Frameworks like DroidRun already offer natural-language control, planning, and screenshot-aware automation across mobile apps. Clawbot Mobile focuses on a different tradeoff: a local, extensible agent stack that prioritizes deterministic control and deep OpenClaw integration over thin “click-only” automation.
+ClawMobile runs OpenClaw directly on a mobile device, turning the phone into a self-contained AI agent platform. Rather than simply hosting OpenClaw on-device, ClawMobile integrates it with structured UI automation and deterministic mobile control layers (ADB, Termux, and Accessibility-based tooling). This enables agents not only to converse on the phone, but to actively manipulate apps, inspect UI state, and execute reliable, reproducible workflows.
 
-Clawbot Mobile is different:
-- 🧠 Local runtime on the device: no remote control server required
-- 🔌 OpenClaw as the orchestration layer: reusable tools and skills that plug into existing OpenClaw interfaces
-- 👁️ Semantic UI control: accessibility-based actions via the DroidRun Portal app and ADB rather than fragile coordinates
-- 🧩 Extensible pipeline: add tools/providers without rewriting the agent loop
+- 🧠 **Local runtime**: runs fully on-device without requiring a remote control server
+- 🔌 **OpenClaw as orchestration layer**: reusable tools and skills plug into existing OpenClaw interfaces
+- 👁️ **Semantic UI control**: accessibility-driven actions and ADB, instead of fragile coordinate-based automation
+- 🧩 **Extensible control pipeline**: add tools or providers without rewriting the agent loop
 
 ---
 
 ## What can it do?
 
-Clawbot Mobile can:
+ClawMobile can:
 - Do everything OpenClaw can do, but locally on the phone, using the same multi‑channel interfaces and tool routing
 - Extend OpenClaw with mobile‑only capabilities (semantic UI control, on‑device context, and portability)
-- Operate on semantic UI elements via accessibility metadata (text, role, labels) using the DroidRun Portal app and ADB
+- Operate on semantic UI elements via accessibility metadata (text, role, labels) 
 - Combine deterministic UI actions with higher‑level task planning when needed
 - Run tasks inside proot and treat the phone as a portable gateway
-
-Examples:
-- “Summarize my latest messages, then open Settings and connect to HomeNet”
-- “Run a job in proot, then report the result back to Telegram”
-
----
-
-## Architecture overview
-
-```
-User (Telegram / CLI / other interface)
-        ↓
-    OpenClaw Gateway
-        ↓
-  Clawbot Mobile Plugin
-        ↓
-  ├─ Executor tools (deterministic)
-  │    ├─ UI find / tap / type
-  │    └─ ADB actions
-  │
-  └─ Agent mode (advanced)
-        ↓
-     DroidRun Agent
-        ↓
-   Android UI (this device)
-```
 
 ---
 
@@ -65,7 +84,6 @@ User (Telegram / CLI / other interface)
 
 Running locally enables:
 - 📱 Control of apps that cannot be automated remotely
-- 🔐 No need to stream your screen or inputs to a server
 - 🧩 Full access to system UI, dialogs, and settings
 - ⚙️ Experimentation with long-running agents on real devices
 
@@ -91,41 +109,35 @@ Telegram is used in the installer guide because it is easy to test and widely av
 Installation involves:
 - Termux
 - Ubuntu (proot)
-- Android debugging permissions
+- Android permissions
 - OpenClaw interactive configuration
 
 👉 See the full installation guide here:
-[INSTALL.md](INSTALL.md)
+[INSTALL.md](installer/INSTALL.md)
 
 ---
 
-## License & disclaimer
-
-This project controls the local Android device.
-
-Use responsibly.
-
----
-
-## Next steps (planned)
+## Next steps (To be released…)
 - Better planning/execution separation
 - More robust UI selection strategies
-- Additional OpenClaw interfaces
 - Improved safety constraints
 
 ---
 
-## TL;DR
-- 📱 AI agent runs on the phone
-- 🧠 OpenClaw for reasoning & orchestration
-- 👁️ DroidRun for UI interaction
-- 🔐 No remote control server
-- 🧪 Experimental, but powerful
-
----
-
 ## Where to go next
-- Install & run: [INSTALL.md](INSTALL.md)
-- Code: [openclaw-plugin-mobile-ui/](openclaw-plugin-mobile-ui/)
-- FAQ: [FAQ.md](FAQ.md)
-- Security & privacy: [SECURITY.md](SECURITY.md)
+- Install & run: [INSTALL.md](installer/INSTALL.md)
+- FAQ: [FAQ.md](installer/FAQ.md)
+- Paper: https://arxiv.org/abs/2602.22942
+
+## Citation
+
+```bibtex
+@misc{du2026clawmobile,
+  title        = {ClawMobile: Rethinking Smartphone-Native Agentic Systems},
+  author       = {Du, Hongchao and Wu, Shangyu and Li, Qiao and Pan, Riwei and Li, Jinheng and Sun, Youcheng and Xue, Chun Jason},
+  year         = {2026},
+  eprint       = {2602.22942},
+  archivePrefix= {arXiv},
+  primaryClass = {cs.MA},
+  doi          = {10.48550/arXiv.2602.22942}
+}
