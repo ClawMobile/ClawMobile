@@ -66,6 +66,8 @@ adbkey.pub
 *.jpg
 *.jpeg
 
+!assets/*
+
 # DroidRun portal artifacts
 .portal/
 droidrun-portal/
