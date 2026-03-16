@@ -2,7 +2,18 @@ import fs from "fs";
 import path from "path";
 import { appendToolAudit, truncateString, DEFAULT_MAX_OUTPUT_BYTES } from "./workspace";
 
-const DEFAULT_PATH = path.resolve(__dirname, "..", "..", "..", "installer", "workspace-seed", "CAPABILITIES.mobile.md");
+// TODO: package this catalog with the plugin instead of reading it from the repo checkout.
+const DEFAULT_PATH = path.resolve(
+  __dirname,
+  "..",
+  "..",
+  "..",
+  "installer",
+  "workspace-seed",
+  "skills",
+  "clawmobile-capabilities",
+  "SKILL.md"
+);
 const PACKAGE_PATH = path.resolve(__dirname, "..", "..", "package.json");
 
 export async function mobile_capabilities(input?: { query?: string }) {

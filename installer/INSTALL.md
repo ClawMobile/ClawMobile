@@ -234,24 +234,6 @@ To reset OpenClaw configuration and start fresh:
 
 ---
 
-## Directory overview
-
-```
-installer/
-├─ termux/
-│  ├─ install.sh
-│  ├─ onboard.sh
-│  ├─ pairing.sh
-│  └─ run.sh
-└─ ubuntu/
-   ├─ bootstrap.sh
-   ├─ env.sh
-   └─ reset-openclaw.sh
-
-```
-
----
-
 ## Quick summary
 
 1. `./installer/termux/install.sh`

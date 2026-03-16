@@ -7,7 +7,6 @@ GATEWAY_BIND="${GATEWAY_BIND:-loopback}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-REPO_RULES="${REPO_ROOT}/memory"
 PLUGIN_DIR="${REPO_ROOT}/openclaw-plugin-mobile-ui"
 
 # ---- choose droidrun provider/model in Termux, then pass to Ubuntu via temp env ----
@@ -77,7 +76,6 @@ fi
 echo "[clawbot] Starting OpenClaw Gateway..."
 proot-distro login "${UBUNTU_DISTRO}" --shared-tmp -- bash -lc 'bash -seuo pipefail' <<EOF
 REPO_ROOT='${REPO_ROOT}'
-REPO_RULES='${REPO_RULES}'
 PLUGIN_DIR='${PLUGIN_DIR}'
 TMP_ENV='${TMP_ENV}'
 
@@ -156,7 +154,7 @@ else
   echo "[run] WARNING: plugin dir not found at \$PLUGIN_DIR"
 fi
 
-# ---- workspace seed: inject AGENTS/TOOLS blocks + sync rules ----
+# ---- workspace seed: inject AGENTS/TOOLS blocks + sync skills ----
 WORKSPACE="\$(openclaw config get agents.defaults.workspace 2>/dev/null | tr -d '\"' || true)"
 [ -n "\$WORKSPACE" ] || WORKSPACE="/root/.openclaw/workspace"
 mkdir -p "\$WORKSPACE"

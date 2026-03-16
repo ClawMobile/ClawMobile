@@ -198,14 +198,3 @@ export async function adb_swipe(input: { x1: number; y1: number; x2: number; y2:
     duration,
   ]);
 }
-
-export async function adb_app_start(input: { package: string; activity?: string }) {
-  const pkg = input?.package;
-  if (!pkg) return { ok: false, code: -1, stdout: "", stderr: "package is required" };
-
-  if (input?.activity) {
-    return runAdb(["shell", "am", "start", "-n", `${pkg}/${input.activity}`], 30_000);
-  }
-
-  return runAdb(["shell", "monkey", "-p", pkg, "-c", "android.intent.category.LAUNCHER", "1"], 30_000);
-}

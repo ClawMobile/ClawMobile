@@ -1,1 +1,96 @@
+# -------------------------
+# OS / Editor
+# -------------------------
 .DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.tmp
+
+# -------------------------
+# Python
+# -------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+env/
+ENV/
+
+# pip / build artifacts
+pip-wheel-metadata/
+build/
+dist/
+*.egg-info/
+
+# -------------------------
+# Node / npm
+# -------------------------
+node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Compiled plugin output (keep source, not build)
+openclaw-plugin-mobile-ui/dist/
+openclaw-plugin-mobile-ui/package-lock.json
+
+# -------------------------
+# OpenClaw runtime data
+# -------------------------
+.openclaw/
+.openclaw-workspace/
+.openclaw-cache/
+
+# If users accidentally run OpenClaw in repo
+workspace/
+cache/
+logs/
+
+# -------------------------
+# Termux / proot
+# -------------------------
+proot-distro/
+*.proot
+*.tar.gz
+
+# -------------------------
+# DroidRun / ADB
+# -------------------------
+adbkey
+adbkey.pub
+*.png
+*.jpg
+*.jpeg
+
+!assets/*
+
+# DroidRun portal artifacts
+.portal/
+droidrun-portal/
+
+# -------------------------
+# Environment / Secrets
+# -------------------------
+.env
+.env.*
+*.env
+
+# API keys or local overrides
+config/local.yaml
+config/local.yml
+
+# -------------------------
+# Temporary installer files
+# -------------------------
+installer/**/*.log
+installer/**/tmp/
+
+# -------------------------
+# Others
+# -------------------------
+DEVELOPMENT.md
+ARCHITECTURE.md
