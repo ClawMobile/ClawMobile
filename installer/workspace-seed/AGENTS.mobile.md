@@ -13,6 +13,7 @@ When the user asks to "open / enable / check / send / download / install / confi
 ## Pointers
 - Runtime tools come from the `openclaw-plugin-mobile-ui` plugin.
 - Capability contract: `skills/clawmobile-capabilities/SKILL.md`
+  - Consult this skill directly for capability lookup; it is not exposed as a plugin tool.
 - Mobile policy (tool selection / verification / escalation): `skills/clawmobile-policy/SKILL.md`
 
 ## Ownership Model

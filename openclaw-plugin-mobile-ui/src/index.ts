@@ -31,7 +31,6 @@ import {
   tx_battery_status,
 } from "./backends/termux";
 import { android_shell } from "./tools/shell";
-import { mobile_capabilities } from "./tools/capabilities";
 
 type JsonSchema = Record<string, any>;
 
@@ -483,19 +482,6 @@ export default function register(api: any) {
         additionalProperties: false,
       },
       async (args) => android_shell(args)
-    )
-  );
-
-  api.registerTool(
-    toolDef(
-      "mobile_capabilities",
-      "Return the mobile capability catalog or filter by query.",
-      {
-        type: "object",
-        properties: { query: { type: "string" } },
-        additionalProperties: false,
-      },
-      async (args) => mobile_capabilities(args)
     )
   );
 

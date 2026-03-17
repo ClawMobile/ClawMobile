@@ -5,6 +5,7 @@ This runtime provides Android UI automation tools. These tools operate a real An
 
 This file documents the plugin tool surface only.
 Tool selection policy and task escalation rules live in the seeded skills.
+Capability lookup lives in `skills/clawmobile-capabilities/SKILL.md`, not in a plugin tool.
 
 ### Backends (3 kinds)
 - **DroidRun / Portal (Accessibility)**: semantic UI tools (`android_ui_*`, `android_agent_task`).
