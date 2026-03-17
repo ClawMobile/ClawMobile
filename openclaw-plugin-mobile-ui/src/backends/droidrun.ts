@@ -1,13 +1,13 @@
 import fs from "fs";
 import { DroidrunExecutor } from "../internal/droidrun/executor";
 import { DroidrunAgent } from "../internal/droidrun/agent";
+import { auditEnd, auditError, auditStart } from "../internal/runtime";
 import {
   makeScreenshotPath,
   pngDimensions,
   truncateLargeStrings,
   ensureLogsDir,
   writeLog,
-  appendToolAudit,
 } from "../tools/workspace";
 
 // DroidRun backend adapter.
@@ -33,54 +33,15 @@ async function withPortal<T>(fn: () => Promise<T>): Promise<T> {
   }
 }
 
-function envFlags() {
-  return {
-    DROIDRUN_SERIAL: process.env.DROIDRUN_SERIAL || "",
-    DROIDRUN_PROVIDER: process.env.DROIDRUN_PROVIDER || "",
-    DROIDRUN_MODEL: process.env.DROIDRUN_MODEL || "",
-    CLAW_MOBILE_PYTHON: process.env.CLAW_MOBILE_PYTHON || "",
-    DROIDRUN_USE_TCP: process.env.DROIDRUN_USE_TCP || "",
-    OPENAI_API_KEY: Boolean(process.env.OPENAI_API_KEY),
-    GEMINI_API_KEY: Boolean(process.env.GEMINI_API_KEY),
-    ANTHROPIC_API_KEY: Boolean(process.env.ANTHROPIC_API_KEY),
-    DEEPSEEK_API_KEY: Boolean(process.env.DEEPSEEK_API_KEY),
-  };
-}
-
 async function audit<T>(tool: string, fn: () => Promise<T>) {
   const start = Date.now();
-  appendToolAudit({
-    time: new Date(start).toISOString(),
-    tool,
-    backend: "droidrun",
-    phase: "start",
-    cwd: process.cwd(),
-    env: envFlags(),
-  });
+  auditStart(tool, "droidrun", start);
   try {
     const res: any = await fn();
-  appendToolAudit({
-    time: new Date().toISOString(),
-    tool,
-    backend: "droidrun",
-    phase: "end",
-    ok: Boolean(res?.ok),
-    elapsed_ms: Date.now() - start,
-    error: res?.error,
-    stderr: res?.extra?.stderr_snip,
-    exit_code: res?.extra?.exit_code,
-  });
+    auditEnd(tool, start, res, { backend: "droidrun" });
     return res as T;
   } catch (e: any) {
-    appendToolAudit({
-      time: new Date().toISOString(),
-      tool,
-      backend: "droidrun",
-      phase: "end",
-      ok: false,
-      elapsed_ms: Date.now() - start,
-      error: String(e?.message || e || "unknown_error"),
-    });
+    auditError(tool, start, e, { backend: "droidrun" });
     throw e;
   }
 }

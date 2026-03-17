@@ -2,7 +2,6 @@ import fs from "fs";
 import path from "path";
 import { appendToolAudit, truncateString, DEFAULT_MAX_OUTPUT_BYTES } from "./workspace";
 
-// TODO: package this catalog with the plugin instead of reading it from the repo checkout.
 const DEFAULT_PATH = path.resolve(
   __dirname,
   "..",

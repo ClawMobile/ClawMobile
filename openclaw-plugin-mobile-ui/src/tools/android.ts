@@ -1,4 +1,5 @@
 import { adb_devices, adb_screenshot, adb_tap, adb_type, adb_swipe } from "../backends/adb";
+import { auditEnd, auditStart, CompositeBackend, runWithBackendFallback } from "../internal/runtime";
 import { signalComplete } from "./attention";
 import {
   droidrun_health,
@@ -14,79 +15,11 @@ import {
   droidrun_ui_type_find,
   droidrun_agent_task,
 } from "../backends/droidrun";
-import { appendToolAudit } from "./workspace";
 
 // Composite mobile runtime wrappers.
 // These are the higher-level tool implementations exposed as `android_*`.
 // They sit above backend adapters and currently still contain some backend
 // selection policy, which is why Step 1 only documents that seam.
-
-type CompositeBackend = "auto" | "adb" | "droidrun";
-
-function envFlags() {
-  return {
-    DROIDRUN_SERIAL: process.env.DROIDRUN_SERIAL || "",
-    DROIDRUN_PROVIDER: process.env.DROIDRUN_PROVIDER || "",
-    DROIDRUN_MODEL: process.env.DROIDRUN_MODEL || "",
-    CLAW_MOBILE_PYTHON: process.env.CLAW_MOBILE_PYTHON || "",
-    DROIDRUN_USE_TCP: process.env.DROIDRUN_USE_TCP || "",
-    OPENAI_API_KEY: Boolean(process.env.OPENAI_API_KEY),
-    GEMINI_API_KEY: Boolean(process.env.GEMINI_API_KEY),
-    ANTHROPIC_API_KEY: Boolean(process.env.ANTHROPIC_API_KEY),
-    DEEPSEEK_API_KEY: Boolean(process.env.DEEPSEEK_API_KEY),
-  };
-}
-
-function auditStart(tool: string, backend: string, start: number) {
-  appendToolAudit({
-    time: new Date(start).toISOString(),
-    tool,
-    phase: "start",
-    backend,
-    cwd: process.cwd(),
-    env: envFlags(),
-  });
-}
-
-function auditEnd(tool: string, start: number, res: any, extra?: Record<string, any>) {
-  appendToolAudit({
-    time: new Date().toISOString(),
-    tool,
-    phase: "end",
-    ok: Boolean((res as any)?.ok),
-    elapsed_ms: Date.now() - start,
-    error: (res as any)?.error,
-    stderr: (res as any)?.extra?.stderr_snip || (res as any)?.stderr,
-    exit_code: (res as any)?.extra?.exit_code,
-    ...(extra || {}),
-  });
-}
-
-async function runWithBackendFallback(args: {
-  backend?: CompositeBackend;
-  adbAction: () => Promise<any>;
-  droidrunAction: () => Promise<any>;
-}) {
-  const backend = args.backend ?? "auto";
-
-  if (backend === "adb") {
-    return { res: await args.adbAction(), resolvedBackend: "adb" as const };
-  }
-
-  if (backend === "droidrun") {
-    return { res: await args.droidrunAction(), resolvedBackend: "droidrun" as const };
-  }
-
-  const hasAdb = await hasAdbDevice();
-  if (hasAdb) {
-    const adbRes = await args.adbAction();
-    if ((adbRes as any)?.ok) {
-      return { res: adbRes, resolvedBackend: "adb" as const };
-    }
-  }
-
-  return { res: await args.droidrunAction(), resolvedBackend: "droidrun" as const };
-}
 
 export async function android_health() {
   return droidrun_health();
@@ -101,6 +34,7 @@ export async function android_screenshot(input: { backend?: CompositeBackend }) 
     backend,
     adbAction: () => adb_screenshot(),
     droidrunAction: () => droidrun_screenshot(),
+    hasAdbDevice,
   });
   auditEnd("android_screenshot", start, res, { resolved_backend: resolvedBackend });
   return res;
@@ -114,6 +48,7 @@ export async function android_tap(input: { x: number; y: number; backend?: Compo
     backend,
     adbAction: () => adb_tap({ x: input.x, y: input.y }),
     droidrunAction: () => droidrun_tap(input.x, input.y),
+    hasAdbDevice,
   });
   auditEnd("android_tap", start, res, { resolved_backend: resolvedBackend });
   return res;
@@ -132,6 +67,7 @@ export async function android_type(input: {
     backend,
     adbAction: () => adb_type({ text: input.text }),
     droidrunAction: () => droidrun_type(input.text, input.index ?? -1, input.clear ?? false),
+    hasAdbDevice,
   });
   auditEnd("android_type", start, res, { resolved_backend: resolvedBackend });
   return res;
@@ -152,6 +88,7 @@ export async function android_swipe(input: {
     backend,
     adbAction: () => adb_swipe(input),
     droidrunAction: () => droidrun_swipe(input.x1, input.y1, input.x2, input.y2, input.durationMs ?? 300),
+    hasAdbDevice,
   });
   auditEnd("android_swipe", start, res, { resolved_backend: resolvedBackend });
   return res;
@@ -251,6 +188,8 @@ export async function android_signal_complete(args?: {
 async function hasAdbDevice() {
   // Runtime helper only: tells composite tools whether the ADB path is
   // currently available before they fall back to DroidRun.
+  // TODO: consider removing this preflight check in a later performance pass
+  // and falling back based on direct ADB action failure instead.
   try {
     const res = await adb_devices();
     return Array.isArray((res as any)?.devices) && (res as any).devices.some((d: any) => d?.state === "device");

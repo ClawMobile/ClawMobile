@@ -80,7 +80,6 @@ export default function register(api: any) {
       {
         type: "object",
         properties: {
-          output: { type: "string" },
           backend: { type: "string", enum: ["auto", "adb", "droidrun"] },
         },
         additionalProperties: false,
