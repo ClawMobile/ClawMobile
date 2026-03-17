@@ -70,8 +70,8 @@ Recommended: clone the repo directly in Termux.
 
 ```sh
 pkg install git
-git clone https://github.com/MrDuGitHub/ClawMobile-Dev.git
-cd ClawMobile-Dev
+git clone https://github.com/ClawMobile/ClawMobile.git
+cd ClawMobile
 ```
 
 If you are working from your own fork or another remote, replace the clone URL with that repository.

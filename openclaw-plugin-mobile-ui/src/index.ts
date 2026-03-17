@@ -59,8 +59,7 @@ function toolDef(
 export default function register(api: any) {
   // Public plugin surface for OpenClaw.
   // This file is the contract boundary between the OpenClaw runtime and the
-  // mobile runtime implementation below. Step 1 keeps behavior unchanged and
-  // only makes tool groups more explicit.
+  // mobile runtime implementation below.
 
   // ---- composite mobile runtime tools ----
   api.registerTool(
