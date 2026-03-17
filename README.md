@@ -52,7 +52,7 @@
 - OpenClaw — an extensible agent framework
 - On-device Android automation — Android UI automation via ADB + Accessibility
 - Termux + Ubuntu (proot) — a fully local runtime on the phone
-- Mobile Workspace (To be released…)
+- Mobile workspace seed — runtime bootstrap files and mobile skills for OpenClaw
 
 The result is a self‑hosted, portable gateway that can orchestrate tools and drive the Android UI without any remote control server.
 
@@ -127,7 +127,7 @@ Installation involves:
 
 ---
 
-## Next steps (To be released…)
+## Next steps
 - Better planning/execution separation
 - More robust UI selection strategies
 - Improved safety constraints
