@@ -24,7 +24,7 @@ This capability contract belongs to the skill layer.
 
 - It is the source of truth for capability interpretation and task classification.
 - It should not be redefined manually inside the plugin runtime.
-- A future machine-readable contract should live alongside this skill, with `SKILL.md` derived from it.
+- `contract.json` is the machine-readable source of truth; `SKILL.md` is generated/derived from it.
 
 ---
 
