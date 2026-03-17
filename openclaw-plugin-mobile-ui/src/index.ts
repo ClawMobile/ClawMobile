@@ -58,6 +58,12 @@ function toolDef(
 }
 
 export default function register(api: any) {
+  // Public plugin surface for OpenClaw.
+  // This file is the contract boundary between the OpenClaw runtime and the
+  // mobile runtime implementation below. Step 1 keeps behavior unchanged and
+  // only makes tool groups more explicit.
+
+  // ---- composite mobile runtime tools ----
   api.registerTool(
     toolDef(
       "android_health",
@@ -141,7 +147,7 @@ export default function register(api: any) {
     )
   );
 
-  // ---- NEW: a11y-based tools ----
+  // ---- semantic UI tools (DroidRun-backed) ----
   api.registerTool(
     toolDef(
       "android_ui_dump",
@@ -273,7 +279,7 @@ export default function register(api: any) {
     )
   );
 
-  // ---- completion signal (Termux:API) ----
+  // ---- device attention / completion ----
   api.registerTool(
     toolDef(
       "android_signal_complete",
@@ -294,7 +300,7 @@ export default function register(api: any) {
     )
   );
 
-  // ---- adb tools ----
+  // ---- raw adb primitives ----
   api.registerTool(
     toolDef(
       "adb_devices",
@@ -387,7 +393,7 @@ export default function register(api: any) {
     )
   );
 
-  // ---- termux-api tools ----
+  // ---- raw termux primitives ----
   api.registerTool(
     toolDef(
       "tx_notify",
@@ -462,7 +468,7 @@ export default function register(api: any) {
     )
   );
 
-  // ---- fallback shell ----
+  // ---- escape hatches / metadata ----
   api.registerTool(
     toolDef(
       "android_shell",

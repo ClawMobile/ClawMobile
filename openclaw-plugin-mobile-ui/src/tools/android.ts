@@ -16,6 +16,11 @@ import {
 } from "../backends/droidrun";
 import { appendToolAudit } from "./workspace";
 
+// Composite mobile runtime wrappers.
+// These are the higher-level tool implementations exposed as `android_*`.
+// They sit above backend adapters and currently still contain some backend
+// selection policy, which is why Step 1 only documents that seam.
+
 function envFlags() {
   return {
     DROIDRUN_SERIAL: process.env.DROIDRUN_SERIAL || "",
@@ -359,6 +364,8 @@ export async function android_signal_complete(args?: {
 }
 
 async function hasAdbDevice() {
+  // Runtime helper only: tells composite tools whether the ADB path is
+  // currently available before they fall back to DroidRun.
   try {
     const res = await adb_devices();
     return Array.isArray((res as any)?.devices) && (res as any).devices.some((d: any) => d?.state === "device");

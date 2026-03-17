@@ -10,12 +10,18 @@ import {
   appendToolAudit,
 } from "../tools/workspace";
 
+// DroidRun backend adapter.
+// This module owns serialized access to Portal-backed operations and exposes
+// backend-shaped helpers for the public `android_*` wrappers.
+
 const exec = new DroidrunExecutor();
 const agent = new DroidrunAgent();
 
 let portalLock: Promise<void> = Promise.resolve();
 
 async function withPortal<T>(fn: () => Promise<T>): Promise<T> {
+  // Portal access is serialized because concurrent DroidRun actions can
+  // interfere with each other at the device/session level.
   const prev = portalLock;
   let release: () => void;
   portalLock = new Promise((r) => (release = r));
@@ -221,6 +227,8 @@ export async function droidrun_agent_task(input: {
   deviceSerial?: string;
   tcp?: boolean;
 }) {
+  // TODO: keep agent-mode exposed here for now, but treat app/workflow policy
+  // above this layer rather than inside backend adapters.
   const res = await audit("droidrun_agent_task", () => agent.runTask(input));
   return withFailureLog("droidrun_agent_task", res);
 }

@@ -56,6 +56,12 @@
 
 The result is a self‑hosted, portable gateway that can orchestrate tools and drive the Android UI without any remote control server.
 
+At a high level, the repository is split into three interface layers:
+
+- `openclaw-plugin-mobile-ui/` — the executable mobile runtime plugin and backend adapters
+- `installer/workspace-seed/skills/` — prompt-facing policy and capability contracts
+- `installer/workspace-seed/` — workspace bootstrap content injected into OpenClaw
+
 ---
 
 ## How ClawMobile works
@@ -66,6 +72,10 @@ ClawMobile runs OpenClaw directly on a mobile device, turning the phone into a s
 - 🔌 **OpenClaw as orchestration layer**: reusable tools and skills plug into existing OpenClaw interfaces
 - 👁️ **Semantic UI control**: accessibility-driven actions and ADB, instead of fragile coordinate-based automation
 - 🧩 **Extensible control pipeline**: add tools or providers without rewriting the agent loop
+
+Current execution path:
+
+`user -> OpenClaw workspace context -> skills/policy -> plugin tool -> backend -> Android device`
 
 ---
 

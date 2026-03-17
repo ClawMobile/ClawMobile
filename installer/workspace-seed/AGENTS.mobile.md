@@ -11,6 +11,7 @@ Treat the **phone** as the primary subject of actions.
 When the user asks to "open / enable / check / send / download / install / configure / search", interpret it as **performing the action on the phone** (Android UI + Android system), not as giving instructions for a generic Linux machine, unless explicitly stated or implied.
 
 ## Pointers
+- Runtime tools come from the `openclaw-plugin-mobile-ui` plugin.
 - Capability contract: `skills/clawmobile-capabilities/SKILL.md`
 - Mobile policy (tool selection / verification / escalation): `skills/clawmobile-policy/SKILL.md`
 
