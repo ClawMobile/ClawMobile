@@ -3,6 +3,8 @@ name: clawmobile-capabilities
 description: Capability contract (COMPLETE/BOOTSTRAP) for ClawMobile Android runtime.
 ---
 
+<!-- Generated from contract.json by generate_skill.py. Edit the contract, then run `python3 installer/workspace-seed/skills/clawmobile-capabilities/generate_skill.py`. -->
+
 # ClawMobile Capabilities (Contract)
 
 This skill is a **capability contract** for ClawMobile’s Android runtime.
