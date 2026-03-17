@@ -22,6 +22,11 @@ The current interface layers are:
 - Skills: policy and capability contracts under `skills/`
 - Plugin runtime: public tools registered by `openclaw-plugin-mobile-ui`
 
+Use this ownership rule when extending the system:
+- Base plugin tools should stay device-generic and reusable across apps.
+- Skill files should define policy, capability interpretation, and execution guidance.
+- App-specific workflows should move into app-specific extensions rather than into the base runtime layer.
+
 #### Health / observation
 - `android_health`
 - `android_screenshot` — writes a PNG file and returns `{ ok, path, bytes, width, height }` (no base64).

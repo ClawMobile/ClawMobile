@@ -15,6 +15,11 @@ When the user asks to "open / enable / check / send / download / install / confi
 - Capability contract: `skills/clawmobile-capabilities/SKILL.md`
 - Mobile policy (tool selection / verification / escalation): `skills/clawmobile-policy/SKILL.md`
 
+## Ownership Model
+- Treat the plugin as the execution substrate for device-generic mobile actions.
+- Treat skills as the source of truth for policy, capability interpretation, and workflow guidance.
+- Treat future app-specific integrations as separate extension layers rather than expanding the base plugin with app semantics.
+
 ---
 
 ## Anti-Hallucination Execution Rule (Strict)
