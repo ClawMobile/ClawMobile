@@ -153,7 +153,7 @@ export async function android_agent_task(input: {
   const timeoutS = Math.min(Math.max(input?.timeout ?? defaultS, 1), maxS);
   auditStart("android_agent_task", "droidrun", start);
   try {
-    const res = await droidrun_agent_task(input);
+    const res = await droidrun_agent_task({ ...input, timeout: timeoutS });
     const elapsedS = Math.round((Date.now() - start) / 1000);
     auditEnd("android_agent_task", start, res);
     if ((res as any)?.error === "timeout") {
