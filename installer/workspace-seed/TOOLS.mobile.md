@@ -3,6 +3,10 @@
 
 This runtime provides Android UI automation tools. These tools operate a real Android phone (ADB/Termux/UI). Interpret user requests as phone actions by default.
 
+This file documents the plugin tool surface only.
+Tool selection policy and task escalation rules live in the seeded skills.
+Capability lookup lives in `skills/clawmobile-capabilities/SKILL.md`, not in a plugin tool.
+
 ### Backends (3 kinds)
 - **DroidRun / Portal (Accessibility)**: semantic UI tools (`android_ui_*`, `android_agent_task`).
 - **ADB (low-level deterministic)**: `adb_*` tools and `android_*` with `backend=auto|adb`.
@@ -13,6 +17,16 @@ This runtime provides Android UI automation tools. These tools operate a real An
 ---
 
 ### Tool catalog (selected)
+
+The current interface layers are:
+- Workspace seed: this file plus `AGENTS.mobile.md`
+- Skills: policy and capability contracts under `skills/`
+- Plugin runtime: public tools registered by `openclaw-plugin-mobile-ui`
+
+Use this ownership rule when extending the system:
+- Base plugin tools should stay device-generic and reusable across apps.
+- Skill files should define policy, capability interpretation, and execution guidance.
+- App-specific workflows should move into app-specific extensions rather than into the base runtime layer.
 
 #### Health / observation
 - `android_health`

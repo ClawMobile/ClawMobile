@@ -64,7 +64,21 @@ To use Telegram:
 
 ### Step 1 – Run the installer
 
-In Termux, from the project root:
+Before running the installer, make sure this repository is available inside Termux.
+
+Recommended: clone the repo directly in Termux.
+
+```sh
+pkg install git
+git clone https://github.com/MrDuGitHub/ClawMobile-Dev.git
+cd ClawMobile-Dev
+```
+
+If you are working from your own fork or another remote, replace the clone URL with that repository.
+
+Alternative: download the repository as a zip file, extract it somewhere Termux can access, and `cd` into the extracted project directory before continuing.
+
+After the repository is available in Termux, run the installer from the project root:
 
 ```sh
 ./installer/termux/install.sh

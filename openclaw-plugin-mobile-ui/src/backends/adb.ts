@@ -2,6 +2,10 @@ import { spawn } from "child_process";
 import fs from "fs";
 import { makeScreenshotPath, pngDimensions, truncateString, DEFAULT_MAX_OUTPUT_BYTES } from "../tools/workspace";
 
+// Low-level ADB adapter used by the public plugin tools.
+// These functions should stay device-generic; higher-level policy belongs in
+// the composite `android_*` wrappers or in workspace-seeded skills.
+
 export type AdbResult = {
   ok: boolean;
   code: number;

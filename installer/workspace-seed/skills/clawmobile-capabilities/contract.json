@@ -1,0 +1,176 @@
+{
+  "metadata": {
+    "name": "clawmobile-capabilities",
+    "description": "Capability contract (COMPLETE/BOOTSTRAP) for ClawMobile Android runtime."
+  },
+  "title": "ClawMobile Capabilities (Contract)",
+  "intro": [
+    "This skill is a **capability contract** for ClawMobile’s Android runtime.",
+    "",
+    "It answers:",
+    "- **What** can be done deterministically on-device (via Termux / ADB),",
+    "- What tasks are only **BOOTSTRAP-able** deterministically and must be finished via UI agent mode,",
+    "- What tools/backends to prefer and what minimal verification signals to use.",
+    "",
+    "This skill is intentionally **declarative** (an index/contract), not a policy engine.",
+    "For tool selection / escalation / verification rules, see the platform policy skill:",
+    "- `clawmobile-policy` (or your current mobile policy skill)"
+  ],
+  "ownership": {
+    "heading": "Ownership",
+    "summary": "This capability contract belongs to the skill layer.",
+    "points": [
+      "It is the source of truth for capability interpretation and task classification.",
+      "It should not be redefined manually inside the plugin runtime.",
+      "`contract.json` is the machine-readable source of truth; `SKILL.md` is generated/derived from it."
+    ]
+  },
+  "labels": [
+    "**COMPLETE**: Deterministic path can complete the task end-to-end (still must verify).",
+    "**BOOTSTRAP**: Deterministic path can only set up state; finish + verify via `android_agent_task`."
+  ],
+  "groups": [
+    {
+      "title": "Hardware / Device Controls",
+      "kind": "backend",
+      "entries": [
+        {
+          "task": "Flashlight on",
+          "preferred": "Termux",
+          "label": "COMPLETE",
+          "example": "`android_shell backend=\"termux\" cmd=\"termux-torch on\"`"
+        },
+        {
+          "task": "Flashlight off",
+          "preferred": "Termux",
+          "label": "COMPLETE",
+          "example": "`android_shell backend=\"termux\" cmd=\"termux-torch off\"`"
+        },
+        {
+          "task": "Set media volume",
+          "preferred": "Termux",
+          "label": "COMPLETE",
+          "example": "`android_shell backend=\"termux\" cmd=\"termux-volume music 7\"`"
+        },
+        {
+          "task": "Set brightness",
+          "preferred": "Termux",
+          "label": "COMPLETE",
+          "example": "`android_shell backend=\"termux\" cmd=\"termux-brightness 150\"`"
+        }
+      ]
+    },
+    {
+      "title": "Clipboard",
+      "kind": "tool",
+      "entries": [
+        {
+          "task": "Get clipboard",
+          "preferred": "`tx_clipboard_get`",
+          "label": "COMPLETE",
+          "notes": ""
+        },
+        {
+          "task": "Set clipboard",
+          "preferred": "`tx_clipboard_set`",
+          "label": "COMPLETE",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "title": "System Navigation / App Launch",
+      "kind": "backend",
+      "entries": [
+        {
+          "task": "Go Home",
+          "preferred": "ADB",
+          "label": "BOOTSTRAP",
+          "example": "`adb_keyevent HOME`"
+        },
+        {
+          "task": "Go Back",
+          "preferred": "ADB",
+          "label": "BOOTSTRAP",
+          "example": "`adb_keyevent BACK`"
+        },
+        {
+          "task": "Open Wi-Fi settings",
+          "preferred": "ADB",
+          "label": "BOOTSTRAP",
+          "example": "`android_shell backend=\"adb\" cmd=\"am start -a android.settings.WIFI_SETTINGS\"`"
+        },
+        {
+          "task": "Open app by package",
+          "preferred": "ADB",
+          "label": "BOOTSTRAP",
+          "example": "`android_shell backend=\"adb\" cmd=\"monkey -p <package> -c android.intent.category.LAUNCHER 1\"`"
+        },
+        {
+          "task": "Toggle dark mode",
+          "preferred": "ADB",
+          "label": "BOOTSTRAP",
+          "example": "`android_shell backend=\"adb\" cmd=\"cmd uimode night yes\"` (use `no` for off)"
+        }
+      ]
+    },
+    {
+      "title": "Notifications / Attention",
+      "kind": "tool",
+      "entries": [
+        {
+          "task": "Completion alert",
+          "preferred": "`android_signal_complete`",
+          "label": "COMPLETE",
+          "notes": "Minimal attention pattern (vibrate + toast)."
+        },
+        {
+          "task": "Speak text",
+          "preferred": "`tx_tts`",
+          "label": "COMPLETE",
+          "notes": ""
+        },
+        {
+          "task": "Toast message",
+          "preferred": "`tx_toast`",
+          "label": "COMPLETE",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "title": "IME Recovery (Critical)",
+      "kind": "backend",
+      "intro": "These are deterministic recovery actions to restore input method if agent mode changed it.",
+      "entries": [
+        {
+          "task": "List IMEs",
+          "preferred": "ADB",
+          "label": "COMPLETE",
+          "example": "`android_shell backend=\"adb\" cmd=\"ime list -s\"`"
+        },
+        {
+          "task": "Set IME",
+          "preferred": "ADB",
+          "label": "COMPLETE",
+          "example": "`android_shell backend=\"adb\" cmd=\"ime set <IME_ID>\"`"
+        }
+      ]
+    }
+  ],
+  "minimalRules": [
+    "If a **COMPLETE** entry exists for the user request: use that deterministic path and verify.",
+    "If only a **BOOTSTRAP** entry exists: run it once, then complete + verify using `android_agent_task`.",
+    "For UI-changing steps, verification must use one of:",
+    "  - `android_ui_dump` or `android_screenshot`",
+    "  - If Portal/UI dump is unstable: fallback to `adb_ui_dump_xml`",
+    "Never claim success unless a tool was called and the result was verified."
+  ],
+  "extensionNotes": [
+    "When adding new capabilities:",
+    "- Prefer stable, vendor-agnostic commands (Termux / ADB intents).",
+    "- Indicate whether the deterministic path is **COMPLETE** or only **BOOTSTRAP**.",
+    "- Provide at least one concrete example command/tool invocation.",
+    "- If verification differs from the default rules, note the required verification signal."
+  ]
+}

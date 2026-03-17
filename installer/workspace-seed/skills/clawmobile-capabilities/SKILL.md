@@ -3,6 +3,8 @@ name: clawmobile-capabilities
 description: Capability contract (COMPLETE/BOOTSTRAP) for ClawMobile Android runtime.
 ---
 
+<!-- Generated from contract.json by generate_skill.py. Edit the contract, then run `python3 installer/workspace-seed/skills/clawmobile-capabilities/generate_skill.py`. -->
+
 # ClawMobile Capabilities (Contract)
 
 This skill is a **capability contract** for ClawMobile’s Android runtime.
@@ -15,6 +17,14 @@ It answers:
 This skill is intentionally **declarative** (an index/contract), not a policy engine.
 For tool selection / escalation / verification rules, see the platform policy skill:
 - `clawmobile-policy` (or your current mobile policy skill)
+
+## Ownership
+
+This capability contract belongs to the skill layer.
+
+- It is the source of truth for capability interpretation and task classification.
+- It should not be redefined manually inside the plugin runtime.
+- A future machine-readable contract should live alongside this skill, with `SKILL.md` derived from it.
 
 ---
 

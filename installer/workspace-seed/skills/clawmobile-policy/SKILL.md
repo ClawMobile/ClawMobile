@@ -8,6 +8,11 @@ description: Deterministic-first mobile policy for tool selection, verification,
 This skill defines the **interaction-level policy** for mobile autonomy: tool selection, verification, and escalation.
 It does not add new tools; it constrains how existing tools are used.
 
+## Ownership
+- This skill owns planning policy, tool-selection policy, escalation, and verification rules.
+- The base mobile plugin owns executable runtime primitives.
+- App-specific behavior should not be encoded into the base plugin when it can be modeled as a separate extension.
+
 ## Policy: Deterministic-First (Priority)
 1. **Command-line (Termux / ADB)** when it can **COMPLETE** and/or **VERIFY** the task.
 2. **DroidRun agent mode** (`android_agent_task`) for multi-step UI workflows.
@@ -24,6 +29,11 @@ It does not add new tools; it constrains how existing tools are used.
 4. If no entry exists:
    - Use `android_agent_task` for UI workflows.
    - Use manual `android_ui_*` only if agent mode fails or is unsafe.
+
+## Extension Rule
+- If a new behavior is device-generic and reusable across apps, it belongs in the base plugin.
+- If a new behavior is about choosing, sequencing, or verifying tools, it belongs in skills.
+- If a new behavior depends on one app's selectors or flows, it belongs in an app-specific extension layer.
 
 ## Verification Requirements (Non-negotiable)
 - Do NOT claim success unless a tool was called and the result is verified.
