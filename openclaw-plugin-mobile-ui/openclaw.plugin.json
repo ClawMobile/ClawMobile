@@ -1,7 +1,7 @@
 {
   "id": "openclaw-plugin-mobile-ui",
   "name": "Mobile UI",
-  "description": "Android UI tools.",
+  "description": "Android mobile runtime tools for OpenClaw, including ADB, Termux, and DroidRun-backed UI automation.",
   "kind": "tools",
   "version": "0.1.0",
   "configSchema": {
