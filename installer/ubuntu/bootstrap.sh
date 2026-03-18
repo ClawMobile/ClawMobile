@@ -12,15 +12,15 @@ apt install -y \
   python3 python3-venv python3-pip \
   curl rsync
 
-echo "[+] Creating venv for clawbot/openclaw tooling..."
+echo "[+] Creating venv for ClawMobile/OpenClaw tooling..."
 mkdir -p /root/venvs
-if [[ ! -d /root/venvs/clawbot ]]; then
-  python3 -m venv /root/venvs/clawbot
+if [[ ! -d /root/venvs/clawmobile ]]; then
+  python3 -m venv /root/venvs/clawmobile
 fi
 
 # Activate venv
 # shellcheck disable=SC1091
-source /root/venvs/clawbot/bin/activate
+source /root/venvs/clawmobile/bin/activate
 
 echo "[+] Upgrading pip toolchain in venv..."
 python -m pip install --upgrade pip

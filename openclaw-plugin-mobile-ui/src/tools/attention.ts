@@ -41,9 +41,9 @@ function runAdb(args: string[], timeoutMs = 10_000): Promise<AdbResult> {
 }
 
 async function adb_notify(input: { title: string; content: string }) {
-  const title = input?.title ?? "Clawbot";
+  const title = input?.title ?? "ClawMobile";
   const content = input?.content ?? "Task completed.";
-  return runAdb(["shell", "cmd", "notification", "post", "clawbot", title, content]);
+  return runAdb(["shell", "cmd", "notification", "post", "clawmobile", title, content]);
 }
 
 export async function signalComplete(args?: {
@@ -56,7 +56,7 @@ export async function signalComplete(args?: {
 }) {
   const envMs = Number(process.env.CLAW_MOBILE_NOTIFY_VIBRATE_MS || 500);
   const ms = Math.max(1, Math.min(args?.ms ?? envMs, 5000));
-  const title = args?.title ?? "Clawbot";
+  const title = args?.title ?? "ClawMobile";
   const content = args?.content ?? "Task completed.";
   const toastEnabled = String(process.env.CLAW_MOBILE_NOTIFY_TOAST || "1").toLowerCase() !== "0";
 

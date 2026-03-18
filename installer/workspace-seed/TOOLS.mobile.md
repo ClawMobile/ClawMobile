@@ -1,5 +1,5 @@
-<!-- CLAWBOT_MOBILE_BEGIN -->
-## Android Tools (Clawbot Mobile)
+<!-- CLAWMOBILE_BEGIN -->
+## Android Tools (ClawMobile)
 
 This runtime provides Android UI automation tools. These tools operate a real Android phone (ADB/Termux/UI). Interpret user requests as phone actions by default.
 
@@ -66,4 +66,4 @@ Use this ownership rule when extending the system:
 - If UI changes unexpectedly, re-run `android_screenshot` or `android_ui_dump` before acting.
 - If ADB shows `unauthorized`, accept the debugging prompt on the phone.
 
-<!-- CLAWBOT_MOBILE_END -->
+<!-- CLAWMOBILE_END -->

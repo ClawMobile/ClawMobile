@@ -1,5 +1,5 @@
-<!-- CLAWBOT_MOBILE_BEGIN -->
-# Clawbot Mobile Agent Rules (Runtime Entry)
+<!-- CLAWMOBILE_BEGIN -->
+# ClawMobile Agent Rules (Runtime Entry)
 
 ## Mobile-First Identity (ClawMobile)
 
@@ -46,4 +46,4 @@ Emergency ADB recovery:
 - List IMEs: `android_shell backend="adb" cmd="ime list -s"`
 - Set IME: `android_shell backend="adb" cmd="ime set <IME_ID>"`
 
-<!-- CLAWBOT_MOBILE_END -->
+<!-- CLAWMOBILE_END -->

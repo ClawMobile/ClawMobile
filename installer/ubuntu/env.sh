@@ -4,7 +4,7 @@ set -euo pipefail
 # Usage:
 #   source installer/ubuntu/env.sh
 # Optional:
-#   source /root/venvs/clawbot/bin/activate
+#   source /root/venvs/clawmobile/bin/activate
 #   source installer/ubuntu/env.sh
 
 echo "[env] Applying OpenClaw/Node patches for Android/proot..."
@@ -29,8 +29,8 @@ echo "[env] NODE_OPTIONS=${NODE_OPTIONS}"
 # ---- Optional: persist to .bashrc for future shells ----
 # This block only appends once (idempotent).
 BASHRC="/root/.bashrc"
-MARKER_BEGIN="# >>> clawbot-mobile env begin >>>"
-MARKER_END="# <<< clawbot-mobile env end <<<"
+MARKER_BEGIN="# >>> clawmobile env begin >>>"
+MARKER_END="# <<< clawmobile env end <<<"
 
 if ! grep -qF "${MARKER_BEGIN}" "${BASHRC}" 2>/dev/null; then
   cat >> "${BASHRC}" <<EOF

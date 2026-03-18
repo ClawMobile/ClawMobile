@@ -171,7 +171,7 @@ To set up DroidRun with the wireless device, install or reconfigure DroidRun Por
 
 ```sh
 proot-distro login ubuntu
-source /root/venvs/clawbot/bin/activate
+source /root/venvs/clawmobile/bin/activate
 droidrun setup
 ```
 
