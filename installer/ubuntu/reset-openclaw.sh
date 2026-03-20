@@ -170,9 +170,9 @@ clean_seeded_prompt_file() {
   local tmp="${file}.tmp.reset"
 
   # Strip lines between the mobile begin and end markers (exclusive).
-  awk '
-/CLAWMOBILE_BEGIN/ {inblock=1; next}
-/CLAWMOBILE_END/ {inblock=0; next}
+  awk -v begin_marker="$begin_marker" -v end_marker="$end_marker" '
+index($0, begin_marker) {inblock=1; next}
+index($0, end_marker) {inblock=0; next}
 !inblock {print}
 ' "$file" > "$tmp"
 
