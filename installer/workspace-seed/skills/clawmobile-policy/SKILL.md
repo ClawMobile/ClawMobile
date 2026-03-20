@@ -30,6 +30,18 @@ It does not add new tools; it constrains how existing tools are used.
    - Use `android_agent_task` for UI workflows.
    - Use manual `android_ui_*` only if agent mode fails or is unsafe.
 
+## UI Workflow Efficiency
+- Avoid redundant UI observation on the same step.
+- Prefer fused semantic actions when they match the goal:
+  - use `android_ui_tap_find` instead of `android_ui_find` followed by `android_ui_tap`
+  - use `android_ui_type_find` instead of `android_ui_find` followed by `android_ui_type`
+- Do not run `android_ui_dump` before every semantic action by default.
+  - Use it when you need diagnosis, disambiguation, or post-action verification.
+- For a single deterministic UI action, prefer:
+  1. choose the most direct tool,
+  2. perform the action,
+  3. verify once after the UI-changing step.
+
 ## Extension Rule
 - If a new behavior is device-generic and reusable across apps, it belongs in the base plugin.
 - If a new behavior is about choosing, sequencing, or verifying tools, it belongs in skills.

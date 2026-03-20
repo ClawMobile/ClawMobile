@@ -14,6 +14,8 @@ export type AdbResult = {
 };
 
 const DEFAULT_TIMEOUT_MS = 20_000;
+const DEFAULT_SCREENSHOT_TIMEOUT_MS = 30_000;
+const DEFAULT_TYPE_TIMEOUT_MS = 30_000;
 
 function runAdb(args: string[], timeoutMs = DEFAULT_TIMEOUT_MS): Promise<AdbResult> {
   return new Promise((resolve) => {
@@ -123,7 +125,7 @@ export async function adb_ui_dump_xml(input: { compressed?: boolean }) {
   return { ...catRes, xml: truncateString(catRes.stdout, DEFAULT_MAX_OUTPUT_BYTES) };
 }
 
-export async function adb_screenshot() {
+export async function adb_screenshot(input?: { timeoutMs?: number }) {
   return await new Promise((resolve) => {
     const p = spawn("adb", ["exec-out", "screencap", "-p"], {
       env: process.env,
@@ -133,6 +135,7 @@ export async function adb_screenshot() {
     const chunks: Buffer[] = [];
     let stderr = "";
     let done = false;
+    const timeoutMs = input?.timeoutMs ?? DEFAULT_SCREENSHOT_TIMEOUT_MS;
 
     const timer = setTimeout(() => {
       if (done) return;
@@ -141,7 +144,7 @@ export async function adb_screenshot() {
         p.kill("SIGKILL");
       } catch {}
       resolve({ ok: false, path: "", bytes: 0, width: 0, height: 0 });
-    }, 30_000);
+    }, timeoutMs);
 
     p.on("error", (e: any) => {
       if (done) return;
@@ -179,17 +182,17 @@ export async function adb_screenshot() {
   });
 }
 
-export async function adb_tap(input: { x: number; y: number }) {
-  return runAdb(["shell", "input", "tap", String(input.x), String(input.y)]);
+export async function adb_tap(input: { x: number; y: number; timeoutMs?: number }) {
+  return runAdb(["shell", "input", "tap", String(input.x), String(input.y)], input?.timeoutMs);
 }
 
-export async function adb_type(input: { text: string }) {
+export async function adb_type(input: { text: string; timeoutMs?: number }) {
   if (input?.text == null) return { ok: false, code: -1, stdout: "", stderr: "text is required" };
   const text = encodeInputText(String(input.text));
-  return runAdb(["shell", "input", "text", text], 30_000);
+  return runAdb(["shell", "input", "text", text], input?.timeoutMs ?? DEFAULT_TYPE_TIMEOUT_MS);
 }
 
-export async function adb_swipe(input: { x1: number; y1: number; x2: number; y2: number; durationMs?: number }) {
+export async function adb_swipe(input: { x1: number; y1: number; x2: number; y2: number; durationMs?: number; timeoutMs?: number }) {
   const duration = typeof input?.durationMs === "number" ? String(input.durationMs) : "300";
   return runAdb([
     "shell",
@@ -200,5 +203,5 @@ export async function adb_swipe(input: { x1: number; y1: number; x2: number; y2:
     String(input.x2),
     String(input.y2),
     duration,
-  ]);
+  ], input?.timeoutMs);
 }

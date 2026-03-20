@@ -254,8 +254,7 @@ def cmd_screenshot(args):
         return {"format": fmt, "path": out_path, "bytes": len(image_bytes)}
 
     try:
-        with ImeGuard():
-            data = asyncio.run(_run())
+        data = asyncio.run(_run())
         return ok(data)
     except Exception as e:
         return fail("screenshot_failed", {"repr": repr(e)})
@@ -272,8 +271,8 @@ def cmd_tap(args):
         return {"success": bool(success), "x": args.x, "y": args.y}
 
     try:
-        with ImeGuard():
-            data = asyncio.run(_run())
+        # Non-text action: avoid extra IME save/restore ADB round-trips.
+        data = asyncio.run(_run())
         return ok(data)
     except Exception as e:
         return fail("tap_failed", {"repr": repr(e)})
@@ -294,8 +293,8 @@ def cmd_swipe(args):
         }
 
     try:
-        with ImeGuard():
-            data = asyncio.run(_run())
+        # Non-text action: avoid extra IME save/restore ADB round-trips.
+        data = asyncio.run(_run())
         return ok(data)
     except Exception as e:
         return fail("swipe_failed", {"repr": repr(e)})
@@ -373,8 +372,8 @@ def cmd_ui_dump(args):
         }
 
     try:
-        with ImeGuard():
-            data = asyncio.run(_run())
+        # Read-only path: avoid extra IME save/restore ADB round-trips.
+        data = asyncio.run(_run())
         return ok(data)
     except Exception as e:
         return fail("ui_dump_failed", {"repr": repr(e)})
@@ -428,9 +427,8 @@ def cmd_ui_find(args):
         }
 
     try:
-        # get_state 会触发 AdbTools 初始化，仍然做 IME guard
-        with ImeGuard():
-            data = asyncio.run(_run())
+        # Read-only path: avoid extra IME save/restore ADB round-trips.
+        data = asyncio.run(_run())
         return ok(data)
     except Exception as e:
         return fail("ui_find_failed", {"repr": repr(e)})
@@ -448,8 +446,8 @@ def cmd_ui_tap(args):
         return {"success": bool(success), "index": args.index}
 
     try:
-        with ImeGuard():
-            data = asyncio.run(_run())
+        # Non-text action: avoid extra IME save/restore ADB round-trips.
+        data = asyncio.run(_run())
         return ok(data)
     except Exception as e:
         return fail("ui_tap_failed", {"repr": repr(e)})
@@ -528,8 +526,8 @@ def cmd_ui_tap_find(args):
         }
 
     try:
-        with ImeGuard():
-            data = asyncio.run(_run())
+        # Non-text action: avoid extra IME save/restore ADB round-trips.
+        data = asyncio.run(_run())
         return ok(data)
     except Exception as e:
         return fail("ui_tap_find_failed", {"repr": repr(e)})

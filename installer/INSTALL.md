@@ -167,12 +167,10 @@ adb connect 127.0.0.1:5555
 adb disconnect 127.0.0.1:<CONNECT_PORT> # you can disconnect the original connect port after tcpip connection is successful
 ```
 
-To set up DroidRun with the wireless device, install or reconfigure DroidRun Portal with the following command in Termux:
+To set up DroidRun with the wireless device, install or reconfigure DroidRun Portal from Termux:
 
 ```sh
-proot-distro login ubuntu
-source /root/venvs/clawmobile/bin/activate
-droidrun setup
+./installer/termux/droidrun-setup.sh
 ```
 
 ---
@@ -243,8 +241,16 @@ To onboard new interfaces or reconfigure OpenClaw:
 #### Reset OpenClaw configuration
 To reset OpenClaw configuration and start fresh:
 ```sh
-./installer/ubuntu/reset-openclaw.sh
+./installer/termux/reset.sh
 ```
+
+Useful reset levels:
+- `--level soft` only stops the gateway.
+- `--level workspace` clears seeded workspace files.
+- `--level state` clears OpenClaw state and plugin build output.
+- `--level full` also removes the global `openclaw` CLI package.
+
+If you use `--level full`, rerun `./installer/termux/install.sh` before onboarding again.
 
 ---
 

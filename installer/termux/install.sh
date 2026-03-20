@@ -33,9 +33,9 @@ echo
 echo
 echo "[✓] Install finished."
 echo
-echo "Next steps:"
+echo "Back in Termux, run the next steps from the project root:"
 echo "  1) Run onboarding (interactive):"
-echo "     ${REPO_ROOT}/installer/termux/onboard.sh"
+echo "     ./installer/termux/onboard.sh"
 echo
 echo "  2) Start gateway anytime:"
-echo "     ${REPO_ROOT}/installer/termux/run.sh"
+echo "     ./installer/termux/run.sh"

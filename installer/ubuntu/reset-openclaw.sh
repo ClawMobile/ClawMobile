@@ -8,8 +8,8 @@ set -euo pipefail
 # Levels:
 #   soft     Stop gateway only (default)
 #   workspace Clear seeded workspace content (AGENTS/TOOLS/skills/cache)
-#   state    Clear OpenClaw state dir
-#   full     Uninstall OpenClaw and clear state/workspace
+#   state    Clear OpenClaw state dir and plugin build output
+#   full     Remove global OpenClaw CLI and clear state/workspace
 #
 # Options:
 #   --level <soft|workspace|state|full>
@@ -27,6 +27,9 @@ DRY_RUN=0
 
 STATE_DIR="${OPENCLAW_STATE_DIR:-$HOME/.openclaw}"
 WORKSPACE_OVERRIDE=""
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+PLUGIN_DIR="${REPO_ROOT}/openclaw-plugin-mobile-ui"
 
 usage() {
   cat <<'USAGE'
@@ -44,7 +47,7 @@ Examples:
   # wipe ~/.openclaw (cache/config/index), but keep workspace content
   ./reset-openclaw.sh --level state
 
-  # wipe everything (nuclear)
+  # remove the global OpenClaw CLI and wipe local state/workspace
   ./reset-openclaw.sh --level full
 USAGE
 }
@@ -112,6 +115,15 @@ fi
 log "Level: $LEVEL"
 log "State dir: $STATE_DIR"
 log "Workspace: $WORKSPACE"
+
+reset_plugin_build() {
+  if [ -d "$PLUGIN_DIR/dist" ]; then
+    log "Removing plugin build output at $PLUGIN_DIR/dist ..."
+    run "rm -rf '$PLUGIN_DIR/dist'"
+  else
+    log "Plugin build output already clean."
+  fi
+}
 
 clean_seeded_prompt_file() {
   local file="$1"
@@ -191,6 +203,7 @@ reset_workspace() {
 
 reset_state() {
   log "Resetting OpenClaw state dir (config/cache/indexes) ..."
+  reset_plugin_build
   # Be careful: this may remove onboard configuration if stored under state dir.
   run "rm -rf '$STATE_DIR' 2>/dev/null || true"
   log "State dir reset complete."
@@ -209,7 +222,7 @@ case "$LEVEL" in
     log "Done (state reset)."
     ;;
   full)
-    run "openclaw uninstall --all --yes --non-interactive || true"
+    log "Removing global openclaw CLI package (lighter full reset) ..."
     run "npm rm -g openclaw || true"
     reset_workspace
     reset_state

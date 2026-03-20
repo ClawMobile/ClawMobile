@@ -34,7 +34,7 @@ Use this ownership rule when extending the system:
 - `android_ui_dump` — may return `{ ok:false, logPath }` if Portal is unstable; deterministic fallback: `adb_ui_dump_xml`.
 
 #### Completion alerts
-- `android_signal_complete` — attention layer; may use Termux or ADB internally (only one exposed tool).
+- `android_signal_complete` — attention layer; uses lightweight local completion signals.
 
 #### Agent mode
 - `android_agent_task` — preferred for multi-step UI workflows.
@@ -43,6 +43,10 @@ Use this ownership rule when extending the system:
 #### Semantic UI tools
 - `android_ui_find`, `android_ui_tap_find`, `android_ui_type_find`
 - `android_ui_tap`, `android_ui_type`
+- Efficiency hint:
+  - Prefer `android_ui_tap_find` over `android_ui_find` + `android_ui_tap` when one matched tap is the goal.
+  - Prefer `android_ui_type_find` over `android_ui_find` + `android_ui_type` when one matched input is the goal.
+  - Use `android_ui_dump` when you need inspection or verification, not as a mandatory pre-step for every semantic action.
 
 #### ADB tools
 - `adb_devices`, `adb_keyevent`, `adb_ui_dump_xml`

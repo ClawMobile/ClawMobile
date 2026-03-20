@@ -147,8 +147,20 @@ fi
 
 # ---- build plugin if needed, then plugins install ----
 if [ -d "\$PLUGIN_DIR" ]; then
-  if [ ! -d "\$PLUGIN_DIR/dist" ] || [ ! -f "\$PLUGIN_DIR/dist/pyexec/android_exec.py" ]; then
-    echo "[run] building plugin (dist or pyexec missing)..."
+  NEED_BUILD=0
+
+  if [ ! -f "\$PLUGIN_DIR/dist/index.js" ] || [ ! -f "\$PLUGIN_DIR/dist/pyexec/android_exec.py" ]; then
+    NEED_BUILD=1
+    echo "[run] building plugin (dist output missing)..."
+  elif [ "\$PLUGIN_DIR/package.json" -nt "\$PLUGIN_DIR/dist/index.js" ] || [ "\$PLUGIN_DIR/tsconfig.json" -nt "\$PLUGIN_DIR/dist/index.js" ]; then
+    NEED_BUILD=1
+    echo "[run] building plugin (package or tsconfig changed)..."
+  elif [ -n "\$(find "\$PLUGIN_DIR/src" "\$PLUGIN_DIR/pyexec" "\$PLUGIN_DIR/scripts" -type f -newer "\$PLUGIN_DIR/dist/index.js" -print -quit 2>/dev/null || true)" ]; then
+    NEED_BUILD=1
+    echo "[run] building plugin (source newer than dist)..."
+  fi
+
+  if [ "\$NEED_BUILD" -eq 1 ]; then
     cd "\$PLUGIN_DIR"
     npm install
     npm run build

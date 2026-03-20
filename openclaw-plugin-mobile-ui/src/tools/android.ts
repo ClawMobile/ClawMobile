@@ -1,4 +1,4 @@
-import { adb_devices, adb_screenshot, adb_tap, adb_type, adb_swipe } from "../backends/adb";
+import { adb_screenshot, adb_tap, adb_type, adb_swipe } from "../backends/adb";
 import { auditEnd, auditError, auditStart, CompositeBackend, runWithBackendFallback } from "../internal/runtime";
 import { signalComplete } from "./attention";
 import {
@@ -15,6 +15,8 @@ import {
   droidrun_ui_type_find,
   droidrun_agent_task,
 } from "../backends/droidrun";
+
+const AUTO_ADB_TIMEOUT_MS = 5_000;
 
 // Composite mobile runtime wrappers.
 // These are the higher-level tool implementations exposed as `android_*`.
@@ -34,8 +36,8 @@ export async function android_screenshot(input: { backend?: CompositeBackend }) 
     const { res, resolvedBackend } = await runWithBackendFallback({
       backend,
       adbAction: () => adb_screenshot(),
+      adbAutoAction: () => adb_screenshot({ timeoutMs: AUTO_ADB_TIMEOUT_MS }),
       droidrunAction: () => droidrun_screenshot(),
-      hasAdbDevice,
     });
     auditEnd("android_screenshot", start, res, { resolved_backend: resolvedBackend });
     return res;
@@ -53,8 +55,8 @@ export async function android_tap(input: { x: number; y: number; backend?: Compo
     const { res, resolvedBackend } = await runWithBackendFallback({
       backend,
       adbAction: () => adb_tap({ x: input.x, y: input.y }),
+      adbAutoAction: () => adb_tap({ x: input.x, y: input.y, timeoutMs: AUTO_ADB_TIMEOUT_MS }),
       droidrunAction: () => droidrun_tap(input.x, input.y),
-      hasAdbDevice,
     });
     auditEnd("android_tap", start, res, { resolved_backend: resolvedBackend });
     return res;
@@ -77,8 +79,8 @@ export async function android_type(input: {
     const { res, resolvedBackend } = await runWithBackendFallback({
       backend,
       adbAction: () => adb_type({ text: input.text }),
+      adbAutoAction: () => adb_type({ text: input.text, timeoutMs: AUTO_ADB_TIMEOUT_MS }),
       droidrunAction: () => droidrun_type(input.text, input.index ?? -1, input.clear ?? false),
-      hasAdbDevice,
     });
     auditEnd("android_type", start, res, { resolved_backend: resolvedBackend });
     return res;
@@ -103,8 +105,8 @@ export async function android_swipe(input: {
     const { res, resolvedBackend } = await runWithBackendFallback({
       backend,
       adbAction: () => adb_swipe(input),
+      adbAutoAction: () => adb_swipe({ ...input, timeoutMs: AUTO_ADB_TIMEOUT_MS }),
       droidrunAction: () => droidrun_swipe(input.x1, input.y1, input.x2, input.y2, input.durationMs ?? 300),
-      hasAdbDevice,
     });
     auditEnd("android_swipe", start, res, { resolved_backend: resolvedBackend });
     return res;
@@ -206,24 +208,11 @@ export async function android_ui_type_find(input: {
 
 export async function android_signal_complete(args?: {
   ms?: number;
-  repeat?: number;
-  gapMs?: number;
-  tts?: string;
   title?: string;
   content?: string;
+  vibrate?: boolean;
+  toast?: boolean;
+  wait?: boolean;
 }) {
   return signalComplete(args);
-}
-
-async function hasAdbDevice() {
-  // Runtime helper only: tells composite tools whether the ADB path is
-  // currently available before they fall back to DroidRun.
-  // TODO: consider removing this preflight check in a later performance pass
-  // and falling back based on direct ADB action failure instead.
-  try {
-    const res = await adb_devices();
-    return Array.isArray((res as any)?.devices) && (res as any).devices.some((d: any) => d?.state === "device");
-  } catch {
-    return false;
-  }
 }

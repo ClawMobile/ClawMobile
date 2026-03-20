@@ -133,8 +133,16 @@ Most issues are resolved by a clean restart.
 
 If problems persist, you can always reset to a clean state:
 ```sh
-./installer/ubuntu/reset-openclaw.sh
+./installer/termux/reset.sh
 ```
+
+Common reset levels:
+- `--level soft`: stop the gateway only
+- `--level workspace`: clear seeded workspace files
+- `--level state`: clear OpenClaw state and plugin build output
+- `--level full`: also remove the global `openclaw` CLI package
+
+If you use `--level full`, rerun `./installer/termux/install.sh` before `onboard.sh` or `run.sh`.
 
 And then start fresh:
 
