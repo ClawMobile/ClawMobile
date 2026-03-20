@@ -8,8 +8,8 @@ set -euo pipefail
 # Levels:
 #   soft     Stop gateway only (default)
 #   workspace Clear seeded workspace content (AGENTS/TOOLS/skills/cache)
-#   state    Clear OpenClaw state dir
-#   full     Uninstall OpenClaw and clear state/workspace
+#   state    Clear OpenClaw state dir and plugin build output
+#   full     Remove global OpenClaw CLI and clear state/workspace
 #
 # Options:
 #   --level <soft|workspace|state|full>
@@ -27,6 +27,9 @@ DRY_RUN=0
 
 STATE_DIR="${OPENCLAW_STATE_DIR:-$HOME/.openclaw}"
 WORKSPACE_OVERRIDE=""
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+PLUGIN_DIR="${REPO_ROOT}/openclaw-plugin-mobile-ui"
 
 usage() {
   cat <<'USAGE'
@@ -44,7 +47,7 @@ Examples:
   # wipe ~/.openclaw (cache/config/index), but keep workspace content
   ./reset-openclaw.sh --level state
 
-  # wipe everything (nuclear)
+  # remove the global OpenClaw CLI and wipe local state/workspace
   ./reset-openclaw.sh --level full
 USAGE
 }
@@ -113,23 +116,34 @@ log "Level: $LEVEL"
 log "State dir: $STATE_DIR"
 log "Workspace: $WORKSPACE"
 
+reset_plugin_build() {
+  if [ -d "$PLUGIN_DIR/dist" ]; then
+    log "Removing plugin build output at $PLUGIN_DIR/dist ..."
+    run "rm -rf '$PLUGIN_DIR/dist'"
+  else
+    log "Plugin build output already clean."
+  fi
+}
+
 clean_seeded_prompt_file() {
   local file="$1"
+  local begin_marker="CLAWMOBILE_BEGIN"
+  local end_marker="CLAWMOBILE_END"
 
   # If dry-run, just report what would happen.
   if [ "$DRY_RUN" -eq 1 ]; then
-    if [ -f "$file" ] && grep -q 'CLAWBOT_MOBILE_BEGIN' "$file"; then
+    if [ -f "$file" ] && grep -q "$begin_marker" "$file"; then
       # Verify that an END marker exists after the BEGIN marker.
       local begin_line end_line
-      begin_line=$(grep -n 'CLAWBOT_MOBILE_BEGIN' "$file" | head -n1 | cut -d: -f1 || true)
-      end_line=$(grep -n 'CLAWBOT_MOBILE_END' "$file" | head -n1 | cut -d: -f1 || true)
+      begin_line=$(grep -n "$begin_marker" "$file" | head -n1 | cut -d: -f1 || true)
+      end_line=$(grep -n "$end_marker" "$file" | head -n1 | cut -d: -f1 || true)
       if [ -n "${begin_line:-}" ] && [ -n "${end_line:-}" ] && [ "$end_line" -gt "$begin_line" ]; then
-        echo "[DRY-RUN] Would remove CLAWBOT_MOBILE_BEGIN/END seeded block from '$file'"
+        echo "[DRY-RUN] Would remove mobile seeded block from '$file'"
       else
-        echo "[DRY-RUN] Found CLAWBOT_MOBILE_BEGIN but missing or misordered CLAWBOT_MOBILE_END in '$file'; would skip cleanup to avoid truncating content"
+        echo "[DRY-RUN] Found mobile seeded block marker but missing or misordered end marker in '$file'; would skip cleanup to avoid truncating content"
       fi
     else
-      echo "[DRY-RUN] No CLAWBOT_MOBILE_BEGIN/END seeded block found in '$file'; nothing to do"
+      echo "[DRY-RUN] No mobile seeded block found in '$file'; nothing to do"
     fi
     return 0
   fi
@@ -140,25 +154,25 @@ clean_seeded_prompt_file() {
   fi
 
   # If there's no seeded block marker, leave the file untouched.
-  if ! grep -q 'CLAWBOT_MOBILE_BEGIN' "$file"; then
+  if ! grep -q "$begin_marker" "$file"; then
     return 0
   fi
 
   # Ensure there is a matching END marker after the BEGIN marker to avoid truncating content.
   local begin_line end_line
-  begin_line=$(grep -n 'CLAWBOT_MOBILE_BEGIN' "$file" | head -n1 | cut -d: -f1 || true)
-  end_line=$(grep -n 'CLAWBOT_MOBILE_END' "$file" | head -n1 | cut -d: -f1 || true)
+  begin_line=$(grep -n "$begin_marker" "$file" | head -n1 | cut -d: -f1 || true)
+  end_line=$(grep -n "$end_marker" "$file" | head -n1 | cut -d: -f1 || true)
   if [ -z "${end_line:-}" ] || [ -z "${begin_line:-}" ] || [ "$end_line" -le "$begin_line" ]; then
-    echo "WARNING: Skipping CLAWBOT_MOBILE seeded block cleanup for '$file' because CLAWBOT_MOBILE_END is missing or appears before CLAWBOT_MOBILE_BEGIN." >&2
+    echo "WARNING: Skipping mobile seeded block cleanup for '$file' because the end marker is missing or appears before the begin marker." >&2
     return 0
   fi
 
   local tmp="${file}.tmp.reset"
 
-  # Strip lines between CLAWBOT_MOBILE_BEGIN and CLAWBOT_MOBILE_END (exclusive).
+  # Strip lines between the mobile begin and end markers (exclusive).
   awk '
-/CLAWBOT_MOBILE_BEGIN/ {inblock=1; next}
-/CLAWBOT_MOBILE_END/ {inblock=0; next}
+/CLAWMOBILE_BEGIN/ {inblock=1; next}
+/CLAWMOBILE_END/ {inblock=0; next}
 !inblock {print}
 ' "$file" > "$tmp"
 
@@ -174,7 +188,7 @@ reset_workspace() {
   # Remove only files seeded by installer/workspace-seed plus local caches.
   log "Resetting workspace seed files ..."
 
-  # Seeded prompt files: remove only CLAWBOT_MOBILE_BEGIN/END seeded blocks.
+  # Seeded prompt files: remove only mobile seeded blocks.
   clean_seeded_prompt_file "$WORKSPACE/AGENTS.md"
   clean_seeded_prompt_file "$WORKSPACE/TOOLS.md"
 
@@ -189,6 +203,7 @@ reset_workspace() {
 
 reset_state() {
   log "Resetting OpenClaw state dir (config/cache/indexes) ..."
+  reset_plugin_build
   # Be careful: this may remove onboard configuration if stored under state dir.
   run "rm -rf '$STATE_DIR' 2>/dev/null || true"
   log "State dir reset complete."
@@ -207,7 +222,7 @@ case "$LEVEL" in
     log "Done (state reset)."
     ;;
   full)
-    run "openclaw uninstall --all --yes --non-interactive || true"
+    log "Removing global openclaw CLI package (lighter full reset) ..."
     run "npm rm -g openclaw || true"
     reset_workspace
     reset_state

@@ -8,8 +8,8 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 usage() {
   echo "Usage:"
-  echo "  ./installer/termux/pair.sh <PAIRING_CODE>"
-  echo "  ./installer/termux/pair.sh \"<paste the bot message containing the code>\""
+  echo "  ./installer/termux/pairing.sh <PAIRING_CODE>"
+  echo "  ./installer/termux/pairing.sh \"<paste the bot message containing the code>\""
   echo
   echo "Pairing code format: 8 chars, uppercase letters + digits, e.g. A1B2C3D4"
   exit 1

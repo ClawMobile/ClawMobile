@@ -280,16 +280,16 @@ export default function register(api: any) {
   api.registerTool(
     toolDef(
       "android_signal_complete",
-      "Device-level completion signal (Termux:API vibrate/notification/TTS).",
+      "Device-level completion signal (Termux:API vibrate/toast). Best-effort by default; set wait=true to block until local signals finish.",
       {
         type: "object",
         properties: {
           ms: { type: "integer", minimum: 1, maximum: 5000 },
-          repeat: { type: "integer", minimum: 1, maximum: 5 },
-          gapMs: { type: "integer", minimum: 0, maximum: 2000 },
-          tts: { type: "string" },
           title: { type: "string" },
-          content: { type: "string" }
+          content: { type: "string" },
+          vibrate: { type: "boolean" },
+          toast: { type: "boolean" },
+          wait: { type: "boolean" }
         },
         additionalProperties: false
       },
@@ -336,7 +336,7 @@ export default function register(api: any) {
   api.registerTool(
     toolDef(
       "adb_screenshot",
-      "Take a screenshot via adb (returns base64 PNG).",
+      "Take a screenshot via adb and return the saved PNG path plus image metadata.",
       { type: "object", properties: {}, additionalProperties: false },
       async () => adb_screenshot()
     )

@@ -67,12 +67,19 @@ fi
 
 # 5) python venv import droidrun
 section "python droidrun"
-if [ -f "/root/venvs/clawbot/bin/activate" ]; then
+VENV_DIR=""
+if [ -f "/root/venvs/clawmobile/bin/activate" ]; then
+  VENV_DIR="/root/venvs/clawmobile"
+elif [ -f "/root/venvs/clawbot/bin/activate" ]; then
+  VENV_DIR="/root/venvs/clawbot"
+fi
+
+if [ -n "$VENV_DIR" ]; then
   # shellcheck disable=SC1091
-  source /root/venvs/clawbot/bin/activate
-  pass "activated venv: /root/venvs/clawbot"
+  source "$VENV_DIR/bin/activate"
+  pass "activated venv: $VENV_DIR"
 else
-  fail "venv not found: /root/venvs/clawbot/bin/activate"
+  fail "venv not found: /root/venvs/clawmobile/bin/activate or /root/venvs/clawbot/bin/activate"
 fi
 
 PY=${CLAW_MOBILE_PYTHON:-python3}

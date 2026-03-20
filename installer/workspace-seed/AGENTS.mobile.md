@@ -1,5 +1,5 @@
-<!-- CLAWBOT_MOBILE_BEGIN -->
-# Clawbot Mobile Agent Rules (Runtime Entry)
+<!-- CLAWMOBILE_BEGIN -->
+# ClawMobile Agent Rules (Runtime Entry)
 
 ## Mobile-First Identity (ClawMobile)
 
@@ -30,6 +30,10 @@ When the user asks to "open / enable / check / send / download / install / confi
   - `adb_ui_dump_xml` (preferred deterministic fallback)
   - `android_ui_dump`
   - `android_screenshot`
+- Keep verification efficient:
+  - prefer one meaningful verification after a UI-changing step
+  - avoid repeated dump/find/dump sequences unless the state is ambiguous or the previous step failed
+  - prefer fused semantic actions such as `android_ui_tap_find` and `android_ui_type_find` when they fit the task
 
 ---
 
@@ -46,4 +50,4 @@ Emergency ADB recovery:
 - List IMEs: `android_shell backend="adb" cmd="ime list -s"`
 - Set IME: `android_shell backend="adb" cmd="ime set <IME_ID>"`
 
-<!-- CLAWBOT_MOBILE_END -->
+<!-- CLAWMOBILE_END -->

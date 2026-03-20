@@ -1,6 +1,6 @@
 # Known Issues & FAQ
 
-This section lists common problems and platform-specific pitfalls when running Clawbot Mobile on Android (Termux + Ubuntu).
+This section lists common problems and platform-specific pitfalls when running ClawMobile on Android (Termux + Ubuntu).
 
 If something feels “randomly broken”, check here first.
 
@@ -39,7 +39,7 @@ On some devices you may also need to:
 
 If battery optimization is enabled, the OpenClaw Gateway could be killed silently.
 
-On the other side, if you keep the Termux app open and active, the power of your device is likely consumed more quickly.
+If you keep the Termux app open and active, your device battery will likely drain more quickly.
 
 ---
 
@@ -111,7 +111,7 @@ In Termux, before starting the gateway:
 export OPENAI_API_KEY=sk-...
 # optional
 export DROIDRUN_MODEL=gpt-5.2
-./run.sh
+./installer/termux/run.sh
 ```
 
 `run.sh` automatically detects exported keys and passes only the selected provider/model into Ubuntu.
@@ -133,8 +133,16 @@ Most issues are resolved by a clean restart.
 
 If problems persist, you can always reset to a clean state:
 ```sh
-./installer/ubuntu/reset-openclaw.sh
+./installer/termux/reset.sh
 ```
+
+Common reset levels:
+- `--level soft`: stop the gateway only
+- `--level workspace`: clear seeded workspace files
+- `--level state`: clear OpenClaw state and plugin build output
+- `--level full`: also remove the global `openclaw` CLI package
+
+If you use `--level full`, rerun `./installer/termux/install.sh` before `onboard.sh` or `run.sh`.
 
 And then start fresh:
 

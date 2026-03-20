@@ -10,7 +10,7 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 PLUGIN_DIR="${REPO_ROOT}/openclaw-plugin-mobile-ui"
 
 # ---- choose droidrun provider/model in Termux, then pass to Ubuntu via temp env ----
-TMP_ENV="${TMPDIR:-/data/data/com.termux/files/usr/tmp}/clawbot-env.$$.sh"
+TMP_ENV="${TMPDIR:-/data/data/com.termux/files/usr/tmp}/clawmobile-env.$$.sh"
 trap 'rm -f "$TMP_ENV"' EXIT
 
 DROIDRUN_PROVIDER_CHOSEN="${DROIDRUN_PROVIDER:-}"
@@ -73,7 +73,7 @@ fi
   esac
 } > "$TMP_ENV"
 
-echo "[clawbot] Starting OpenClaw Gateway..."
+echo "[clawmobile] Starting OpenClaw Gateway..."
 proot-distro login "${UBUNTU_DISTRO}" --shared-tmp -- bash -lc 'bash -seuo pipefail' <<EOF
 REPO_ROOT='${REPO_ROOT}'
 PLUGIN_DIR='${PLUGIN_DIR}'
@@ -97,16 +97,23 @@ if [ -f installer/ubuntu/env.sh ]; then
 fi
 
 # ---- activate python virtual environment + pin CLAW_MOBILE_PYTHON ----
-if [ -f "/root/venvs/clawbot/bin/activate" ]; then
+VENV_DIR=""
+if [ -f "/root/venvs/clawmobile/bin/activate" ]; then
+  VENV_DIR="/root/venvs/clawmobile"
+elif [ -f "/root/venvs/clawbot/bin/activate" ]; then
+  VENV_DIR="/root/venvs/clawbot"
+fi
+
+if [ -n "\$VENV_DIR" ]; then
   # shellcheck disable=SC1091
-  source "/root/venvs/clawbot/bin/activate"
-  if [ -x "/root/venvs/clawbot/bin/python3" ]; then
-    export CLAW_MOBILE_PYTHON="/root/venvs/clawbot/bin/python3"
+  source "\$VENV_DIR/bin/activate"
+  if [ -x "\$VENV_DIR/bin/python3" ]; then
+    export CLAW_MOBILE_PYTHON="\$VENV_DIR/bin/python3"
   else
-    export CLAW_MOBILE_PYTHON="/root/venvs/clawbot/bin/python"
+    export CLAW_MOBILE_PYTHON="\$VENV_DIR/bin/python"
   fi
 else
-  echo "[run] WARNING: venv not found at /root/venvs/clawbot; tools may use system python"
+  echo "[run] WARNING: venv not found at /root/venvs/clawmobile or /root/venvs/clawbot; tools may use system python"
 fi
 echo "[run] CLAW_MOBILE_PYTHON=\${CLAW_MOBILE_PYTHON:-}" || true
 
@@ -140,8 +147,20 @@ fi
 
 # ---- build plugin if needed, then plugins install ----
 if [ -d "\$PLUGIN_DIR" ]; then
-  if [ ! -d "\$PLUGIN_DIR/dist" ] || [ ! -f "\$PLUGIN_DIR/dist/pyexec/android_exec.py" ]; then
-    echo "[run] building plugin (dist or pyexec missing)..."
+  NEED_BUILD=0
+
+  if [ ! -f "\$PLUGIN_DIR/dist/index.js" ] || [ ! -f "\$PLUGIN_DIR/dist/pyexec/android_exec.py" ]; then
+    NEED_BUILD=1
+    echo "[run] building plugin (dist output missing)..."
+  elif [ "\$PLUGIN_DIR/package.json" -nt "\$PLUGIN_DIR/dist/index.js" ] || [ "\$PLUGIN_DIR/tsconfig.json" -nt "\$PLUGIN_DIR/dist/index.js" ]; then
+    NEED_BUILD=1
+    echo "[run] building plugin (package or tsconfig changed)..."
+  elif [ -n "\$(find "\$PLUGIN_DIR/src" "\$PLUGIN_DIR/pyexec" "\$PLUGIN_DIR/scripts" -type f -newer "\$PLUGIN_DIR/dist/index.js" -print -quit 2>/dev/null || true)" ]; then
+    NEED_BUILD=1
+    echo "[run] building plugin (source newer than dist)..."
+  fi
+
+  if [ "\$NEED_BUILD" -eq 1 ]; then
     cd "\$PLUGIN_DIR"
     npm install
     npm run build
@@ -164,7 +183,7 @@ SEED_DIR="\$REPO_ROOT/installer/workspace-seed"
 append_block_if_missing() {
   local target="\$1"
   local block="\$2"
-  local marker="CLAWBOT_MOBILE_BEGIN"
+  local marker="CLAWMOBILE_BEGIN"
 
   [ -f "\$block" ] || return 0
   touch "\$target"

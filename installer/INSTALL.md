@@ -44,7 +44,7 @@ Examples:
 - MiniMax
 - Anthropic
 
-These keys are required to setting as environment variables in Termux for DroidRun agent mode later.
+These keys will need to be exported as environment variables in Termux later for DroidRun agent mode.
 OpenClaw itself will still be configured interactively.
 
 ---
@@ -102,9 +102,9 @@ During OpenClaw configuration you can:
 
 ### Step 2 – Configure OpenClaw interactively
 
-Run OpenClaw interactive configuration (onboard)
+Run the OpenClaw interactive onboarding flow.
 
-Noted that you can not set up model provider during configuration now, so you need to add corresponding parameters when running `./installer/termux/onboard.sh`.
+At the moment, model providers are not fully configured during onboarding, so you should pass the provider choice when running `./installer/termux/onboard.sh`.
 
 For example:
 
@@ -114,7 +114,7 @@ If you want to use OpenAI, you can run:
 ./installer/termux/onboard.sh --auth-choice openai-api-key
 ```
 
-For other providers, you may need to check the [openclaw documents](https://docs.openclaw.ai/concepts/models).
+For other providers, refer to the [OpenClaw model documentation](https://docs.openclaw.ai/concepts/models).
 
 ---
 
@@ -142,7 +142,7 @@ adb devices
 ```
 
 If you see your device (e.g. `emulator-5554`), you can skip wireless setup, go to step 4.
-If not, you need to connect wirelessly and setup Droidrun again to use the wireless device:
+If not, you need to connect wirelessly and set up DroidRun again to use the wireless device:
 
 1. Find the pairing code on your phone, usually in the Developer options under Wireless debugging
 2. In Termux, run:
@@ -151,7 +151,7 @@ If not, you need to connect wirelessly and setup Droidrun again to use the wirel
 adb pair 127.0.0.1:<PAIRING_PORT> <PAIRING_CODE>
 ```
 
-Please note that the pairing port may vary and different with connect port. It will also change when you change to another app like Termux, so you need to use split screen or floating window to keep the pairing code visible while running the command in Termux. *
+Please note that the pairing port may vary and is different from the connect port. It can also change when you switch apps, so it is best to use split screen or a floating window to keep the pairing code visible while running the command in Termux.
 
 After successful pairing, connect to the device:
 
@@ -167,12 +167,10 @@ adb connect 127.0.0.1:5555
 adb disconnect 127.0.0.1:<CONNECT_PORT> # you can disconnect the original connect port after tcpip connection is successful
 ```
 
-To setup the Droidrun with the wireless device, you need to install the Droidrun Portal with the following command in Termux:
+To set up DroidRun with the wireless device, install or reconfigure DroidRun Portal from Termux:
 
 ```sh
-proot-distro login ubuntu
-source /root/venvs/clawbot/bin/activate
-droidrun setup
+./installer/termux/droidrun-setup.sh
 ```
 
 ---
@@ -226,7 +224,7 @@ Once paired, you can close this second window.
 
 ---
 
-### Step 6 – Using Clawbot
+### Step 6 – Using ClawMobile
 
 After pairing:
 - Return to Telegram
@@ -243,22 +241,30 @@ To onboard new interfaces or reconfigure OpenClaw:
 #### Reset OpenClaw configuration
 To reset OpenClaw configuration and start fresh:
 ```sh
-./installer/ubuntu/reset-openclaw.sh
+./installer/termux/reset.sh
 ```
+
+Useful reset levels:
+- `--level soft` only stops the gateway.
+- `--level workspace` clears seeded workspace files.
+- `--level state` clears OpenClaw state and plugin build output.
+- `--level full` also removes the global `openclaw` CLI package.
+
+If you use `--level full`, rerun `./installer/termux/install.sh` before onboarding again.
 
 ---
 
 ## Quick summary
 
 1. `./installer/termux/install.sh`
-   → accept Android permissions and install Droidrun Portal
+   → accept Android permissions and install DroidRun Portal
 2. `./installer/termux/onboard.sh --auth-choice <provider>`
    → configure OpenClaw interactively
 3. `export OPENAI_API_KEY=...`
-3. `./installer/termux/run.sh`
-4. Send message to Telegram bot → get code
-5. New Termux window: `./installer/termux/pairing.sh <code>`
-6. Start chatting
+4. `./installer/termux/run.sh`
+5. Send message to Telegram bot → get code
+6. New Termux window: `./installer/termux/pairing.sh <code>`
+7. Start chatting
 
 ---
 

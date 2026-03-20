@@ -6,19 +6,19 @@ UBUNTU_DISTRO="${UBUNTU_DISTRO:-ubuntu}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
-echo "[clawmobile] Entering Ubuntu and starting OpenClaw onboarding..."
-echo "[clawmobile] When you see 'Onboard complete', press Ctrl+C to exit if it does not stop automatically."
+echo "[clawmobile] Entering Ubuntu and running OpenClaw reset..."
 echo
 
 proot-distro login "${UBUNTU_DISTRO}" --shared-tmp -- \
-  bash -lc "
+  bash -lc '
     set -e
-    cd '${REPO_ROOT}'
+    REPO_ROOT="$1"
+    shift
+    cd "$REPO_ROOT"
 
-    # Ensure Node patch / env fixes are active for non-interactive shells
     if [ -f installer/ubuntu/env.sh ]; then
       source installer/ubuntu/env.sh
     fi
-    
-    openclaw onboard --skip-daemon ${*:-}
-  "
+
+    ./installer/ubuntu/reset-openclaw.sh "$@"
+  ' -- "${REPO_ROOT}" "$@"
