@@ -1,8 +1,5 @@
 import { appendToolAudit } from "../tools/workspace";
 
-export type CompositeBackend = "auto" | "adb" | "droidrun";
-export type ResolvedBackend = "adb" | "droidrun" | "unsupported";
-
 export function runtimeEnvFlags() {
   return {
     DROIDRUN_SERIAL: process.env.DROIDRUN_SERIAL || "",

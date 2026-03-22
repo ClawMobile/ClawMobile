@@ -1,5 +1,6 @@
 import { spawn } from "child_process";
 import path from "path";
+import { parseJsonFromStdout } from "./protocol";
 
 type ExecResult = { ok: boolean; data?: any; error?: string; extra?: any };
 
@@ -21,24 +22,6 @@ function buildEnv(py: string) {
 function truncate(s: string, max = 4000) {
   if (!s) return "";
   return s.length > max ? s.slice(0, max) : s;
-}
-
-function parseJsonFromStdout(stdout: string): any | null {
-  const trimmed = (stdout || "").trim();
-  if (!trimmed) return null;
-
-  try {
-    return JSON.parse(trimmed);
-  } catch {}
-
-  const lines = trimmed.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-  for (let i = lines.length - 1; i >= 0; i -= 1) {
-    try {
-      return JSON.parse(lines[i]);
-    } catch {}
-  }
-
-  return null;
 }
 
 function runPython(args: string[], timeoutMs = 120_000): Promise<ExecResult> {

@@ -1,29 +1,12 @@
 import { spawn } from "child_process";
 import path from "path";
+import { parseJsonFromStdout } from "./protocol";
 
 export type ExecResult = { ok: boolean; data?: any; error?: string; extra?: any };
 
 function truncate(s: string, max = 2000) {
   if (!s) return "";
   return s.length > max ? s.slice(0, max) : s;
-}
-
-function parseJsonFromStdout(stdout: string): any | null {
-  const trimmed = (stdout || "").trim();
-  if (!trimmed) return null;
-
-  try {
-    return JSON.parse(trimmed);
-  } catch {}
-
-  const lines = trimmed.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-  for (let i = lines.length - 1; i >= 0; i -= 1) {
-    try {
-      return JSON.parse(lines[i]);
-    } catch {}
-  }
-
-  return null;
 }
 
 function buildEnv(py: string) {
