@@ -29,8 +29,12 @@ def ensure_droidrun_importable():
         return False, str(exc)
 
 
+def selected_serial() -> str:
+    return os.environ.get("DROIDRUN_SERIAL") or os.environ.get("ANDROID_SERIAL") or ""
+
+
 def _adb_base():
-    serial = os.environ.get("DROIDRUN_SERIAL") or ""
+    serial = selected_serial()
     base = ["adb"]
     if serial:
         base.extend(["-s", serial])
@@ -160,26 +164,36 @@ def cmd_health(_args):
     except Exception as exc:
         portal_err = str(exc)
 
-    return ok(
-        {
-            "python": sys.version.split()[0],
-            "cwd": os.getcwd(),
-            "droidrun_importable": ok_import,
-            "droidrun_import_error": err,
-            "droidrun_tools_importable": tools_ok,
-            "droidrun_tools_import_error": tools_err,
-            "droidrun_android_driver_importable": driver_ok,
-            "droidrun_android_driver_import_error": driver_err,
-            "portal_query_ok": portal_ok,
-            "portal_query_error": portal_err,
-            "env": {
-                "DROIDRUN_SERIAL": os.environ.get("DROIDRUN_SERIAL", ""),
-                "DROIDRUN_USE_TCP": os.environ.get("DROIDRUN_USE_TCP", ""),
-                "DROIDRUN_TCP_PORT": os.environ.get("DROIDRUN_TCP_PORT", ""),
-            },
-            "time": int(time.time()),
-        }
-    )
+    diagnostics = {
+        "python": sys.version.split()[0],
+        "cwd": os.getcwd(),
+        "droidrun_importable": ok_import,
+        "droidrun_import_error": err,
+        "droidrun_tools_importable": tools_ok,
+        "droidrun_tools_import_error": tools_err,
+        "droidrun_android_driver_importable": driver_ok,
+        "droidrun_android_driver_import_error": driver_err,
+        "portal_query_ok": portal_ok,
+        "portal_query_error": portal_err,
+        "env": {
+            "DROIDRUN_SERIAL": os.environ.get("DROIDRUN_SERIAL", ""),
+            "ANDROID_SERIAL": os.environ.get("ANDROID_SERIAL", ""),
+            "selected_serial": selected_serial(),
+            "DROIDRUN_USE_TCP": os.environ.get("DROIDRUN_USE_TCP", ""),
+            "DROIDRUN_TCP_PORT": os.environ.get("DROIDRUN_TCP_PORT", ""),
+        },
+        "time": int(time.time()),
+    }
+
+    if ok_import and portal_ok:
+        return ok(diagnostics)
+
+    reasons = []
+    if not ok_import:
+        reasons.append("droidrun_not_importable")
+    if not portal_ok:
+        reasons.append("portal_unreachable")
+    return fail("health_check_failed", {**diagnostics, "reasons": reasons})
 
 
 def cmd_agent_task(args):
@@ -191,7 +205,7 @@ def cmd_agent_task(args):
     if not goal:
         return fail("goal is required")
 
-    serial = os.environ.get("DROIDRUN_SERIAL") or None
+    serial = selected_serial() or None
     use_tcp = os.environ.get("DROIDRUN_USE_TCP", "0").lower() in ("1", "true", "yes")
 
     if args.device_serial:
