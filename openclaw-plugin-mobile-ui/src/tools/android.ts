@@ -3,8 +3,6 @@ import {
   auditEnd,
   auditError,
   auditStart,
-  LowLevelBackend,
-  runWithBackendFallback,
 } from "../internal/runtime";
 import { signalComplete } from "./attention";
 import {
@@ -21,44 +19,35 @@ export async function android_health() {
   return droidrun_health();
 }
 
-export async function android_screenshot(input: { backend?: LowLevelBackend }) {
+export async function android_screenshot() {
   const start = Date.now();
-  const backend = input?.backend ?? "auto";
-  auditStart("android_screenshot", backend, start);
+  auditStart("android_screenshot", "adb", start);
   try {
-    const { res, resolvedBackend } = await runWithBackendFallback({
-      backend,
-      adbAction: () => adb_screenshot(),
-    });
-    auditEnd("android_screenshot", start, res, { resolved_backend: resolvedBackend });
+    const res = await adb_screenshot();
+    auditEnd("android_screenshot", start, res, { resolved_backend: "adb" });
     return res;
   } catch (error) {
-    auditError("android_screenshot", start, error, { backend });
+    auditError("android_screenshot", start, error, { backend: "adb" });
     throw error;
   }
 }
 
-export async function android_tap(input: { x: number; y: number; backend?: LowLevelBackend }) {
+export async function android_tap(input: { x: number; y: number }) {
   const start = Date.now();
-  const backend = input?.backend ?? "auto";
-  auditStart("android_tap", backend, start);
+  auditStart("android_tap", "adb", start);
   try {
-    const { res, resolvedBackend } = await runWithBackendFallback({
-      backend,
-      adbAction: () => adb_tap({ x: input.x, y: input.y }),
-    });
-    auditEnd("android_tap", start, res, { resolved_backend: resolvedBackend });
+    const res = await adb_tap({ x: input.x, y: input.y });
+    auditEnd("android_tap", start, res, { resolved_backend: "adb" });
     return res;
   } catch (error) {
-    auditError("android_tap", start, error, { backend });
+    auditError("android_tap", start, error, { backend: "adb" });
     throw error;
   }
 }
 
-export async function android_type(input: { text: string; backend?: LowLevelBackend }) {
+export async function android_type(input: { text: string }) {
   const start = Date.now();
-  const backend = input?.backend ?? "auto";
-  auditStart("android_type", backend, start);
+  auditStart("android_type", "adb", start);
   try {
     const legacyInput = input as any;
     if (legacyInput?.index !== undefined || legacyInput?.clear !== undefined) {
@@ -74,20 +63,17 @@ export async function android_type(input: { text: string; backend?: LowLevelBack
       };
       auditEnd("android_type", start, res, {
         resolved_backend: "unsupported",
-        requested_backend: backend,
+        requested_backend: "adb",
         rejection_reason: "legacy_index_or_clear_not_supported_in_adb_only_mode",
       });
       return res;
     }
 
-    const { res, resolvedBackend } = await runWithBackendFallback({
-      backend,
-      adbAction: () => adb_type({ text: input.text }),
-    });
-    auditEnd("android_type", start, res, { resolved_backend: resolvedBackend });
+    const res = await adb_type({ text: input.text });
+    auditEnd("android_type", start, res, { resolved_backend: "adb" });
     return res;
   } catch (error) {
-    auditError("android_type", start, error, { backend });
+    auditError("android_type", start, error, { backend: "adb" });
     throw error;
   }
 }
@@ -98,20 +84,15 @@ export async function android_swipe(input: {
   x2: number;
   y2: number;
   durationMs?: number;
-  backend?: LowLevelBackend;
 }) {
   const start = Date.now();
-  const backend = input?.backend ?? "auto";
-  auditStart("android_swipe", backend, start);
+  auditStart("android_swipe", "adb", start);
   try {
-    const { res, resolvedBackend } = await runWithBackendFallback({
-      backend,
-      adbAction: () => adb_swipe(input),
-    });
-    auditEnd("android_swipe", start, res, { resolved_backend: resolvedBackend });
+    const res = await adb_swipe(input);
+    auditEnd("android_swipe", start, res, { resolved_backend: "adb" });
     return res;
   } catch (error) {
-    auditError("android_swipe", start, error, { backend });
+    auditError("android_swipe", start, error, { backend: "adb" });
     throw error;
   }
 }
@@ -122,8 +103,15 @@ export async function android_ui_dump() {
   auditStart("android_ui_dump", "adb", start);
   try {
     const res = await adb_ui_dump_xml({});
-    auditEnd("android_ui_dump", start, res);
-    return { ...res, source: "adb_ui_dump_xml" };
+    const shaped = {
+      ok: res.ok,
+      code: res.code,
+      stderr: res.stderr,
+      xml: res.xml,
+      source: "adb_ui_dump_xml" as const,
+    };
+    auditEnd("android_ui_dump", start, shaped);
+    return shaped;
   } catch (error) {
     auditError("android_ui_dump", start, error, { backend: "adb" });
     throw error;

@@ -9,7 +9,7 @@ Capability lookup lives in `skills/clawmobile-capabilities/SKILL.md`, not in a p
 
 ### Backends (3 kinds)
 - **DroidRun / Portal**: `android_agent_task` and health checks.
-- **ADB (low-level deterministic)**: `adb_*` tools and `android_*` with `backend=auto|adb`.
+- **ADB (low-level deterministic)**: `adb_*` tools and the low-level `android_*` wrappers.
 - **Termux:API (device UX)**: `tx_*` tools; completion alerts via `android_signal_complete`.
 
 > Tool selection / escalation / verification policy lives in: `skills/clawmobile-policy/SKILL.md`.

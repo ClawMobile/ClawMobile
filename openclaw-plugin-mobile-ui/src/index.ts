@@ -70,13 +70,7 @@ export default function register(api: any) {
     toolDef(
       "android_screenshot",
       "Take a screenshot on the Android device (via adb).",
-      {
-        type: "object",
-        properties: {
-          backend: { type: "string", enum: ["auto", "adb"] },
-        },
-        additionalProperties: false,
-      },
+      { type: "object", properties: {}, additionalProperties: false },
       async (args) => android_screenshot(args)
     )
   );
@@ -90,7 +84,6 @@ export default function register(api: any) {
         properties: {
           x: { type: "integer" },
           y: { type: "integer" },
-          backend: { type: "string", enum: ["auto", "adb"] },
         },
         required: ["x", "y"],
         additionalProperties: false,
@@ -107,7 +100,6 @@ export default function register(api: any) {
         type: "object",
         properties: {
           text: { type: "string" },
-          backend: { type: "string", enum: ["auto", "adb"] },
         },
         required: ["text"],
         additionalProperties: false,
@@ -128,7 +120,6 @@ export default function register(api: any) {
           x2: { type: "integer" },
           y2: { type: "integer" },
           durationMs: { type: "integer" },
-          backend: { type: "string", enum: ["auto", "adb"] },
         },
         required: ["x1", "y1", "x2", "y2"],
         additionalProperties: false,
