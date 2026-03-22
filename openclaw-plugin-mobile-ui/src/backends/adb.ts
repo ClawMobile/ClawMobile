@@ -17,9 +17,14 @@ const DEFAULT_TIMEOUT_MS = 20_000;
 const DEFAULT_SCREENSHOT_TIMEOUT_MS = 30_000;
 const DEFAULT_TYPE_TIMEOUT_MS = 30_000;
 
+function adbCommandArgs(args: string[]) {
+  const serial = process.env.DROIDRUN_SERIAL || process.env.ANDROID_SERIAL || "";
+  return serial ? ["-s", serial, ...args] : args;
+}
+
 function runAdb(args: string[], timeoutMs = DEFAULT_TIMEOUT_MS): Promise<AdbResult> {
   return new Promise((resolve) => {
-    const p = spawn("adb", args, { env: process.env, stdio: ["ignore", "pipe", "pipe"] });
+    const p = spawn("adb", adbCommandArgs(args), { env: process.env, stdio: ["ignore", "pipe", "pipe"] });
 
     let stdout = "";
     let stderr = "";
@@ -127,7 +132,7 @@ export async function adb_ui_dump_xml(input: { compressed?: boolean }) {
 
 export async function adb_screenshot(input?: { timeoutMs?: number }) {
   return await new Promise((resolve) => {
-    const p = spawn("adb", ["exec-out", "screencap", "-p"], {
+    const p = spawn("adb", adbCommandArgs(["exec-out", "screencap", "-p"]), {
       env: process.env,
       stdio: ["ignore", "pipe", "pipe"],
     });

@@ -4,6 +4,7 @@ import {
   auditError,
   auditStart,
 } from "../internal/runtime";
+import { truncateString } from "./workspace";
 import { signalComplete } from "./attention";
 import {
   droidrun_health,
@@ -45,19 +46,27 @@ export async function android_tap(input: { x: number; y: number }) {
   }
 }
 
-export async function android_type(input: { text: string }) {
+type AndroidTypeInput = {
+  text: string;
+  // Deprecated legacy fields from the old DroidRun-backed contract.
+  // We still accept them at runtime so older callers get a structured
+  // rejection instead of silently ignoring the request.
+  index?: number;
+  clear?: boolean;
+};
+
+export async function android_type(input: AndroidTypeInput) {
   const start = Date.now();
   auditStart("android_type", "adb", start);
   try {
-    const legacyInput = input as any;
-    if (legacyInput?.index !== undefined || legacyInput?.clear !== undefined) {
+    if (input.index !== undefined || input.clear !== undefined) {
       const res = {
         ok: false,
         error: "android_type_only_supports_typing_into_the_focused_field",
         extra: {
           unsupported_fields: [
-            ...(legacyInput?.index !== undefined ? ["index"] : []),
-            ...(legacyInput?.clear !== undefined ? ["clear"] : []),
+            ...(input.index !== undefined ? ["index"] : []),
+            ...(input.clear !== undefined ? ["clear"] : []),
           ],
         },
       };
@@ -109,6 +118,9 @@ export async function android_ui_dump() {
       stderr: res.stderr,
       xml: res.xml,
       source: "adb_ui_dump_xml" as const,
+      ...(!res.ok && res.stdout
+        ? { stdout_snip: truncateString(res.stdout) }
+        : {}),
     };
     auditEnd("android_ui_dump", start, shaped);
     return shaped;

@@ -139,6 +139,7 @@ if command -v adb >/dev/null 2>&1; then
       [ -n "\$PICK" ] || PICK="\${DEVICES[0]}"
       export DROIDRUN_SERIAL="\$PICK"
     fi
+    export ANDROID_SERIAL="\$DROIDRUN_SERIAL"
     echo "[run] adb selected serial: \${DROIDRUN_SERIAL}"
   fi
 else
