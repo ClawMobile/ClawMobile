@@ -22,9 +22,14 @@ function adbCommandArgs(args: string[]) {
   return serial ? ["-s", serial, ...args] : args;
 }
 
-function runAdb(args: string[], timeoutMs = DEFAULT_TIMEOUT_MS): Promise<AdbResult> {
+function runAdb(
+  args: string[],
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  options?: { useSerial?: boolean }
+): Promise<AdbResult> {
   return new Promise((resolve) => {
-    const p = spawn("adb", adbCommandArgs(args), { env: process.env, stdio: ["ignore", "pipe", "pipe"] });
+    const adbArgs = options?.useSerial === false ? args : adbCommandArgs(args);
+    const p = spawn("adb", adbArgs, { env: process.env, stdio: ["ignore", "pipe", "pipe"] });
 
     let stdout = "";
     let stderr = "";
@@ -64,7 +69,7 @@ function encodeInputText(text: string) {
 }
 
 export async function adb_devices() {
-  const res = await runAdb(["devices", "-l"], 10_000);
+  const res = await runAdb(["devices", "-l"], 10_000, { useSerial: false });
   if (!res.ok) return { ...res, devices: [] };
 
   const lines = res.stdout.split(/\r?\n/).filter(Boolean);
