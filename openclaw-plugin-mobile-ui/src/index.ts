@@ -71,7 +71,7 @@ export default function register(api: any) {
       "android_screenshot",
       "Take a screenshot on the Android device (via adb).",
       { type: "object", properties: {}, additionalProperties: false },
-      async (args) => android_screenshot(args)
+      async () => android_screenshot()
     )
   );
 
