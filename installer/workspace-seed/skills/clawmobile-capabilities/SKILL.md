@@ -93,8 +93,7 @@ These are deterministic recovery actions to restore input method if agent mode c
 - If a **COMPLETE** entry exists for the user request: use that deterministic path and verify.
 - If only a **BOOTSTRAP** entry exists: run it once, then complete + verify using `android_agent_task`.
 - For UI-changing steps, verification must use one of:
-  - `android_ui_dump` or `android_screenshot`
-  - If Portal/UI dump is unstable: fallback to `adb_ui_dump_xml`
+  - `adb_ui_dump_xml` or `android_screenshot`
 - Never claim success unless a tool was called and the result was verified.
 
 ---

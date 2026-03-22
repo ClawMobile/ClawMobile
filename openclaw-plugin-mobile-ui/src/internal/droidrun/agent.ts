@@ -71,27 +71,42 @@ function runPython(args: string[], timeoutMs = 120_000): Promise<ExecResult> {
 
     p.on("close", (code) => {
       clearTimeout(timer);
+      const exitCode = typeof code === "number" ? code : -1;
       const parsed = parseJsonFromStdout(out);
-      if (parsed && typeof parsed === "object") {
-        parsed.extra = { ...(parsed.extra || {}), exit_code: code };
+
+      if (parsed && typeof parsed === "object" && typeof parsed.ok === "boolean") {
+        if (err) {
+          parsed.extra = { ...(parsed.extra || {}), stderr_snip: truncate(err) };
+        }
+        parsed.extra = { ...(parsed.extra || {}), exit_code: exitCode };
         resolve(parsed);
         return;
       }
 
-      const exitCode = typeof code === "number" ? code : -1;
-      if (exitCode === 0) {
+      if (!(out || "").trim()) {
         resolve({
-          ok: true,
-          data: { output: (out || "").trim() },
-          extra: { stdout: truncate(out), stderr: truncate(err), exit_code: exitCode, output_format: "text" },
+          ok: false,
+          error: "empty_output",
+          extra: {
+            stderr: truncate(err),
+            stderr_snip: truncate(err),
+            exit_code: exitCode,
+            output_format: "text",
+          },
         });
         return;
       }
 
       resolve({
         ok: false,
-        error: "python_failed",
-        extra: { stdout: truncate(out), stderr: truncate(err), exit_code: exitCode, output_format: "text" },
+        error: exitCode === 0 ? "invalid_json" : "python_failed",
+        extra: {
+          stdout: truncate(out),
+          stderr: truncate(err),
+          stderr_snip: truncate(err),
+          exit_code: exitCode,
+          output_format: "text",
+        },
       });
     });
   });
@@ -108,7 +123,6 @@ export class DroidrunAgent {
     const args: string[] = ["agent_task", input.goal];
 
     if (typeof input.steps === "number") args.push("--steps", String(input.steps));
-    if (typeof input.timeout === "number") args.push("--timeout", String(input.timeout));
     if (input.deviceSerial) args.push("--device-serial", input.deviceSerial);
     if (input.tcp) args.push("--tcp");
 

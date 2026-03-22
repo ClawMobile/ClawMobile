@@ -28,12 +28,10 @@ When the user asks to "open / enable / check / send / download / install / confi
 - If a tool call fails or returns `ok:false`, report failure and do NOT claim success.
 - For UI-changing tasks, verification must use one of:
   - `adb_ui_dump_xml` (preferred deterministic fallback)
-  - `android_ui_dump`
   - `android_screenshot`
 - Keep verification efficient:
   - prefer one meaningful verification after a UI-changing step
   - avoid repeated dump/find/dump sequences unless the state is ambiguous or the previous step failed
-  - prefer fused semantic actions such as `android_ui_tap_find` and `android_ui_type_find` when they fit the task
 
 ---
 

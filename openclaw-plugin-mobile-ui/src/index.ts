@@ -6,11 +6,6 @@ import {
   android_swipe,
   android_agent_task,
   android_ui_dump,
-  android_ui_tap,
-  android_ui_type,
-  android_ui_find,
-  android_ui_tap_find,
-  android_ui_type_find,
 } from "./tools/android";
 import { signalComplete as android_signal_complete } from "./tools/attention";
 import {
@@ -74,11 +69,11 @@ export default function register(api: any) {
   api.registerTool(
     toolDef(
       "android_screenshot",
-      "Take a screenshot on the Android device (via droidrun or adb).",
+      "Take a screenshot on the Android device (via adb).",
       {
         type: "object",
         properties: {
-          backend: { type: "string", enum: ["auto", "adb", "droidrun"] },
+          backend: { type: "string", enum: ["auto", "adb"] },
         },
         additionalProperties: false,
       },
@@ -89,13 +84,13 @@ export default function register(api: any) {
   api.registerTool(
     toolDef(
       "android_tap",
-      "Tap at (x,y) on the Android device (via droidrun or adb).",
+      "Tap at (x,y) on the Android device (via adb).",
       {
         type: "object",
         properties: {
           x: { type: "integer" },
           y: { type: "integer" },
-          backend: { type: "string", enum: ["auto", "adb", "droidrun"] },
+          backend: { type: "string", enum: ["auto", "adb"] },
         },
         required: ["x", "y"],
         additionalProperties: false,
@@ -107,14 +102,12 @@ export default function register(api: any) {
   api.registerTool(
     toolDef(
       "android_type",
-      "Type text into the focused field (via droidrun or adb). Optional index targets a11y element index.",
+      "Type text into the currently focused field (via adb).",
       {
         type: "object",
         properties: {
           text: { type: "string" },
-          index: { type: "integer" },
-          clear: { type: "boolean" },
-          backend: { type: "string", enum: ["auto", "adb", "droidrun"] },
+          backend: { type: "string", enum: ["auto", "adb"] },
         },
         required: ["text"],
         additionalProperties: false,
@@ -126,7 +119,7 @@ export default function register(api: any) {
   api.registerTool(
     toolDef(
       "android_swipe",
-      "Swipe from (x1,y1) to (x2,y2) (via droidrun or adb).",
+      "Swipe from (x1,y1) to (x2,y2) (via adb).",
       {
         type: "object",
         properties: {
@@ -135,7 +128,7 @@ export default function register(api: any) {
           x2: { type: "integer" },
           y2: { type: "integer" },
           durationMs: { type: "integer" },
-          backend: { type: "string", enum: ["auto", "adb", "droidrun"] },
+          backend: { type: "string", enum: ["auto", "adb"] },
         },
         required: ["x1", "y1", "x2", "y2"],
         additionalProperties: false,
@@ -144,49 +137,17 @@ export default function register(api: any) {
     )
   );
 
-  // ---- semantic UI tools (DroidRun-backed) ----
+  // ---- deterministic observation + DroidRun agent mode ----
   api.registerTool(
     toolDef(
       "android_ui_dump",
-      "Dump current UI accessibility nodes (a11y). Returns a list with indexes you can tap/type.",
+      "Dump current UI hierarchy using adb uiautomator XML. This is the default deterministic observation path.",
       {
         type: "object",
         properties: {},
         additionalProperties: false,
       },
       async () => android_ui_dump()
-    )
-  );
-
-  api.registerTool(
-    toolDef(
-      "android_ui_tap",
-      "Tap an element by accessibility index (stable across screen sizes vs coordinates).",
-      {
-        type: "object",
-        properties: { index: { type: "integer" } },
-        required: ["index"],
-        additionalProperties: false,
-      },
-      async (args) => android_ui_tap(args)
-    )
-  );
-
-  api.registerTool(
-    toolDef(
-      "android_ui_type",
-      "Type text into an element by accessibility index.",
-      {
-        type: "object",
-        properties: {
-          index: { type: "integer" },
-          text: { type: "string" },
-          clear: { type: "boolean" },
-        },
-        required: ["index", "text"],
-        additionalProperties: false,
-      },
-      async (args) => android_ui_type(args)
     )
   );
 
@@ -207,72 +168,6 @@ export default function register(api: any) {
         additionalProperties: false
       },
       async (args) => android_agent_task(args)
-    )
-  );
-
-  api.registerTool(
-    toolDef(
-      "android_ui_find",
-      "Find UI accessibility nodes by text/resource-id/desc/class. Returns ranked candidates with indexes.",
-      {
-        type: "object",
-        properties: {
-          textContains: { type: "string" },
-          descContains: { type: "string" },
-          resourceIdContains: { type: "string" },
-          classContains: { type: "string" },
-          clickableOnly: { type: "boolean" },
-          enabledOnly: { type: "boolean" },
-          preferClickable: { type: "boolean" },
-          limit: { type: "integer" },
-        },
-        additionalProperties: false,
-      },
-      async (args) => android_ui_find(args)
-    )
-  );
-
-  api.registerTool(
-    toolDef(
-      "android_ui_tap_find",
-      "Find a UI element by text/resource-id/desc/class and tap the best match.",
-      {
-        type: "object",
-        properties: {
-          textContains: { type: "string" },
-          descContains: { type: "string" },
-          resourceIdContains: { type: "string" },
-          classContains: { type: "string" },
-          clickableOnly: { type: "boolean" },
-          enabledOnly: { type: "boolean" },
-          limit: { type: "integer" }
-        },
-        additionalProperties: false
-      },
-      async (args) => android_ui_tap_find(args)
-    )
-  );
-
-  api.registerTool(
-    toolDef(
-      "android_ui_type_find",
-      "Find a UI input field and type text into it.",
-      {
-        type: "object",
-        properties: {
-          textContains: { type: "string" },
-          descContains: { type: "string" },
-          resourceIdContains: { type: "string" },
-          classContains: { type: "string" },
-          enabledOnly: { type: "boolean" },
-          limit: { type: "integer" },
-          clear: { type: "boolean" },
-          text: { type: "string" }
-        },
-        required: ["text"],
-        additionalProperties: false
-      },
-      async (args) => android_ui_type_find(args)
     )
   );
 

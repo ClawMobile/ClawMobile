@@ -12,7 +12,8 @@ echo
 proot-distro login "${UBUNTU_DISTRO}" --shared-tmp -- \
   bash -lc '
     set -e
-    REPO_ROOT="$0"
+    REPO_ROOT="$1"
+    shift
     cd "$REPO_ROOT"
 
     if [ -f installer/ubuntu/env.sh ]; then

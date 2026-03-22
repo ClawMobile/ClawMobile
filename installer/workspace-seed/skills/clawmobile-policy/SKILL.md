@@ -16,7 +16,7 @@ It does not add new tools; it constrains how existing tools are used.
 ## Policy: Deterministic-First (Priority)
 1. **Command-line (Termux / ADB)** when it can **COMPLETE** and/or **VERIFY** the task.
 2. **DroidRun agent mode** (`android_agent_task`) for multi-step UI workflows.
-3. **Manual UI tools** (`android_ui_*`) only when agent mode fails or is unsafe.
+3. **Manual ADB tools** (`adb_*`, `android_*`) only when agent mode fails or is unsafe.
 
 ## Decision Procedure (Strict)
 1. Consult `skills/clawmobile-capabilities/SKILL.md`.
@@ -28,15 +28,12 @@ It does not add new tools; it constrains how existing tools are used.
    - Immediately switch to `android_agent_task` to finish and verify.
 4. If no entry exists:
    - Use `android_agent_task` for UI workflows.
-   - Use manual `android_ui_*` only if agent mode fails or is unsafe.
+   - Use manual ADB tools only if agent mode fails or is unsafe.
 
 ## UI Workflow Efficiency
 - Avoid redundant UI observation on the same step.
-- Prefer fused semantic actions when they match the goal:
-  - use `android_ui_tap_find` instead of `android_ui_find` followed by `android_ui_tap`
-  - use `android_ui_type_find` instead of `android_ui_find` followed by `android_ui_type`
-- Do not run `android_ui_dump` before every semantic action by default.
-  - Use it when you need diagnosis, disambiguation, or post-action verification.
+- Do not run XML/screenshot observation before every action by default.
+  - Use `adb_ui_dump_xml` or `android_screenshot` when you need diagnosis, disambiguation, or post-action verification.
 - For a single deterministic UI action, prefer:
   1. choose the most direct tool,
   2. perform the action,
@@ -50,16 +47,15 @@ It does not add new tools; it constrains how existing tools are used.
 ## Verification Requirements (Non-negotiable)
 - Do NOT claim success unless a tool was called and the result is verified.
 - For UI-changing steps, verify using:
-  - `android_ui_dump` or `android_screenshot`
-  - If Portal is unstable: fallback to `adb_ui_dump_xml`
+  - `adb_ui_dump_xml` or `android_screenshot`
 - If a tool returns `ok:false` or fails: report failure; do not claim success.
 
 ## Escalation & Recovery
 - If deterministic path cannot verify state reliably, escalate to `android_agent_task`.
 - If `android_agent_task` appears stuck:
-  1) run `android_screenshot` or `android_ui_dump` to collect evidence,
+  1) run `android_screenshot` or `adb_ui_dump_xml` to collect evidence,
   2) retry once,
-  3) if still stuck, fall back to manual `android_ui_*` only if safe.
+  3) if still stuck, fall back to manual ADB tools only if safe.
 
 ## IME Safety
 Before pausing for user confirmation, restore the user IME if it was changed by agent mode.
