@@ -12,7 +12,8 @@
   <a href="installer/INSTALL.md">Install</a> ·
   <a href="installer/FAQ.md">FAQ</a> ·
   <a href="https://www.linkedin.com/in/clawmobile-mbzuai/">LinkedIn</a> ·
-  <a href="https://www.youtube.com/@ClawMobile-l4x">YouTube</a>
+  <a href="https://www.youtube.com/@ClawMobile-l4x">YouTube</a> ·
+  <a href="https://space.bilibili.com/3706946571995651">Bilibili</a>
 </p>
 
 ## Demo videos
