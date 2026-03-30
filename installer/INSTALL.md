@@ -167,7 +167,7 @@ For other providers, refer to the [OpenClaw model documentation](https://docs.op
 
 ---
 
-### Step 3 - Configure DroirRun
+### Step 3 - Configure DroidRun
 
 In Termux, before starting the gateway (use openai as an example):
 
