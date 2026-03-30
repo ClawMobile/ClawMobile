@@ -13,7 +13,7 @@ This project allows you to control the current Android device itself using OpenC
 
 ---
 
-## Before you start
+## Prerequisites
 
 ### 1. Android system requirements
 
@@ -60,6 +60,46 @@ To use Telegram:
 
 ---
 
+### 5. ADB connection
+
+If you cannot find the device with adb in Termux, you should also connect wirelessly using ADB if you want to use DroidRun agent mode remotely. First, test if adb can see the device:
+
+```sh
+adb devices
+```
+
+If you see your device (e.g. `emulator-5554`), you can skip wireless setup and continue to step 3.
+If not, you need to connect wirelessly and set up DroidRun again to use the wireless device:
+
+1. Find the pairing code on your phone, usually in the Developer options under Wireless debugging
+2. In Termux, run:
+
+```sh
+adb pair 127.0.0.1:<PAIRING_PORT> <PAIRING_CODE>
+```
+
+Please note that the pairing port may vary and is different from the connect port. It can also change when you switch apps, so it is best to use split screen or a floating window to keep the pairing code visible while running the command in Termux.
+
+After successful pairing, connect to the device:
+
+```sh
+adb connect 127.0.0.1:<CONNECT_PORT>
+```
+
+3. You can also then use tcpip to keep more stable connection:
+
+```sh
+adb tcpip 5555
+adb connect 127.0.0.1:5555
+```
+
+you can disconnect the original connect port after tcpip connection is successful
+```sh
+adb disconnect 127.0.0.1:<CONNECT_PORT>
+```
+
+---
+
 ## Installation steps
 
 ### Step 1 – Run the installer
@@ -81,6 +121,15 @@ Alternative: download the repository as a zip file, extract it somewhere Termux 
 After the repository is available in Termux, run the installer from the project root:
 
 ```sh
+./installer/termux/install.sh
+```
+
+If you want to override the pinned install versions, set them before running:
+
+```sh
+export OPENCLAW_VERSION=2026.3.13
+export DROIDRUN_VERSION=0.5.1
+export DROIDRUN_PORTAL_VERSION=0.6.1
 ./installer/termux/install.sh
 ```
 
@@ -111,14 +160,14 @@ For example:
 If you want to use OpenAI, you can run:
 
 ```sh
-./installer/termux/onboard.sh --auth-choice openai-api-key
+./installer/termux/onboard.sh
 ```
 
 For other providers, refer to the [OpenClaw model documentation](https://docs.openclaw.ai/concepts/models).
 
 ---
 
-### Step 3 – Export model API key and connect wirelessly (for DroidRun agent)
+### Step 3 - Configure DroidRun
 
 In Termux, before starting the gateway (use openai as an example):
 
@@ -135,43 +184,21 @@ export DROIDRUN_MODEL=gpt-5.2
 These environment variables are used only by DroidRun agent mode.
 OpenClaw continues to use its own interactive configuration.
 
-If you cannot find the device with adb in Termux, you should also connect wirelessly using ADB if you want to use DroidRun agent mode remotely. First, test if adb can see the device:
-
-```sh
-adb devices
-```
-
-If you see your device (e.g. `emulator-5554`), you can skip wireless setup, go to step 4.
-If not, you need to connect wirelessly and set up DroidRun again to use the wireless device:
-
-1. Find the pairing code on your phone, usually in the Developer options under Wireless debugging
-2. In Termux, run:
-
-```sh
-adb pair 127.0.0.1:<PAIRING_PORT> <PAIRING_CODE>
-```
-
-Please note that the pairing port may vary and is different from the connect port. It can also change when you switch apps, so it is best to use split screen or a floating window to keep the pairing code visible while running the command in Termux.
-
-After successful pairing, connect to the device:
-
-```sh
-adb connect 127.0.0.1:<CONNECT_PORT>
-```
-
-3. You can also then use tcpip to keep more stable connection:
-
-```sh
-adb tcpip 5555
-adb connect 127.0.0.1:5555
-adb disconnect 127.0.0.1:<CONNECT_PORT> # you can disconnect the original connect port after tcpip connection is successful
-```
-
-To set up DroidRun with the wireless device, install or reconfigure DroidRun Portal from Termux:
+If no DroidRun Portal is installed or if you hit errors when installing DroidRun Portal, you can install or reconfigure it from Termux:
 
 ```sh
 ./installer/termux/droidrun-setup.sh
 ```
+
+If you want to remove the installed DroidRun Portal from the phone:
+
+```sh
+./installer/termux/droidrun-uninstall.sh
+```
+
+When installing or re-running Portal setup, the installer now checks the currently installed
+Portal version. If it does not match `DROIDRUN_PORTAL_VERSION`, it will uninstall the old
+Portal first and then install the requested version.
 
 ---
 
