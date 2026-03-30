@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Pinned install versions. You can override them at runtime, for example:
+#   OPENCLAW_VERSION=2026.3.13 DROIDRUN_VERSION=0.5.1 DROIDRUN_PORTAL_VERSION=0.6.1 ./installer/termux/install.sh
+OPENCLAW_VERSION="${OPENCLAW_VERSION:-2026.3.13}"
+DROIDRUN_VERSION="${DROIDRUN_VERSION:-0.5.1}"
+DROIDRUN_PORTAL_VERSION="${DROIDRUN_PORTAL_VERSION:-0.6.1}"
+DROIDRUN_PORTAL_APK_PATH="${DROIDRUN_PORTAL_APK_PATH:-/tmp/droidrun-portal-v${DROIDRUN_PORTAL_VERSION}.apk}"
+export DROIDRUN_PORTAL_VERSION
+export DROIDRUN_PORTAL_APK_PATH
+
 echo "[+] Updating apt..."
 apt update -y
 
@@ -25,10 +34,12 @@ source /root/venvs/clawmobile/bin/activate
 echo "[+] Upgrading pip toolchain in venv..."
 python -m pip install --upgrade pip
 
-echo "[+] Installing Droidrun (pip, no uv)..."
+echo "[+] Installing DroidRun ${DROIDRUN_VERSION} (pip, no uv)..."
 # If you want extras, change [openai] to what you need.
-python -m pip install "droidrun[google,anthropic,openai,deepseek,ollama,openrouter]"
-droidrun setup
+python -m pip install \
+  "droidrun[google,anthropic,openai,deepseek,ollama,openrouter]==${DROIDRUN_VERSION}"
+
+./installer/ubuntu/install-droidrun-portal.sh
 
 echo "[+] Verifying droidrun import..."
 droidrun ping
@@ -49,7 +60,8 @@ echo
 echo "[*] OpenClaw installation"
 echo
 
-curl -fsSL https://openclaw.ai/install.sh | bash -s -- --no-onboard
+echo "[+] Installing OpenClaw ${OPENCLAW_VERSION}..."
+curl -fsSL https://openclaw.ai/install.sh | bash -s -- --no-onboard --version "${OPENCLAW_VERSION}"
 
 
 echo "[✓] Bootstrap complete."

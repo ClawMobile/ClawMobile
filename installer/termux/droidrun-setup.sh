@@ -14,6 +14,11 @@ proot-distro login "${UBUNTU_DISTRO}" --shared-tmp -- \
     set -e
     cd '${REPO_ROOT}'
 
+    DROIDRUN_PORTAL_VERSION=\"\${DROIDRUN_PORTAL_VERSION:-0.6.1}\"
+    DROIDRUN_PORTAL_APK_PATH=\"\${DROIDRUN_PORTAL_APK_PATH:-/tmp/droidrun-portal-v\${DROIDRUN_PORTAL_VERSION}.apk}\"
+    export DROIDRUN_PORTAL_VERSION
+    export DROIDRUN_PORTAL_APK_PATH
+
     if [ -f installer/ubuntu/env.sh ]; then
       source installer/ubuntu/env.sh
     fi
@@ -27,5 +32,5 @@ proot-distro login "${UBUNTU_DISTRO}" --shared-tmp -- \
       exit 1
     fi
 
-    droidrun setup
+    ./installer/ubuntu/install-droidrun-portal.sh
   "
