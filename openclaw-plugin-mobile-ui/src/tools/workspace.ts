@@ -63,12 +63,75 @@ function safeJsonLine(obj: any, maxBytes = AUDIT_MAX_BYTES) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Async write-buffer for audit logging.
+//
+// BEFORE (blocking):  every tool call → fs.appendFileSync() → blocks event loop
+// AFTER  (buffered):  tool calls push to in-memory buffer → flushed async on
+//                     timer or when buffer reaches threshold.
+//
+// This mirrors the OS page-cache pattern: writes land in memory immediately
+// and are flushed to storage asynchronously, trading a small durability window
+// for significantly lower per-call latency. On a phone running proot this
+// avoids 5-50 ms of synchronous I/O per audit entry.
+// ---------------------------------------------------------------------------
+
+const AUDIT_FLUSH_INTERVAL_MS = 500;   // flush at most every 500 ms
+const AUDIT_FLUSH_THRESHOLD   = 20;    // or when buffer reaches 20 lines
+
+let _auditBuffer: string[]     = [];
+let _auditFlushTimer: ReturnType<typeof setTimeout> | null = null;
+let _auditLogPath: string | null = null;   // cached after first resolve
+let _auditFlushing              = false;   // guard against concurrent flushes
+
+function resolveAuditLogPath(): string {
+  if (!_auditLogPath) {
+    const dir = ensureLogsDir();           // mkdirSync only once
+    _auditLogPath = path.join(dir, "tool-audit.jsonl");
+  }
+  return _auditLogPath;
+}
+
+function scheduleFlush() {
+  if (_auditFlushTimer) return;            // already scheduled
+  _auditFlushTimer = setTimeout(() => {
+    _auditFlushTimer = null;
+    flushAuditBuffer();
+  }, AUDIT_FLUSH_INTERVAL_MS);
+  // Allow the Node process to exit even if the timer is pending.
+  if (_auditFlushTimer && typeof _auditFlushTimer.unref === "function") {
+    _auditFlushTimer.unref();
+  }
+}
+
+function flushAuditBuffer() {
+  if (_auditBuffer.length === 0 || _auditFlushing) return;
+  _auditFlushing = true;
+  const batch = _auditBuffer.join("");
+  _auditBuffer = [];
+  const file = resolveAuditLogPath();
+  fs.appendFile(file, batch, (err) => {
+    _auditFlushing = false;
+    if (err) {
+      console.warn(`[audit] async flush failed: ${err.message}`);
+    }
+    // If new entries arrived while we were flushing, schedule another.
+    if (_auditBuffer.length > 0) scheduleFlush();
+  });
+}
+
 export function appendToolAudit(entry: any) {
-  const dir = ensureLogsDir();
-  const file = path.join(dir, "tool-audit.jsonl");
   const line = safeJsonLine(entry, AUDIT_MAX_BYTES);
-  fs.appendFileSync(file, line + "\n");
-  return file;
+  _auditBuffer.push(line + "\n");
+
+  if (_auditBuffer.length >= AUDIT_FLUSH_THRESHOLD) {
+    // Buffer is full — flush immediately (still async, non-blocking).
+    flushAuditBuffer();
+  } else {
+    scheduleFlush();
+  }
+
+  return resolveAuditLogPath();
 }
 
 export function makeScreenshotPath() {
