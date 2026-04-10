@@ -26,17 +26,24 @@ export function getWorkspaceDir() {
   return "/root/.openclaw/workspace";
 }
 
+let _screenshotsDirCache: string | null = null;
+let _logsDirCache: string | null = null;
+
 export function ensureScreenshotsDir() {
+  if (_screenshotsDirCache) return _screenshotsDirCache;
   const ws = getWorkspaceDir();
   const dir = path.join(ws, "screenshots");
   fs.mkdirSync(dir, { recursive: true });
+  _screenshotsDirCache = dir;
   return dir;
 }
 
 export function ensureLogsDir() {
+  if (_logsDirCache) return _logsDirCache;
   const ws = getWorkspaceDir();
   const dir = path.join(ws, "logs");
   fs.mkdirSync(dir, { recursive: true });
+  _logsDirCache = dir;
   return dir;
 }
 
