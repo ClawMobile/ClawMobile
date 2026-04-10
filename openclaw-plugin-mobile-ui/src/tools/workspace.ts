@@ -6,6 +6,8 @@ export const DEFAULT_MAX_OUTPUT_BYTES = 8 * 1024;
 const AUDIT_MAX_BYTES = 2000;
 
 let _cachedWorkspaceDir: string | null = null;
+let _screenshotsDirCache: string | null = null;
+let _logsDirCache: string | null = null;
 
 function resolveWorkspaceDir(): string {
   if (process.env.OPENCLAW_WORKSPACE) return process.env.OPENCLAW_WORKSPACE;
@@ -36,19 +38,25 @@ export function getWorkspaceDir() {
 
 export function resetWorkspaceDirCache() {
   _cachedWorkspaceDir = null;
+  _screenshotsDirCache = null;
+  _logsDirCache = null;
 }
 
 export function ensureScreenshotsDir() {
+  if (_screenshotsDirCache) return _screenshotsDirCache;
   const ws = getWorkspaceDir();
   const dir = path.join(ws, "screenshots");
   fs.mkdirSync(dir, { recursive: true });
+  _screenshotsDirCache = dir;
   return dir;
 }
 
 export function ensureLogsDir() {
+  if (_logsDirCache) return _logsDirCache;
   const ws = getWorkspaceDir();
   const dir = path.join(ws, "logs");
   fs.mkdirSync(dir, { recursive: true });
+  _logsDirCache = dir;
   return dir;
 }
 
