@@ -54,12 +54,34 @@ USAGE
 
 log() { echo "[reset] $*"; }
 
-run() {
+print_dry_run() {
+  local rendered
+  rendered="$(printf '%q ' "$@")"
+  echo "[dry-run] ${rendered% }"
+}
+
+run_cmd() {
   if [ "$DRY_RUN" -eq 1 ]; then
-    echo "[dry-run] $*"
-  else
-    eval "$@"
+    print_dry_run "$@"
+    return 0
   fi
+  "$@"
+}
+
+run_best_effort() {
+  if [ "$DRY_RUN" -eq 1 ]; then
+    print_dry_run "$@" '||' true
+    return 0
+  fi
+  "$@" || true
+}
+
+run_best_effort_quiet() {
+  if [ "$DRY_RUN" -eq 1 ]; then
+    print_dry_run "$@" '>/dev/null' '2>&1' '||' true
+    return 0
+  fi
+  "$@" >/dev/null 2>&1 || true
 }
 
 # Parse args
@@ -93,8 +115,8 @@ esac
 
 # Stop gateway (best-effort)
 log "Stopping openclaw gateway (best-effort)..."
-run "pkill -f 'openclaw gateway' >/dev/null 2>&1 || true"
-run "pkill -f 'openclaw.*gateway' >/dev/null 2>&1 || true"
+run_best_effort_quiet pkill -f "openclaw gateway"
+run_best_effort_quiet pkill -f "openclaw.*gateway"
 
 # Resolve workspace path:
 # Prefer:
@@ -119,7 +141,7 @@ log "Workspace: $WORKSPACE"
 reset_plugin_build() {
   if [ -d "$PLUGIN_DIR/dist" ]; then
     log "Removing plugin build output at $PLUGIN_DIR/dist ..."
-    run "rm -rf '$PLUGIN_DIR/dist'"
+    run_cmd rm -rf -- "$PLUGIN_DIR/dist"
   else
     log "Plugin build output already clean."
   fi
@@ -193,10 +215,10 @@ reset_workspace() {
   clean_seeded_prompt_file "$WORKSPACE/TOOLS.md"
 
   # Seeded skills copied from installer/workspace-seed/skills.
-  run "rm -rf '$WORKSPACE/skills/clawmobile-capabilities' '$WORKSPACE/skills/clawmobile-policy' 2>/dev/null || true"
+  run_best_effort rm -rf -- "$WORKSPACE/skills/clawmobile-capabilities" "$WORKSPACE/skills/clawmobile-policy"
 
   # If you keep any project-generated caches in workspace:
-  run "rm -rf '$WORKSPACE/.cache' '$WORKSPACE/tmp' '$WORKSPACE/.openclaw-cache' 2>/dev/null || true"
+  run_best_effort rm -rf -- "$WORKSPACE/.cache" "$WORKSPACE/tmp" "$WORKSPACE/.openclaw-cache"
 
   log "Workspace reset complete."
 }
@@ -205,7 +227,7 @@ reset_state() {
   log "Resetting OpenClaw state dir (config/cache/indexes) ..."
   reset_plugin_build
   # Be careful: this may remove onboard configuration if stored under state dir.
-  run "rm -rf '$STATE_DIR' 2>/dev/null || true"
+  run_best_effort rm -rf -- "$STATE_DIR"
   log "State dir reset complete."
 }
 
@@ -223,7 +245,7 @@ case "$LEVEL" in
     ;;
   full)
     log "Removing global openclaw CLI package (lighter full reset) ..."
-    run "npm rm -g openclaw || true"
+    run_best_effort npm rm -g openclaw
     reset_workspace
     reset_state
     log "Done (full reset)."
