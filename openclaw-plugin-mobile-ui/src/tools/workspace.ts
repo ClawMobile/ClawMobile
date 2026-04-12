@@ -5,7 +5,9 @@ import path from "path";
 export const DEFAULT_MAX_OUTPUT_BYTES = 8 * 1024;
 const AUDIT_MAX_BYTES = 2000;
 
-export function getWorkspaceDir() {
+let _cachedWorkspaceDir: string | null = null;
+
+function resolveWorkspaceDir(): string {
   if (process.env.OPENCLAW_WORKSPACE) return process.env.OPENCLAW_WORKSPACE;
 
   const stateDir = process.env.OPENCLAW_STATE_DIR || path.join(os.homedir(), ".openclaw");
@@ -24,6 +26,16 @@ export function getWorkspaceDir() {
 
   if (process.env.OPENCLAW_STATE_DIR) return path.join(stateDir, "workspace");
   return "/root/.openclaw/workspace";
+}
+
+export function getWorkspaceDir() {
+  if (_cachedWorkspaceDir !== null) return _cachedWorkspaceDir;
+  _cachedWorkspaceDir = resolveWorkspaceDir();
+  return _cachedWorkspaceDir;
+}
+
+export function resetWorkspaceDirCache() {
+  _cachedWorkspaceDir = null;
 }
 
 export function ensureScreenshotsDir() {
