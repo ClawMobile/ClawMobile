@@ -4,7 +4,7 @@ import {
   auditError,
   auditStart,
 } from "../internal/runtime";
-import { truncateString } from "./workspace";
+import { truncateString, filterUIDumpXml } from "./workspace";
 import { signalComplete } from "./attention";
 import {
   droidrun_health,
@@ -112,16 +112,16 @@ export async function android_ui_dump() {
   auditStart("android_ui_dump", "adb", start);
   try {
     const res = await adb_ui_dump_xml({});
-    const shaped = {
+    const filteredXml = res.ok ? filterUIDumpXml(res.xml) : res.xml;
+    const shaped: Record<string, any> = {
       ok: res.ok,
-      code: res.code,
-      stderr: res.stderr,
-      xml: res.xml,
-      source: "adb_ui_dump_xml" as const,
-      ...(!res.ok && res.stdout
-        ? { stdout_snip: truncateString(res.stdout) }
-        : {}),
+      xml: filteredXml,
     };
+    if (!res.ok) {
+      shaped.code = res.code;
+      if (res.stderr) shaped.stderr = res.stderr;
+      if (res.stdout) shaped.stdout_snip = truncateString(res.stdout);
+    }
     auditEnd("android_ui_dump", start, shaped);
     return shaped;
   } catch (error) {
