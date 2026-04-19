@@ -120,7 +120,39 @@ function flushAuditBuffer() {
   });
 }
 
+// Synchronous drain — last-resort path on process exit so trailing audit
+// lines aren't lost to the buffered-write window.
+export function flushAuditBufferSync() {
+  if (_auditFlushTimer) {
+    clearTimeout(_auditFlushTimer);
+    _auditFlushTimer = null;
+  }
+  if (_auditBuffer.length === 0) return;
+  const batch = _auditBuffer.join("");
+  _auditBuffer = [];
+  try {
+    fs.appendFileSync(resolveAuditLogPath(), batch);
+  } catch (err: any) {
+    console.warn(`[audit] sync flush on shutdown failed: ${err?.message ?? err}`);
+  }
+}
+
+let _shutdownHooksInstalled = false;
+function installShutdownHooks() {
+  if (_shutdownHooksInstalled) return;
+  _shutdownHooksInstalled = true;
+  // beforeExit — event loop is draining; async flush is still allowed here.
+  process.on("beforeExit", () => {
+    if (_auditBuffer.length > 0) flushAuditBuffer();
+  });
+  // exit — only sync APIs run; final safety net for anything still buffered.
+  process.on("exit", () => {
+    flushAuditBufferSync();
+  });
+}
+
 export function appendToolAudit(entry: any) {
+  installShutdownHooks();
   const line = safeJsonLine(entry, AUDIT_MAX_BYTES);
   _auditBuffer.push(line + "\n");
 
