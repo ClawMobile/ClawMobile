@@ -83,6 +83,7 @@ let _auditBuffer: string[]     = [];
 let _auditFlushTimer: ReturnType<typeof setTimeout> | null = null;
 let _auditLogPath: string | null = null;   // cached after first resolve
 let _auditFlushing              = false;   // guard against concurrent flushes
+let _inFlightBatch: string | null = null;  // batch handed to fs.appendFile, callback not yet fired
 
 function resolveAuditLogPath(): string {
   if (!_auditLogPath) {
@@ -109,8 +110,10 @@ function flushAuditBuffer() {
   _auditFlushing = true;
   const batch = _auditBuffer.join("");
   _auditBuffer = [];
+  _inFlightBatch = batch;                 // not yet durably written
   const file = resolveAuditLogPath();
   fs.appendFile(file, batch, (err) => {
+    _inFlightBatch = null;                // callback fired — write confirmed
     _auditFlushing = false;
     if (err) {
       console.warn(`[audit] async flush failed: ${err.message}`);
@@ -120,18 +123,32 @@ function flushAuditBuffer() {
   });
 }
 
-// Synchronous drain — last-resort path on process exit so trailing audit
-// lines aren't lost to the buffered-write window.
+// Synchronous drain — last-resort path on process exit so no audit lines are
+// lost to the buffered-write window.
+//
+// Two things can be unflushed at shutdown:
+//   1. Entries still queued in the active buffer (_auditBuffer).
+//   2. A batch handed to fs.appendFile() whose callback hasn't fired yet
+//      (_inFlightBatch). Once process.exit() runs, the event loop dies and
+//      that pending callback may never run — so we can't assume it landed.
+//
+// Writing the in-flight batch here can occasionally duplicate a batch that
+// actually did complete on disk (narrow window between syscall completion
+// and the callback firing). For audit logs we prefer a rare duplicate over
+// a silent loss.
 export function flushAuditBufferSync() {
   if (_auditFlushTimer) {
     clearTimeout(_auditFlushTimer);
     _auditFlushTimer = null;
   }
-  if (_auditBuffer.length === 0) return;
-  const batch = _auditBuffer.join("");
+  const parts: string[] = [];
+  if (_inFlightBatch) parts.push(_inFlightBatch);      // preserve order
+  if (_auditBuffer.length > 0) parts.push(_auditBuffer.join(""));
+  _inFlightBatch = null;
   _auditBuffer = [];
+  if (parts.length === 0) return;
   try {
-    fs.appendFileSync(resolveAuditLogPath(), batch);
+    fs.appendFileSync(resolveAuditLogPath(), parts.join(""));
   } catch (err: any) {
     console.warn(`[audit] sync flush on shutdown failed: ${err?.message ?? err}`);
   }
