@@ -9,8 +9,6 @@ This project allows you to control the current Android device itself using OpenC
 - Uses ADB + Accessibility to interact with the UI
 - Accepts commands via OpenClaw (Telegram is used as an example)
 
-⚠️ This system controls the same phone it is running on.
-
 ---
 
 ## Prerequisites
@@ -62,28 +60,34 @@ To use Telegram:
 
 ### 5. ADB connection
 
-If you cannot find the device with adb in Termux, you should also connect wirelessly using ADB if you want to use DroidRun agent mode remotely. First, test if adb can see the device:
+If you cannot find the device with adb in Termux, you should also connect wirelessly using ADB. First, test if adb can see the device:
 
 ```sh
 adb devices
 ```
 
-If you see your device (e.g. `emulator-5554`), you can skip wireless setup and continue to step 3.
-If not, you need to connect wirelessly and set up DroidRun again to use the wireless device:
+If you see your device (e.g. `emulator-5554`), you can skip wireless setup and continue with the installation steps below. If not, you need to connect manually:
 
 1. Find the pairing code on your phone, usually in the Developer options under Wireless debugging
 2. In Termux, run:
 
 ```sh
 adb pair 127.0.0.1:<PAIRING_PORT> <PAIRING_CODE>
+# Example:
+# adb pair 127.0.0.1:46501 285686
 ```
+<p align="center">
+  <img src="../assets/adb.png" width="500" alt="ADB" />
+</p>
 
-Please note that the pairing port may vary and is different from the connect port. It can also change when you switch apps, so it is best to use split screen or a floating window to keep the pairing code visible while running the command in Termux.
+NOTICE: The pairing port may vary and is different from the connect port. It can also change when you switch apps, so it is best to use split screen or a floating window to keep the pairing code visible while running the command in Termux.
 
 After successful pairing, connect to the device:
 
 ```sh
 adb connect 127.0.0.1:<CONNECT_PORT>
+# Example:
+# adb connect 127.0.0.1:34037
 ```
 
 3. You can also then use tcpip to keep more stable connection:
@@ -135,9 +139,9 @@ export DROIDRUN_PORTAL_VERSION=0.6.1
 
 This script will:
 - Enter Ubuntu (proot)
-- Install OpenClaw
 - Install DroidRun dependencies
 - Install the DroidRun Portal (Android will prompt you)
+- Install OpenClaw
 
 While `install.sh` is running, you will be asked to:
 1. Accept Android debugging authorization

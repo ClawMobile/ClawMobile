@@ -125,11 +125,18 @@ function flushAuditBuffer() {
   _inFlightBatch = batch;                 // not yet durably written
   const file = resolveAuditLogPath();
   fs.appendFile(file, batch, (err) => {
-    _inFlightBatch = null;                // callback fired — write confirmed
     _auditFlushing = false;
     if (err) {
+      // Requeue the in-flight batch so it can be retried or recovered on shutdown.
+      if (_inFlightBatch) {
+        _auditBuffer.unshift(_inFlightBatch);
+        _inFlightBatch = null;
+      }
       console.warn(`[audit] async flush failed: ${err.message}`);
+      if (_auditBuffer.length > 0) scheduleFlush();
+      return;
     }
+    _inFlightBatch = null;                // callback fired — write confirmed
     // If new entries arrived while we were flushing, schedule another.
     if (_auditBuffer.length > 0) scheduleFlush();
   });
