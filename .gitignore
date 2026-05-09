@@ -94,3 +94,4 @@ installer/**/tmp/
 # -------------------------
 DEVELOPMENT.md
 ARCHITECTURE.md
+.codex

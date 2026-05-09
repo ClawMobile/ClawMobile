@@ -7,8 +7,34 @@ OPENCLAW_VERSION="${OPENCLAW_VERSION:-2026.3.13}"
 DROIDRUN_VERSION="${DROIDRUN_VERSION:-0.5.1}"
 DROIDRUN_PORTAL_VERSION="${DROIDRUN_PORTAL_VERSION:-0.6.1}"
 DROIDRUN_PORTAL_APK_PATH="${DROIDRUN_PORTAL_APK_PATH:-/tmp/droidrun-portal-v${DROIDRUN_PORTAL_VERSION}.apk}"
+DROIDRUN_PIP_INDEX_URL="${DROIDRUN_PIP_INDEX_URL:-https://pypi.tuna.tsinghua.edu.cn/simple}"
+DROIDRUN_PIP_TIMEOUT="${DROIDRUN_PIP_TIMEOUT:-300}"
+DROIDRUN_PIP_RETRIES="${DROIDRUN_PIP_RETRIES:-5}"
+DROIDRUN_MOBILERUN_SDK_SPEC="${DROIDRUN_MOBILERUN_SDK_SPEC:-mobilerun-sdk==2.1.0}"
+DROIDRUN_PIP_NETWORK_ARGS=(
+  -i "${DROIDRUN_PIP_INDEX_URL}"
+  --timeout "${DROIDRUN_PIP_TIMEOUT}"
+  --retries "${DROIDRUN_PIP_RETRIES}"
+)
 export DROIDRUN_PORTAL_VERSION
 export DROIDRUN_PORTAL_APK_PATH
+
+install_droidrun() {
+  local pip_args=(
+    --use-deprecated=legacy-resolver
+    "${DROIDRUN_PIP_NETWORK_ARGS[@]}"
+  )
+
+  echo "[+] Installing DroidRun ${DROIDRUN_VERSION} (pip, no uv)..."
+  echo "[+] Using pip index: ${DROIDRUN_PIP_INDEX_URL}"
+  echo "[+] Installing DroidRun compatibility dependency: ${DROIDRUN_MOBILERUN_SDK_SPEC}"
+  python -m pip install "${pip_args[@]}" \
+    "${DROIDRUN_MOBILERUN_SDK_SPEC}" \
+    "droidrun[google,anthropic,openai,deepseek,ollama,openrouter]==${DROIDRUN_VERSION}"
+
+  echo "[+] Verifying DroidRun CLI imports..."
+  python -c "from droidrun.cli.main import cli; print('droidrun cli import ok')"
+}
 
 echo "[+] Updating apt..."
 apt update -y
@@ -32,12 +58,9 @@ fi
 source /root/venvs/clawmobile/bin/activate
 
 echo "[+] Upgrading pip toolchain in venv..."
-python -m pip install --upgrade pip
+python -m pip install "${DROIDRUN_PIP_NETWORK_ARGS[@]}" --upgrade pip
 
-echo "[+] Installing DroidRun ${DROIDRUN_VERSION} (pip, no uv)..."
-# If you want extras, change [openai] to what you need.
-python -m pip install \
-  "droidrun[google,anthropic,openai,deepseek,ollama,openrouter]==${DROIDRUN_VERSION}"
+install_droidrun
 
 ./installer/ubuntu/install-droidrun-portal.sh
 

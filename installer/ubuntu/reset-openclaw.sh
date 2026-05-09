@@ -55,14 +55,22 @@ USAGE
 log() { echo "[reset] $*"; }
 
 print_dry_run() {
+  local suffix="${1:-}"
+  if [ $# -gt 0 ]; then
+    shift
+  fi
   local rendered
   rendered="$(printf '%q ' "$@")"
-  echo "[dry-run] ${rendered% }"
+  if [ -n "$suffix" ]; then
+    echo "[dry-run] ${rendered% } $suffix"
+  else
+    echo "[dry-run] ${rendered% }"
+  fi
 }
 
 run_cmd() {
   if [ "$DRY_RUN" -eq 1 ]; then
-    print_dry_run "$@"
+    print_dry_run "" "$@"
     return 0
   fi
   "$@"
@@ -70,7 +78,7 @@ run_cmd() {
 
 run_best_effort() {
   if [ "$DRY_RUN" -eq 1 ]; then
-    print_dry_run "$@" '||' true
+    print_dry_run "|| true" "$@"
     return 0
   fi
   "$@" || true
@@ -78,7 +86,7 @@ run_best_effort() {
 
 run_best_effort_quiet() {
   if [ "$DRY_RUN" -eq 1 ]; then
-    print_dry_run "$@" '>/dev/null' '2>&1' '||' true
+    print_dry_run ">/dev/null 2>&1 || true" "$@"
     return 0
   fi
   "$@" >/dev/null 2>&1 || true

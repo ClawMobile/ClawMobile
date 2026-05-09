@@ -10,7 +10,7 @@ if ! command -v adb >/dev/null 2>&1; then
 fi
 
 echo "[portal-uninstall] Looking for installed package: ${PACKAGE_NAME}"
-if ! adb shell pm list packages "${PACKAGE_NAME}" 2>/dev/null | grep -q "^package:${PACKAGE_NAME}\$"; then
+if ! adb shell pm list packages "${PACKAGE_NAME}" 2>/dev/null | tr -d '\r' | grep -q "^package:${PACKAGE_NAME}\$"; then
   echo "[portal-uninstall] Package not installed: ${PACKAGE_NAME}"
   exit 0
 fi
