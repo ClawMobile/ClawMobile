@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - feature/termux-adb-lite
+  pull_request:
+
+jobs:
+  mobile-ui-plugin:
+    name: Mobile UI plugin
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: openclaw-plugin-mobile-ui
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: openclaw-plugin-mobile-ui/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build plugin
+        run: npm run build
+
+      - name: Build Lite plugin
+        run: npm run build:lite
+
+      - name: Run trace induction tests
+        run: npm run test:trace-induction

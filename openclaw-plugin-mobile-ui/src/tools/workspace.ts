@@ -24,8 +24,7 @@ function resolveWorkspaceDir(): string {
     // ignore and fall back
   }
 
-  if (process.env.OPENCLAW_STATE_DIR) return path.join(stateDir, "workspace");
-  return "/root/.openclaw/workspace";
+  return path.join(stateDir, "workspace");
 }
 
 export function getWorkspaceDir() {
@@ -48,6 +47,13 @@ export function ensureScreenshotsDir() {
 export function ensureLogsDir() {
   const ws = getWorkspaceDir();
   const dir = path.join(ws, "logs");
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+export function ensureUiDumpsDir() {
+  const ws = getWorkspaceDir();
+  const dir = path.join(ws, "ui-dumps");
   fs.mkdirSync(dir, { recursive: true });
   return dir;
 }
@@ -84,8 +90,8 @@ function safeJsonLine(obj: any, maxBytes = AUDIT_MAX_BYTES) {
 //
 // This mirrors the OS page-cache pattern: writes land in memory immediately
 // and are flushed to storage asynchronously, trading a small durability window
-// for significantly lower per-call latency. On a phone running proot this
-// avoids 5-50 ms of synchronous I/O per audit entry.
+// for significantly lower per-call latency. On a phone this avoids 5-50 ms of
+// synchronous I/O per audit entry.
 // ---------------------------------------------------------------------------
 
 const AUDIT_FLUSH_INTERVAL_MS = 500;   // flush at most every 500 ms

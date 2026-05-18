@@ -36,7 +36,7 @@ pnpm-debug.log*
 
 # Compiled plugin output (keep source, not build)
 openclaw-plugin-mobile-ui/dist/
-openclaw-plugin-mobile-ui/package-lock.json
+openclaw-plugin-mobile-ui/.openclaw-plugin-installed*.stamp
 
 # -------------------------
 # OpenClaw runtime data
@@ -49,6 +49,13 @@ openclaw-plugin-mobile-ui/package-lock.json
 workspace/
 cache/
 logs/
+recordings/
+token-proxy/
+rec_*/
+*.request.json
+*.response.json
+*.stream.sse
+requests.jsonl
 
 # -------------------------
 # Termux / proot

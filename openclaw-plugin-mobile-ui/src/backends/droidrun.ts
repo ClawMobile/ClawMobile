@@ -68,8 +68,8 @@ export async function droidrun_agent_task(input: {
   deviceSerial?: string;
   tcp?: boolean;
 }) {
-  // TODO: keep agent-mode exposed here for now, but treat app/workflow policy
-  // above this layer rather than inside backend adapters.
+  // Keep agent mode as a backend primitive; app/workflow policy belongs above
+  // the backend adapter layer.
   const res = await audit("droidrun_agent_task", () => withPortal(() => agent.runTask(input)));
   return withFailureLog("droidrun_agent_task", res);
 }
