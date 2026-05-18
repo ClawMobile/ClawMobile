@@ -215,9 +215,6 @@ else
   echo "[run] WARNING: seed skills not found at \$SKILLS_SRC/"
 fi
 
-# Add an extra command for Telegram to restore the IME (input method editor).
-openclaw config set channels.telegram.customCommands '[{"command":"ime","description":"Restore the keyboard (IME)"}]'
-
 openclaw config set tools.profile full
 
 exec openclaw gateway --bind ${GATEWAY_BIND} --port ${GATEWAY_PORT} --verbose

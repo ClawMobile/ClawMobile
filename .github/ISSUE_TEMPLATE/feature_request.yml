@@ -1,0 +1,41 @@
+name: Feature request
+description: Suggest a capability, workflow, or documentation improvement
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What should ClawMobile help users do?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the behavior or API you would like.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Lite installer
+        - Mobile UI tools
+        - Trace-to-skill learning
+        - Generated skill feedback
+        - Documentation
+        - Full DroidRun/MobileRun backend
+        - Other
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Add links, screenshots, or examples only if they are safe to share.

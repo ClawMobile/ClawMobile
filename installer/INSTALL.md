@@ -1,302 +1,183 @@
-# ClawMobile – Installation Guide
+# ClawMobile Installation Guide
 
-This project allows you to control the current Android device itself using OpenClaw + DroidRun, typically via a chat interface such as Telegram.
+This is the recommended public installation path for **ClawMobile**. It runs
+OpenClaw directly in Termux and includes the mobile tool runtime, OCR, optional
+ADB control, and the public-preview generated-skill workflow.
 
----
-
-## What this does
-- Runs an AI agent on your phone
-- Uses ADB + Accessibility to interact with the UI
-- Accepts commands via OpenClaw (Telegram is used as an example)
+The implementation is the ClawMobile Termux runtime, also called the Lite
+runtime in technical docs. Most users should start here.
 
 ---
 
-## Prerequisites
+## Before You Start
 
-### 1. Android system requirements
+Use the latest Termux from F-Droid or GitHub. The old Play Store Termux build is
+not recommended because its package repositories are outdated.
 
-On your phone, enable:
-1. Developer options
-2. USB debugging and wireless debugging (ADB)
-3. Accessibility service
+Prepare:
 
-During installation, Android will show permission dialogs.
-You should accept them (preferably with “Always allow”).
+- an Android phone that can run Termux
+- a stable network connection for Termux packages, Node.js, and OpenClaw
+- a model provider API key, such as OpenAI, Anthropic, Gemini, OpenRouter,
+  DeepSeek, or another OpenAI-compatible endpoint
+- optionally, a Telegram bot token from BotFather and your numeric Telegram
+  user ID if you want the phone to receive commands from Telegram
+- optionally, Android developer options and ADB authorization if you want UI
+  control, screenshots, fresh trace recording, or generated-skill execution
 
----
+If you are not sure what the quick setup questions mean, see
+[FAQ.md](FAQ.md#what-does-quick-setup-ask-for) before starting.
 
-### 2. Termux
-
-Install Termux and Termux-api with the F-Droid app.
-
-Open Termux and make sure to have this project directory available.
-
----
-
-### 3. API keys (prepare in advance)
-
-You should have at least one model provider API key ready.
-
-Examples:
-- OpenAI
-- MiniMax
-- Anthropic
-
-These keys will need to be exported as environment variables in Termux later for DroidRun agent mode.
-OpenClaw itself will still be configured interactively.
+For long-running gateway sessions, disable battery optimization for Termux and
+allow background activity.
 
 ---
 
-### 4. Chat interface (example: Telegram)
+## Quick Install
 
-OpenClaw supports multiple interfaces.
-This guide uses Telegram as an example.
+For a fresh Termux install:
 
-To use Telegram:
-1. Create a bot via @BotFather
-2. Save the Bot Token
+```sh
+curl -fsSL https://raw.githubusercontent.com/ClawMobile/ClawMobile/main/installer/termux-lite/bootstrap.sh | bash -s -- --quick --start
+```
+
+From an existing checkout:
+
+```sh
+./installer/termux-lite/clawmobile setup --quick --start
+```
+
+`--start` launches the gateway immediately after setup and keeps it in the
+foreground. Omit it when you want installation and first run as two separate
+steps.
+
+If you omitted `--start`, a quick health check is:
+
+```sh
+clawmobile doctor
+```
+
+If you omitted `--start`, start the gateway with:
+
+```sh
+clawmobile run
+```
+
+If you used `--start` and still want to run diagnostics, open another Termux
+session or stop the gateway first.
+
+ClawMobile starts with Termux capabilities. Android UI control, fresh trace
+recording, and screenshot/state capture become available once ADB is
+authorized.
+
+The default runtime provides:
+
+- OpenClaw running directly in Termux
+- capability-aware Termux/ADB/mobile tools
+- OCR as a base observation substrate
+- recorder and offline trace parser
+- preview generated skill candidate, promotion, generalization, update, and
+  feedback
+- optional Telegram quick setup with numeric user allowlisting
+
+Full runtime details are in [termux-lite/README.md](termux-lite/README.md).
+Common setup failures are covered in [FAQ.md](FAQ.md).
+
+Before publishing logs or recording directories, review them for screenshots,
+typed text, app state, API-key-adjacent configuration, and generated skill
+summaries.
 
 ---
 
-### 5. ADB connection
+## Existing Checkout
 
-If you cannot find the device with adb in Termux, you should also connect wirelessly using ADB. First, test if adb can see the device:
+If you already cloned the repository in Termux:
+
+```sh
+cd ClawMobile
+./installer/termux-lite/clawmobile setup --quick --start
+```
+
+Useful follow-up commands:
+
+```sh
+clawmobile doctor
+clawmobile repair
+clawmobile reset --level plugin
+clawmobile reset --level workspace
+```
+
+---
+
+## Optional ADB Setup
+
+ClawMobile can run without ADB for Termux-side tools, files, network tasks, and
+local OCR on existing images.
+
+ADB is required for app UI control, live screenshots, UIAutomator XML, Android
+shell commands, fresh trace recording, and generated-skill execution against
+apps.
+
+Check ADB:
 
 ```sh
 adb devices
 ```
 
-If you see your device (e.g. `emulator-5554`), you can skip wireless setup and continue with the installation steps below. If not, you need to connect manually:
-
-1. Find the pairing code on your phone, usually in the Developer options under Wireless debugging
-2. In Termux, run:
+If no device is listed, enable Android developer options and wireless
+debugging, then pair from Termux:
 
 ```sh
 adb pair 127.0.0.1:<PAIRING_PORT> <PAIRING_CODE>
-# Example:
-# adb pair 127.0.0.1:46501 285686
-```
-<p align="center">
-  <img src="../assets/adb.png" width="500" alt="ADB" />
-</p>
-
-NOTICE: The pairing port may vary and is different from the connect port. It can also change when you switch apps, so it is best to use split screen or a floating window to keep the pairing code visible while running the command in Termux.
-
-After successful pairing, connect to the device:
-
-```sh
 adb connect 127.0.0.1:<CONNECT_PORT>
-# Example:
-# adb connect 127.0.0.1:34037
+adb devices
 ```
 
-3. You can also then use tcpip to keep more stable connection:
+The pairing port and connect port are different. Keep the wireless debugging
+screen visible while entering the pairing command.
+
+After the first successful connection, the Android wireless debugging connect
+port may change. For a more stable local loopback connection, switch the
+authorized session to TCP/IP port 5555:
 
 ```sh
 adb tcpip 5555
 adb connect 127.0.0.1:5555
-```
-
-you can disconnect the original connect port after tcpip connection is successful
-```sh
 adb disconnect 127.0.0.1:<CONNECT_PORT>
+adb devices
 ```
+
+ClawMobile prefers `127.0.0.1:5555` when it is available. If the 5555 switch
+fails, keep using the temporary `<CONNECT_PORT>` connection and retry the
+switch after ADB is authorized.
+
+If typing those commands on the same phone is awkward, you can start the
+gateway first and send ClawMobile the pairing values from another device, such
+as Telegram on a laptop or another phone. Ask it to use the Termux shell, not
+ADB shell, for the setup commands:
+
+```text
+Use the Termux shell to run:
+adb pair 127.0.0.1:<PAIRING_PORT> <PAIRING_CODE>
+adb connect 127.0.0.1:<CONNECT_PORT>
+adb tcpip 5555
+adb connect 127.0.0.1:5555
+adb disconnect 127.0.0.1:<CONNECT_PORT>
+adb devices
+Then check the Android capability status.
+```
+
+This works before ADB is ready because the commands run in Termux. After ADB is
+authorized, ClawMobile detects the new UI-control capabilities on later tool
+calls.
 
 ---
 
-## Installation steps
+## Advanced Backend
 
-### Step 1 – Run the installer
+The legacy full DroidRun/MobileRun backend is still available for research that
+specifically needs Ubuntu/proot, DroidRun Portal, Accessibility-backed control,
+or code-generated multi-step UI execution.
 
-Before running the installer, make sure this repository is available inside Termux.
-
-Recommended: clone the repo directly in Termux.
-
-```sh
-pkg install git
-git clone https://github.com/ClawMobile/ClawMobile.git
-cd ClawMobile
-```
-
-If you are working from your own fork or another remote, replace the clone URL with that repository.
-
-Alternative: download the repository as a zip file, extract it somewhere Termux can access, and `cd` into the extracted project directory before continuing.
-
-After the repository is available in Termux, run the installer from the project root:
-
-```sh
-./installer/termux/install.sh
-```
-
-If you want to override the pinned install versions, set them before running:
-
-```sh
-export OPENCLAW_VERSION=2026.3.13
-export DROIDRUN_VERSION=0.5.1
-export DROIDRUN_PORTAL_VERSION=0.6.1
-./installer/termux/install.sh
-```
-
-This script will:
-- Enter Ubuntu (proot)
-- Install DroidRun dependencies
-- Install the DroidRun Portal (Android will prompt you)
-- Install OpenClaw
-
-While `install.sh` is running, you will be asked to:
-1. Accept Android debugging authorization
-2. Allow installation of DroidRun Portal, you can cancel the overlay option if you want to keep using the original screen after installation.
-
-During OpenClaw configuration you can:
-- Configure Telegram (or another interface)
-- Skip features you don’t need
-
----
-
-### Step 2 – Configure OpenClaw interactively
-
-Run the OpenClaw interactive onboarding flow.
-
-At the moment, model providers are not fully configured during onboarding, so you should pass the provider choice when running `./installer/termux/onboard.sh`.
-
-For example:
-
-If you want to use OpenAI, you can run:
-
-```sh
-./installer/termux/onboard.sh
-```
-
-For other providers, refer to the [OpenClaw model documentation](https://docs.openclaw.ai/concepts/models).
-
----
-
-### Step 3 - Configure DroidRun
-
-In Termux, before starting the gateway (use openai as an example):
-
-```sh
-export OPENAI_API_KEY=sk-xxxxxxxx
-```
-
-Optional (override model):
-
-```sh
-export DROIDRUN_MODEL=gpt-5.2
-```
-
-These environment variables are used only by DroidRun agent mode.
-OpenClaw continues to use its own interactive configuration.
-
-If no DroidRun Portal is installed or if you hit errors when installing DroidRun Portal, you can install or reconfigure it from Termux:
-
-```sh
-./installer/termux/droidrun-setup.sh
-```
-
-If you want to remove the installed DroidRun Portal from the phone:
-
-```sh
-./installer/termux/droidrun-uninstall.sh
-```
-
-When installing or re-running Portal setup, the installer now checks the currently installed
-Portal version. If it does not match `DROIDRUN_PORTAL_VERSION`, it will uninstall the old
-Portal first and then install the requested version.
-
----
-
-### Step 4 – Start the Gateway
-
-From the project root:
-
-```sh
-./installer/termux/run.sh
-```
-
-This script will:
-- Detect the local Android ADB device (prefers the emulator-style device representing this phone)
-- Prepare DroidRun + ADB
-- Start the OpenClaw Gateway
-
-You should see output similar to:
-
-```
-[run] adb selected serial: 127.0.0.1:5555
-[run] droidrun chosen: provider=OpenAI model=gpt-5.2
-[openclaw] Gateway listening on ...
-```
-
-Leave this terminal running.
-
-Next time, you can simply run `./installer/termux/run.sh` to start the gateway without going through installation again.
-
----
-
-### Step 5 – Pair the bot (first time only)
-
-In Telegram:
-1. Send any message to your bot
-2. The bot will respond with a pairing code / ID
-3. Open a new Termux window (⚠️ Do not stop the running gateway)
-4. From the project root, run:
-
-```sh
-./installer/termux/pairing.sh <CODE>
-```
-
-Example:
-
-```sh
-./installer/termux/pairing.sh ABCD1234
-```
-
-Once paired, you can close this second window.
-
----
-
-### Step 6 – Using ClawMobile
-
-After pairing:
-- Return to Telegram
-- Send commands to the bot
-- The agent will interact with the current phone UI
-
-If you find the bot is not responding, you may need to stop the battery optimization for Termux in Android settings to allow it to run in the background.
-
-#### Onboarding new interfaces or reconfiguring
-To onboard new interfaces or reconfigure OpenClaw:
-1. Run `./installer/termux/onboard.sh`
-2. Follow the prompts to select interfaces
-
-#### Reset OpenClaw configuration
-To reset OpenClaw configuration and start fresh:
-```sh
-./installer/termux/reset.sh
-```
-
-Useful reset levels:
-- `--level soft` only stops the gateway.
-- `--level workspace` clears seeded workspace files.
-- `--level state` clears OpenClaw state and plugin build output.
-- `--level full` also removes the global `openclaw` CLI package.
-
-If you use `--level full`, rerun `./installer/termux/install.sh` before onboarding again.
-
----
-
-## Quick summary
-
-1. `./installer/termux/install.sh`
-   → accept Android permissions and install DroidRun Portal
-2. `./installer/termux/onboard.sh --auth-choice <provider>`
-   → configure OpenClaw interactively
-3. `export OPENAI_API_KEY=...`
-4. `./installer/termux/run.sh`
-5. Send message to Telegram bot → get code
-6. New Termux window: `./installer/termux/pairing.sh <code>`
-7. Start chatting
-
----
-
-For troubleshooting and common issues, see [FAQ.md](FAQ.md).
+Most public users should not start there. See
+[FULL_BACKEND.md](FULL_BACKEND.md) when you intentionally want that path.

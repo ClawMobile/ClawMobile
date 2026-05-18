@@ -40,8 +40,8 @@ echo "[+] Updating apt..."
 apt update -y
 
 echo "[+] Installing base dependencies..."
-# python3-venv/python3-pip: Debian/Ubuntu 正确 pip 方式（避免 ensurepip 缺失问题）
-# nodejs/npm: OpenClaw/插件常用
+# python3-venv/python3-pip: use Debian/Ubuntu packages instead of ensurepip.
+# nodejs/npm: used by OpenClaw and plugin tooling.
 apt install -y \
   android-tools-adb \
   python3 python3-venv python3-pip \

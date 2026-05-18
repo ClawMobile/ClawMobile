@@ -1,0 +1,557 @@
+#!/data/data/com.termux/files/usr/bin/bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/lib.sh"
+
+usage() {
+  cat <<'EOF'
+Usage: clawmobile <command> [args]
+
+ClawMobile Lite command wrapper.
+
+Commands:
+  install             Install/update Lite prerequisites, OpenClaw plugin, OCR, and workspace seed.
+  install-openclaw    Install/update OpenClaw for Android/Termux.
+  onboard             Run OpenClaw onboarding in Lite mode.
+  setup               Install OpenClaw + Lite runtime, then onboard.
+  setup --quick       Install, ask a short model/channel menu, then run OpenClaw non-interactive onboarding.
+  setup --quick --start
+                      Install, quick-onboard, skip full doctor by default, then start the gateway.
+  setup --quick --doctor
+                      Run full diagnostics after setup. Default setup skips doctor for speed.
+  setup --non-interactive
+                      Run setup with OpenClaw non-interactive local onboarding.
+  configure defaults  Apply ClawMobile Lite defaults for tools/web search/skills.
+  run | start         Start OpenClaw gateway in Lite mode.
+  doctor | status     Print Lite health checks.
+  reset [args]        Run Lite reset helper.
+  repair              Force rebuild/reinstall plugin, sync seed, then start gateway.
+  pair <code>         Approve OpenClaw Telegram pairing code.
+  update              Pull repo updates if this is a git checkout, then install.
+  path                Print this ClawMobile repo path.
+  help                Show this help.
+
+Useful non-interactive setup environment:
+  OPENAI_API_KEY=... clawmobile setup --non-interactive --auth-choice openai-api-key
+  ANTHROPIC_API_KEY=... clawmobile setup --non-interactive --auth-choice anthropic-api-key
+
+Pass extra OpenClaw onboard flags after setup/onboard.
+
+Setup help:
+  installer/termux-lite/README.md explains provider, API key, Telegram, and ADB setup.
+  installer/FAQ.md has troubleshooting for package mirrors, API keys, and Telegram pairing.
+EOF
+}
+
+repo_root() {
+  clawmobile_lite_repo_root
+}
+
+ensure_bin_wrapper() {
+  local target="${PREFIX:-/data/data/com.termux/files/usr}/bin/clawmobile"
+  local source="$SCRIPT_DIR/clawmobile"
+
+  if [ -z "${PREFIX:-}" ]; then
+    return 0
+  fi
+
+  mkdir -p "$(dirname "$target")"
+  if [ "$target" = "$source" ]; then
+    return 0
+  fi
+
+  cat > "$target" <<WRAP
+#!$PREFIX/bin/bash
+exec "$source" "\$@"
+WRAP
+  chmod +x "$target"
+  echo "[lite] Installed command wrapper: $target"
+}
+
+config_set_json() {
+  local key="$1"
+  local value="$2"
+
+  openclaw config set "$key" "$value" --strict-json </dev/null >/dev/null 2>&1 || \
+    openclaw config set "$key" "$value" </dev/null >/dev/null 2>&1 || true
+}
+
+configure_lite_defaults() {
+  if ! command -v openclaw >/dev/null 2>&1; then
+    return 0
+  fi
+
+  echo "[lite] Applying ClawMobile Lite OpenClaw defaults..."
+  openclaw config set tools.profile full </dev/null >/dev/null 2>&1 || true
+  config_set_json "tools.web.search.enabled" "true"
+  config_set_json "tools.web.search.maxResults" "5"
+  config_set_json "tools.web.search.timeoutSeconds" "30"
+  config_set_json "tools.web.search.cacheTtlMinutes" "15"
+  openclaw config unset tools.web.search.provider </dev/null >/dev/null 2>&1 || true
+  config_set_json "skills.install.nodeManager" '"npm"'
+  config_set_json "skills.install.preferBrew" "false"
+}
+
+upsert_env_var() {
+  local name="$1"
+  local value="$2"
+  local env_file="${OPENCLAW_ENV_FILE:-$HOME/.openclaw/.env}"
+  local tmp_file=""
+
+  [ -n "$name" ] || return 0
+  [ -n "$value" ] || return 0
+
+  mkdir -p "$(dirname "$env_file")"
+  touch "$env_file"
+  chmod 600 "$env_file" 2>/dev/null || true
+  tmp_file="$(mktemp "${TMPDIR:-/tmp}/clawmobile-env.XXXXXX")"
+  grep -v "^${name}=" "$env_file" > "$tmp_file" 2>/dev/null || true
+  printf '%s=%s\n' "$name" "$value" >> "$tmp_file"
+  cat "$tmp_file" > "$env_file"
+  rm -f "$tmp_file"
+  export "$name=$value"
+  echo "[lite] Stored $name in $env_file"
+}
+
+prompt_default() {
+  local prompt="$1"
+  local default="$2"
+  local answer=""
+
+  printf '%s [%s]: ' "$prompt" "$default" >&2
+  read -r answer
+  printf '%s' "${answer:-$default}"
+}
+
+prompt_secret() {
+  local prompt="$1"
+  local answer=""
+
+  # Read as a full line instead of one character at a time. Termux/pasted API
+  # keys can include bracketed-paste escape wrappers, and character readers may
+  # display or store those wrappers as part of the secret.
+  if [ "${CLAWMOBILE_HIDE_SECRETS:-0}" = "1" ]; then
+    printf '%s (input hidden; paste, then press Enter): ' "$prompt" >&2
+    IFS= read -r -s answer || true
+    printf '\n' >&2
+  else
+    printf '%s (visible input; paste, then press Enter): ' "$prompt" >&2
+    IFS= read -r answer || true
+  fi
+
+  answer="${answer//$'\r'/}"
+  answer="${answer//$'\e[200~'/}"
+  answer="${answer//$'\e[201~'/}"
+  answer="${answer//$'\e[?2004h'/}"
+  answer="${answer//$'\e[?2004l'/}"
+  answer="${answer//\[200~/}"
+  answer="${answer//\[201~/}"
+  answer="${answer//\[\?2004h/}"
+  answer="${answer//\[\?2004l/}"
+  answer="${answer//$'\e'/}"
+  printf '%s' "$answer"
+}
+
+choose_model_provider() {
+  local choice=""
+
+  cat >&2 <<'EOF'
+
+Model provider:
+  1) OpenAI (recommended)
+  2) Anthropic
+  3) Gemini / Google AI Studio
+  4) OpenRouter
+  5) DeepSeek
+  6) Custom OpenAI-compatible endpoint
+  7) Skip for now
+  8) Use full OpenClaw interactive setup
+
+You will need an API key from the selected provider unless you skip setup.
+See installer/termux-lite/README.md and installer/FAQ.md for examples.
+EOF
+  printf 'Choose model provider [1]: ' >&2
+  read -r choice
+  printf '%s' "${choice:-1}"
+}
+
+choose_channel() {
+  local choice=""
+
+  cat >&2 <<'EOF'
+
+Chat channel:
+  1) Telegram (recommended for phone/remote control)
+  2) Skip for now
+
+Telegram setup needs a bot token from @BotFather. You can skip now and run
+`clawmobile setup` later for the full OpenClaw channel setup.
+If you know your numeric Telegram user ID, quick setup can allowlist you and
+skip the later `clawmobile pair <code>` step.
+See installer/termux-lite/README.md or installer/FAQ.md if these terms are new.
+EOF
+  printf 'Choose chat channel [1]: ' >&2
+  read -r choice
+  printf '%s' "${choice:-1}"
+}
+
+configure_telegram_channel() {
+  local token="$1"
+  local user_id="${2:-}"
+  local channel_configured="0"
+
+  if [ -z "$token" ]; then
+    echo "[lite] Telegram token not provided; skipping channel setup."
+    echo "[lite] Later: clawmobile setup, or openclaw channels add --channel telegram --token <bot-token>"
+    return 0
+  fi
+
+  if [ -n "$user_id" ] && ! printf '%s' "$user_id" | grep -Eq '^[0-9]+$'; then
+    echo "[lite] WARNING: Telegram user ID must be numeric; keeping pairing mode." >&2
+    user_id=""
+  fi
+
+  upsert_env_var "TELEGRAM_BOT_TOKEN" "$token"
+  echo "[lite] Configuring Telegram channel..."
+  if openclaw channels add --channel telegram --use-env </dev/null; then
+    channel_configured="1"
+  else
+    echo "[lite] Telegram env-based setup failed; retrying with token flag..."
+    if openclaw channels add --channel telegram --token "$token" </dev/null; then
+      channel_configured="1"
+    else
+      echo "[lite] WARNING: Telegram channel setup failed." >&2
+      echo "[lite] Will still write explicit Telegram allowlist config if a user ID was provided." >&2
+    fi
+  fi
+
+  if [ "$channel_configured" != "1" ]; then
+    config_set_json "channels.telegram.enabled" "true"
+  fi
+
+  if [ -n "$user_id" ]; then
+    echo "[lite] Allowlisting Telegram user ID: $user_id"
+    config_set_json "channels.telegram.dmPolicy" '"allowlist"'
+    config_set_json "channels.telegram.allowFrom" "[\"$user_id\"]"
+    config_set_json "commands.ownerAllowFrom" "[\"telegram:$user_id\"]"
+    echo "[lite] Telegram pairing should not be required for this user ID."
+  else
+    echo "[lite] Telegram uses pairing mode. After starting the gateway, message the bot and run: clawmobile pair <code>"
+  fi
+
+  return 0
+}
+
+prompt_telegram_user_id() {
+  local answer=""
+
+  answer="${CLAWMOBILE_TELEGRAM_USER_ID:-${TELEGRAM_USER_ID:-}}"
+  if [ -n "$answer" ]; then
+    printf '%s' "$answer"
+    return 0
+  fi
+
+  cat >&2 <<'EOF'
+Telegram numeric user ID (optional):
+  - Enter it to skip the later pairing approval step.
+  - Leave blank to keep OpenClaw's normal pairing flow.
+  - You can get it from @userinfobot/@getidsbot, or from Bot API getUpdates
+    after messaging your bot.
+EOF
+  printf 'Telegram user ID []: ' >&2
+  read -r answer
+  printf '%s' "$answer"
+}
+
+run_quick_setup() {
+  local provider_choice=""
+  local channel_choice=""
+  local auth_choice=""
+  local env_var=""
+  local api_key=""
+  local store_key=""
+  local telegram_token=""
+  local telegram_user_id=""
+  local custom_base_url=""
+  local custom_model_id=""
+  local custom_compatibility=""
+  local extra=()
+
+  provider_choice="$(choose_model_provider)"
+  case "$(printf '%s' "$provider_choice" | tr '[:upper:]' '[:lower:]')" in
+    1|openai|openai-api-key)
+      auth_choice="openai-api-key"
+      env_var="OPENAI_API_KEY"
+      ;;
+    2|anthropic|claude|anthropic-api-key)
+      auth_choice="anthropic-api-key"
+      env_var="ANTHROPIC_API_KEY"
+      ;;
+    3|gemini|google|google-ai|google-ai-studio|gemini-api-key)
+      auth_choice="gemini-api-key"
+      env_var="GEMINI_API_KEY"
+      ;;
+    4|openrouter|openrouter-api-key)
+      auth_choice="openrouter-api-key"
+      env_var="OPENROUTER_API_KEY"
+      ;;
+    5|deepseek|deepseek-api-key)
+      auth_choice="deepseek-api-key"
+      env_var="DEEPSEEK_API_KEY"
+      ;;
+    6|custom|custom-api-key)
+      auth_choice="custom-api-key"
+      env_var="$(prompt_default "Provider API key environment variable" "CUSTOM_API_KEY")"
+      custom_base_url="$(prompt_default "Custom base URL" "https://api.openai.com/v1")"
+      custom_model_id="$(prompt_default "Custom model id" "model-id")"
+      custom_compatibility="$(prompt_default "Compatibility mode" "openai")"
+      extra+=("--custom-base-url" "$custom_base_url")
+      extra+=("--custom-model-id" "$custom_model_id")
+      extra+=("--custom-compatibility" "$custom_compatibility")
+      ;;
+    7|skip|none)
+      auth_choice="skip"
+      ;;
+    8|full|interactive)
+      echo "[lite] Switching to full OpenClaw interactive setup."
+      "$SCRIPT_DIR/onboard.sh" "$@"
+      return 0
+      ;;
+    *)
+      echo "[lite] Unknown quick provider choice: $provider_choice" >&2
+      echo "[lite] Use full setup for providers not listed here: clawmobile setup" >&2
+      return 2
+      ;;
+  esac
+
+  if [ "$auth_choice" != "skip" ] && [ "$env_var" != "SKIP" ]; then
+    api_key="${!env_var:-}"
+    if [ -z "$api_key" ]; then
+      api_key="$(prompt_secret "$env_var")"
+    fi
+    if [ -n "$api_key" ]; then
+      store_key="$(prompt_default "Store $env_var in ~/.openclaw/.env for future gateway runs" "Y")"
+      case "$(printf '%s' "$store_key" | tr '[:upper:]' '[:lower:]')" in
+        y|yes) upsert_env_var "$env_var" "$api_key" ;;
+        *) export "$env_var=$api_key" ;;
+      esac
+    fi
+  fi
+
+  channel_choice="$(choose_channel)"
+  case "$(printf '%s' "$channel_choice" | tr '[:upper:]' '[:lower:]')" in
+    1|telegram|tg)
+      telegram_token="${TELEGRAM_BOT_TOKEN:-}"
+      if [ -z "$telegram_token" ]; then
+        telegram_token="$(prompt_secret "Telegram bot token from @BotFather (leave blank to skip)")"
+      fi
+      if [ -n "$telegram_token" ]; then
+        telegram_user_id="$(prompt_telegram_user_id)"
+      fi
+      ;;
+    2|skip|none)
+      ;;
+    *)
+      echo "[lite] Unknown channel choice; skipping channel setup."
+      ;;
+  esac
+
+  extra=("--auth-choice" "$auth_choice" "${extra[@]}" "$@")
+  echo "[lite] ADB setup is optional and can be done later from OpenClaw."
+  echo "[lite] Long-term session-memory hooks are left off by default."
+  run_onboard_non_interactive "${extra[@]}"
+  if [ -n "$telegram_token" ]; then
+    configure_telegram_channel "$telegram_token" "$telegram_user_id"
+  else
+    echo "[lite] No chat channel configured by quick setup. You can run full channel setup later with: clawmobile setup"
+  fi
+}
+
+run_onboard_non_interactive() {
+  local auth_choice="skip"
+  local gateway_port="${GATEWAY_PORT:-18789}"
+  local gateway_bind="${GATEWAY_BIND:-loopback}"
+  local secret_mode="${CLAWMOBILE_SECRET_INPUT_MODE:-ref}"
+  local extra=()
+
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --auth-choice)
+        auth_choice="${2:-}"
+        shift 2
+        ;;
+      --gateway-port)
+        gateway_port="${2:-}"
+        shift 2
+        ;;
+      --gateway-bind)
+        gateway_bind="${2:-}"
+        shift 2
+        ;;
+      --secret-input-mode)
+        secret_mode="${2:-}"
+        shift 2
+        ;;
+      *)
+        extra+=("$1")
+        shift
+        ;;
+    esac
+  done
+
+  if [ -z "$auth_choice" ]; then
+    auth_choice="skip"
+  fi
+
+  echo "[lite] Running OpenClaw non-interactive onboarding: auth=$auth_choice port=$gateway_port bind=$gateway_bind"
+  openclaw onboard \
+    --non-interactive \
+    --mode local \
+    --auth-choice "$auth_choice" \
+    --gateway-port "$gateway_port" \
+    --gateway-bind "$gateway_bind" \
+    --skip-daemon \
+    --skip-skills \
+    --skip-health \
+    --accept-risk \
+    --secret-input-mode "$secret_mode" \
+    "${extra[@]}"
+}
+
+cmd="${1:-help}"
+shift || true
+
+case "$cmd" in
+  help|-h|--help)
+    usage
+    ;;
+  path)
+    repo_root
+    ;;
+  install-openclaw)
+    exec "$SCRIPT_DIR/install-openclaw.sh" "$@"
+    ;;
+  install)
+    clawmobile_require_termux
+    clawmobile_lite_env
+    ensure_bin_wrapper
+    exec "$SCRIPT_DIR/install.sh" "$@"
+    ;;
+  onboard)
+    clawmobile_require_termux
+    clawmobile_lite_env
+    clawmobile_require_openclaw
+    if [ "${1:-}" = "--non-interactive" ]; then
+      shift
+      run_onboard_non_interactive "$@"
+    else
+      exec "$SCRIPT_DIR/onboard.sh" "$@"
+    fi
+    ;;
+  setup)
+    start_after_setup="0"
+    run_doctor="${CLAWMOBILE_LITE_SETUP_DOCTOR:-0}"
+    setup_args=()
+    setup_mode="${1:-}"
+    if [ "$setup_mode" = "--quick" ] || [ "$setup_mode" = "--non-interactive" ]; then
+      shift
+    else
+      setup_mode=""
+    fi
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --start)
+          start_after_setup="1"
+          shift
+          ;;
+        --doctor)
+          run_doctor="1"
+          shift
+          ;;
+        --no-doctor)
+          run_doctor="0"
+          shift
+          ;;
+        *)
+          setup_args+=("$1")
+          shift
+          ;;
+      esac
+    done
+
+    clawmobile_require_termux
+    clawmobile_lite_env
+    ensure_bin_wrapper
+    CLAWMOBILE_LITE_INSTALL_OPENCLAW="${CLAWMOBILE_LITE_INSTALL_OPENCLAW:-1}" "$SCRIPT_DIR/install.sh"
+    if [ "$setup_mode" = "--quick" ]; then
+      run_quick_setup "${setup_args[@]}"
+    elif [ "$setup_mode" = "--non-interactive" ]; then
+      run_onboard_non_interactive "${setup_args[@]}"
+    else
+      "$SCRIPT_DIR/onboard.sh" "${setup_args[@]}"
+    fi
+    configure_lite_defaults
+    if [ "$run_doctor" = "1" ]; then
+      "$SCRIPT_DIR/doctor.sh" || true
+    else
+      echo "[lite] Skipping full doctor during setup for faster Termux startup."
+      echo "[lite] Run later when needed: clawmobile doctor"
+    fi
+    echo
+    if [ "$start_after_setup" = "1" ]; then
+      echo "[lite] Setup complete. Starting OpenClaw Gateway..."
+      exec "$SCRIPT_DIR/run.sh"
+    else
+      echo "[lite] Setup complete. Start with:"
+      echo "  clawmobile run"
+    fi
+    ;;
+  configure)
+    subcmd="${1:-defaults}"
+    shift || true
+    case "$subcmd" in
+      defaults)
+        clawmobile_require_termux
+        clawmobile_lite_env
+        clawmobile_require_openclaw
+        configure_lite_defaults
+        ;;
+      *)
+        echo "[lite] unknown configure target: $subcmd" >&2
+        exit 2
+        ;;
+    esac
+    ;;
+  run|start)
+    exec "$SCRIPT_DIR/run.sh" "$@"
+    ;;
+  doctor|status)
+    exec "$SCRIPT_DIR/doctor.sh" "$@"
+    ;;
+  reset)
+    exec "$SCRIPT_DIR/reset.sh" "$@"
+    ;;
+  repair)
+    CLAWMOBILE_LITE_FORCE_BUILD=1 CLAWMOBILE_LITE_FORCE_PLUGIN_INSTALL=1 exec "$SCRIPT_DIR/run.sh" "$@"
+    ;;
+  pair|pairing)
+    exec "$SCRIPT_DIR/pairing.sh" "$@"
+    ;;
+  update)
+    root="$(repo_root)"
+    if [ -d "$root/.git" ]; then
+      (cd "$root" && git pull --ff-only)
+    else
+      echo "[lite] Not a git checkout; skipping git pull: $root"
+    fi
+    exec "$SCRIPT_DIR/install.sh" "$@"
+    ;;
+  *)
+    echo "[lite] unknown command: $cmd" >&2
+    echo >&2
+    usage >&2
+    exit 2
+    ;;
+esac
