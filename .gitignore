@@ -93,6 +93,7 @@ config/local.yml
 # -------------------------
 # Temporary installer files
 # -------------------------
+.clawmobile-bootstrap-source
 installer/**/*.log
 installer/**/tmp/
 

@@ -41,6 +41,46 @@ cd ClawMobile
 If `git clone` is also blocked, download the repository as a zip file, extract
 it in Termux, and run the same local setup command from the extracted directory.
 
+## `curl`, `git`, or `pkg` fails with an OpenSSL or QUIC symbol error
+
+Some Termux installs can temporarily have mismatched OpenSSL, libngtcp2,
+libcurl, curl, git, or package-manager dependencies. Symptoms may look like:
+
+```text
+CANNOT LINK EXECUTABLE ".../git-remote-https": cannot locate symbol "SSL_set_quic_tls_transport_params"
+fatal: remote helper 'https' aborted session
+```
+
+The latest one-command bootstrap avoids touching Termux packages before it has
+downloaded ClawMobile: fresh installs fetch the GitHub archive with the `curl`
+that launched the bootstrap, then run setup from the downloaded tree. This
+avoids depending on `git-remote-https` during the earliest install step.
+
+If `pkg update`, `curl`, or `git` already fails with a linker error, the Termux
+package state is probably partially upgraded. Try a full repair with `apt`:
+
+```sh
+apt update
+apt full-upgrade -y
+apt install -y openssl libngtcp2 libcurl curl git ca-certificates
+```
+
+If you previously used a fallback mirror, restore ClawMobile's source backup
+before retrying:
+
+```sh
+if [ -f "$PREFIX/etc/apt/sources.list.clawmobile.bak" ]; then
+  cp "$PREFIX/etc/apt/sources.list.clawmobile.bak" "$PREFIX/etc/apt/sources.list"
+fi
+rm -rf "$PREFIX/var/lib/apt/lists/"*
+apt update
+apt full-upgrade -y
+```
+
+If `apt` has the same linker error, Termux's package manager may be too broken
+to repair in place. The fastest recovery is usually clearing Termux app data or
+reinstalling Termux from F-Droid/GitHub, then rerunning the latest bootstrap.
+
 ## Termux package install fails
 
 Symptoms may include:
