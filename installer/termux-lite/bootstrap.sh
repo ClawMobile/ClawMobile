@@ -5,9 +5,15 @@ REPO_URL="${CLAWMOBILE_REPO_URL:-https://github.com/ClawMobile/ClawMobile.git}"
 REPO_BRANCH="${CLAWMOBILE_REPO_BRANCH:-main}"
 TARGET_DIR="${CLAWMOBILE_HOME:-$HOME/ClawMobile}"
 RUN_SETUP="${CLAWMOBILE_BOOTSTRAP_RUN_SETUP:-1}"
+SOURCE_MODE="${CLAWMOBILE_BOOTSTRAP_SOURCE:-archive}"
+ARCHIVE_MARKER=".clawmobile-bootstrap-source"
 
 info() {
   echo "[lite-bootstrap] $*"
+}
+
+warn() {
+  echo "[lite-bootstrap] WARNING: $*" >&2
 }
 
 die() {
@@ -15,183 +21,149 @@ die() {
   exit 1
 }
 
-termux_apt_mirrors() {
-  local mirrors=""
-
-  if [ -n "${CLAWMOBILE_TERMUX_APT_MIRRORS:-}" ]; then
-    mirrors="$CLAWMOBILE_TERMUX_APT_MIRRORS"
-  elif [ -n "${CLAWMOBILE_TERMUX_APT_MIRROR:-}" ]; then
-    mirrors="$CLAWMOBILE_TERMUX_APT_MIRROR"
-  else
-    mirrors="https://packages.termux.dev/apt/termux-main https://packages-cf.termux.dev/apt/termux-main https://mirror.sjtu.edu.cn/termux/termux-main https://mirrors.bfsu.edu.cn/termux/apt/termux-main https://mirrors.cernet.edu.cn/termux/apt/termux-main https://mirror.iscas.ac.cn/termux/apt/termux-main https://mirror.nyist.edu.cn/termux/apt/termux-main https://mirrors.aliyun.com/termux/termux-main"
-  fi
-
-  printf '%s\n' $mirrors
-}
-
-termux_set_apt_mirror() {
-  local mirror="$1"
-  local sources_dir="${PREFIX:-}/etc/apt"
-  local main_list="$sources_dir/sources.list"
-  local backup=""
-
-  [ -n "${PREFIX:-}" ] || return 1
-  [ -d "$sources_dir" ] || return 1
-
-  backup="$main_list.clawmobile.bak"
-  if [ -f "$main_list" ] && [ ! -f "$backup" ]; then
-    cp "$main_list" "$backup"
-    echo "[lite-bootstrap] Backed up Termux apt source: $backup" >&2
-  fi
-
-  printf 'deb %s stable main\n' "$mirror" > "$main_list"
-  rm -rf "${PREFIX}/var/lib/apt/lists/"* 2>/dev/null || true
-}
-
-termux_restore_apt_backup() {
-  local main_list="${PREFIX:-}/etc/apt/sources.list"
-  local backup="$main_list.clawmobile.bak"
-
-  if [ -f "$backup" ]; then
-    cp "$backup" "$main_list"
-    rm -rf "${PREFIX}/var/lib/apt/lists/"* 2>/dev/null || true
-    echo "[lite-bootstrap] Restored original Termux apt source from: $backup" >&2
-  fi
-}
-
-termux_apt_retry_with_fallback() {
-  local mirror=""
-  local update_log=""
-  local command_log=""
-  local status=1
-  local tmp_dir="${TMPDIR:-${PREFIX:-/tmp}/tmp}"
-
-  [ "${CLAWMOBILE_TERMUX_APT_FALLBACK:-1}" = "1" ] || return 1
-  [ -n "${PREFIX:-}" ] || return 1
-  [ -d "${PREFIX}/etc/apt" ] || return 1
-
-  mkdir -p "$tmp_dir" 2>/dev/null || true
-
-  for mirror in $(termux_apt_mirrors); do
-    echo "[lite-bootstrap] Trying Termux package fallback mirror: $mirror" >&2
-    termux_set_apt_mirror "$mirror" || continue
-
-    update_log="$(mktemp "$tmp_dir/clawmobile-apt-update.XXXXXX")"
-    if ! termux_apt_get update -y > >(tee "$update_log") 2> >(tee -a "$update_log" >&2); then
-      rm -f "$update_log"
-      continue
-    fi
-    if termux_apt_error_needs_mirror_fallback "$update_log"; then
-      rm -f "$update_log"
-      continue
-    fi
-    rm -f "$update_log"
-
-    if [ "${1:-}" = "update" ]; then
-      echo "[lite-bootstrap] Termux package fallback mirror is usable: $mirror" >&2
-      return 0
-    fi
-
-    echo "[lite-bootstrap] Retrying Termux package command with mirror: $mirror" >&2
-    command_log="$(mktemp "$tmp_dir/clawmobile-apt-command.XXXXXX")"
-    if termux_apt_get "$@" > >(tee "$command_log") 2> >(tee -a "$command_log" >&2); then
-      if ! termux_apt_error_needs_mirror_fallback "$command_log"; then
-        rm -f "$command_log"
-        echo "[lite-bootstrap] Termux package fallback mirror is usable: $mirror" >&2
-        return 0
-      fi
-      status=1
-    else
-      status=$?
-    fi
-
-    if ! termux_apt_error_needs_mirror_fallback "$command_log"; then
-      rm -f "$command_log"
-      return "$status"
-    fi
-    rm -f "$command_log"
-  done
-
-  echo "[lite-bootstrap] WARNING: no Termux package fallback mirror was usable." >&2
-  termux_restore_apt_backup
-  return 1
-}
-
-termux_apt_get() {
-  if command -v apt-get >/dev/null 2>&1; then
-    DEBIAN_FRONTEND=noninteractive \
-      APT_LISTCHANGES_FRONTEND=none \
-      UCF_FORCE_CONFFOLD=1 \
-      apt-get \
-      -o Dpkg::Options::="--force-confdef" \
-      -o Dpkg::Options::="--force-confold" \
-      "$@"
-    return $?
-  fi
-
-  DEBIAN_FRONTEND=noninteractive \
-    APT_LISTCHANGES_FRONTEND=none \
-    UCF_FORCE_CONFFOLD=1 \
-    pkg "$@"
-}
-
-termux_apt_error_needs_mirror_fallback() {
-  local log_file="$1"
-
-  [ -f "$log_file" ] || return 1
-  grep -Eqi \
-    'File has unexpected size|Hash Sum mismatch|Mirror sync in progress|Failed to fetch|Could not connect|Connection refused|Could not resolve|Temporary failure resolving|Unable to locate package|Package .* has no installation candidate|does not have a Release file|repository .* is not signed' \
-    "$log_file"
-}
-
-termux_pkg() {
-  local status=0
-  local log_file=""
-  local tmp_dir="${TMPDIR:-${PREFIX:-/tmp}/tmp}"
-
-  mkdir -p "$tmp_dir" 2>/dev/null || true
-  log_file="$(mktemp "$tmp_dir/clawmobile-apt.XXXXXX")"
-
-  if termux_apt_get "$@" > >(tee "$log_file") 2> >(tee -a "$log_file" >&2); then
-    if termux_apt_error_needs_mirror_fallback "$log_file"; then
-      rm -f "$log_file"
-      termux_apt_retry_with_fallback "$@"
-      return $?
-    fi
-    rm -f "$log_file"
+repo_archive_url() {
+  if [ -n "${CLAWMOBILE_REPO_ARCHIVE_URL:-}" ]; then
+    printf '%s\n' "$CLAWMOBILE_REPO_ARCHIVE_URL"
     return 0
   fi
-  status=$?
 
-  if termux_apt_error_needs_mirror_fallback "$log_file"; then
-    rm -f "$log_file"
-    termux_apt_retry_with_fallback "$@"
-    return $?
+  local repo_path=""
+  local normalized="${REPO_URL%.git}"
+
+  case "$normalized" in
+    https://github.com/*/*)
+      repo_path="${normalized#https://github.com/}"
+      ;;
+    git@github.com:*/*)
+      repo_path="${normalized#git@github.com:}"
+      ;;
+    ssh://git@github.com/*/*)
+      repo_path="${normalized#ssh://git@github.com/}"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+
+  repo_path="${repo_path%/}"
+  [ -n "$repo_path" ] || return 1
+  printf 'https://codeload.github.com/%s/tar.gz/refs/heads/%s\n' "$repo_path" "$REPO_BRANCH"
+}
+
+download_repo_archive() {
+  local archive_url=""
+  local tmp_root="${TMPDIR:-${PREFIX:-/tmp}/tmp}"
+  local tmp_dir=""
+  local archive=""
+  local extract_dir=""
+  local top_dir=""
+
+  command -v curl >/dev/null 2>&1 || return 1
+  command -v tar >/dev/null 2>&1 || return 1
+
+  archive_url="$(repo_archive_url)" || return 1
+  mkdir -p "$tmp_root" 2>/dev/null || true
+  tmp_dir="$(mktemp -d "$tmp_root/clawmobile-bootstrap.XXXXXX")"
+  archive="$tmp_dir/repo.tar.gz"
+  extract_dir="$tmp_dir/extract"
+  mkdir -p "$extract_dir"
+
+  info "Downloading repository archive: $archive_url"
+  if ! curl -fL "$archive_url" -o "$archive"; then
+    rm -rf "$tmp_dir"
+    return 1
   fi
 
-  rm -f "$log_file"
-  return "$status"
+  if ! tar -xzf "$archive" -C "$extract_dir"; then
+    rm -rf "$tmp_dir"
+    return 1
+  fi
+
+  top_dir="$(find "$extract_dir" -mindepth 1 -maxdepth 1 -type d | head -n 1)"
+  if [ -z "$top_dir" ]; then
+    rm -rf "$tmp_dir"
+    return 1
+  fi
+
+  mkdir -p "$(dirname "$TARGET_DIR")"
+  rm -rf "$TARGET_DIR"
+  mv "$top_dir" "$TARGET_DIR"
+  write_source_marker "archive" "$archive_url"
+  rm -rf "$tmp_dir"
+}
+
+write_source_marker() {
+  local source_type="$1"
+  local archive_url="${2:-}"
+
+  [ -d "$TARGET_DIR" ] || return 1
+  cat > "$TARGET_DIR/$ARCHIVE_MARKER" <<EOF
+repo_url=$REPO_URL
+repo_branch=$REPO_BRANCH
+source=$source_type
+archive_url=$archive_url
+EOF
+}
+
+clone_repo_with_git() {
+  command -v git >/dev/null 2>&1 || return 1
+  git clone --branch "$REPO_BRANCH" --depth 1 "$REPO_URL" "$TARGET_DIR"
+  write_source_marker "git"
+}
+
+update_git_checkout() {
+  command -v git >/dev/null 2>&1 || return 1
+  git -C "$TARGET_DIR" fetch origin "$REPO_BRANCH"
+  git -C "$TARGET_DIR" checkout "$REPO_BRANCH"
+  git -C "$TARGET_DIR" pull --ff-only origin "$REPO_BRANCH"
+}
+
+prepare_repo() {
+  if [ -d "$TARGET_DIR/.git" ]; then
+    info "Updating existing git checkout: $TARGET_DIR"
+    if ! update_git_checkout; then
+      die "failed to update existing git checkout. Fix git/pkg first, or remove $TARGET_DIR and retry archive bootstrap."
+    fi
+    return 0
+  fi
+
+  if [ -e "$TARGET_DIR" ] && [ ! -f "$TARGET_DIR/$ARCHIVE_MARKER" ]; then
+    die "target exists but is not a ClawMobile bootstrap checkout: $TARGET_DIR"
+  fi
+
+  if [ -f "$TARGET_DIR/$ARCHIVE_MARKER" ]; then
+    info "Replacing existing bootstrap checkout: $TARGET_DIR"
+  fi
+
+  case "$SOURCE_MODE" in
+    archive)
+      rm -rf "$TARGET_DIR"
+      download_repo_archive || die "archive download failed. This mode does not fall back to git; use CLAWMOBILE_BOOTSTRAP_SOURCE=auto if you want git fallback."
+      ;;
+    git)
+      rm -rf "$TARGET_DIR"
+      clone_repo_with_git || die "git clone failed. Try CLAWMOBILE_BOOTSTRAP_SOURCE=archive or repair Termux git/pkg."
+      ;;
+    auto)
+      if download_repo_archive; then
+        return 0
+      fi
+      warn "archive download failed; trying git clone."
+      rm -rf "$TARGET_DIR"
+      clone_repo_with_git || die "archive download failed and git clone was unavailable or failed."
+      ;;
+    *)
+      die "unknown CLAWMOBILE_BOOTSTRAP_SOURCE=$SOURCE_MODE. Use archive, git, or auto."
+      ;;
+  esac
 }
 
 if [ -z "${PREFIX:-}" ] || [[ "${PREFIX:-}" != *"/com.termux/"* ]]; then
   die "this bootstrap must run inside Termux."
 fi
 
-info "Installing minimal Termux prerequisites..."
-termux_pkg update -y
-termux_pkg install -y git curl
-
-if [ -d "$TARGET_DIR/.git" ]; then
-  info "Updating existing checkout: $TARGET_DIR"
-  git -C "$TARGET_DIR" fetch origin "$REPO_BRANCH"
-  git -C "$TARGET_DIR" checkout "$REPO_BRANCH"
-  git -C "$TARGET_DIR" pull --ff-only origin "$REPO_BRANCH"
-elif [ -e "$TARGET_DIR" ]; then
-  die "target exists but is not a git checkout: $TARGET_DIR"
-else
-  info "Cloning $REPO_URL#$REPO_BRANCH -> $TARGET_DIR"
-  git clone --branch "$REPO_BRANCH" --depth 1 "$REPO_URL" "$TARGET_DIR"
-fi
+info "Preparing ClawMobile checkout without changing Termux packages..."
+prepare_repo
 
 chmod +x "$TARGET_DIR/installer/termux-lite/clawmobile"
 mkdir -p "$PREFIX/bin"
@@ -203,7 +175,7 @@ chmod +x "$PREFIX/bin/clawmobile"
 info "Installed command wrapper: $PREFIX/bin/clawmobile"
 
 if [ "$RUN_SETUP" = "1" ]; then
-  info "Running ClawMobile Lite setup..."
+  info "Running ClawMobile setup..."
   if [ -r /dev/tty ]; then
     exec "$TARGET_DIR/installer/termux-lite/clawmobile" setup "$@" </dev/tty
   fi
