@@ -6,7 +6,6 @@ repository or creating a release tag.
 ## Code And Tests
 
 - [ ] `cd openclaw-plugin-mobile-ui && npm run build`
-- [ ] `cd openclaw-plugin-mobile-ui && npm run build:lite`
 - [ ] `cd openclaw-plugin-mobile-ui && npm run test:trace-induction`
 - [ ] `git diff --check`
 - [ ] Confirm the branch is based on the intended `main` commit.
@@ -19,7 +18,8 @@ repository or creating a release tag.
       personal text, or generated traces are committed.
 - [ ] Public docs point to the public repository URL, not private dev-only URLs.
 - [ ] The default install path is ClawMobile on the Termux runtime.
-- [ ] Full DroidRun/MobileRun backend docs are linked as the advanced path only.
+- [ ] Archived DroidRun/MobileRun backend files are not presented as the active
+      install path.
 
 ## Documentation
 

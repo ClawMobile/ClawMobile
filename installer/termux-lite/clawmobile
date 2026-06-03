@@ -9,13 +9,13 @@ usage() {
   cat <<'EOF'
 Usage: clawmobile <command> [args]
 
-ClawMobile Lite command wrapper.
+ClawMobile Termux runtime command wrapper.
 
 Commands:
-  install             Install/update Lite prerequisites, OpenClaw plugin, OCR, and workspace seed.
+  install             Install/update Termux runtime prerequisites, OpenClaw plugin, OCR, and workspace seed.
   install-openclaw    Install/update OpenClaw for Android/Termux.
-  onboard             Run OpenClaw onboarding in Lite mode.
-  setup               Install OpenClaw + Lite runtime, then onboard.
+  onboard             Run OpenClaw onboarding for the Termux runtime.
+  setup               Install OpenClaw + Termux runtime, then onboard.
   setup --quick       Install, ask a short model/channel menu, then run OpenClaw non-interactive onboarding.
   setup --quick --start
                       Install, quick-onboard, skip full doctor by default, then start the gateway.
@@ -23,10 +23,10 @@ Commands:
                       Run full diagnostics after setup. Default setup skips doctor for speed.
   setup --non-interactive
                       Run setup with OpenClaw non-interactive local onboarding.
-  configure defaults  Apply ClawMobile Lite defaults for tools/web search/skills.
-  run | start         Start OpenClaw gateway in Lite mode.
-  doctor | status     Print Lite health checks.
-  reset [args]        Run Lite reset helper.
+  configure defaults  Apply ClawMobile Termux runtime defaults for tools/web search/skills.
+  run | start         Start OpenClaw gateway in capability-aware Termux runtime mode.
+  doctor | status     Print Termux runtime health checks.
+  reset [args]        Run Termux runtime reset helper.
   repair              Force rebuild/reinstall plugin, sync seed, then start gateway.
   pair <code>         Approve OpenClaw Telegram pairing code.
   update              Pull repo updates if this is a git checkout, then install.
@@ -83,7 +83,7 @@ configure_lite_defaults() {
     return 0
   fi
 
-  echo "[lite] Applying ClawMobile Lite OpenClaw defaults..."
+  echo "[lite] Applying ClawMobile Termux runtime OpenClaw defaults..."
   openclaw config set tools.profile full </dev/null >/dev/null 2>&1 || true
   config_set_json "tools.web.search.enabled" "true"
   config_set_json "tools.web.search.maxResults" "5"
@@ -452,7 +452,7 @@ case "$cmd" in
     ;;
   setup)
     start_after_setup="0"
-    run_doctor="${CLAWMOBILE_LITE_SETUP_DOCTOR:-0}"
+    run_doctor="${CLAWMOBILE_TERMUX_SETUP_DOCTOR:-0}"
     setup_args=()
     setup_mode="${1:-}"
     if [ "$setup_mode" = "--quick" ] || [ "$setup_mode" = "--non-interactive" ]; then
@@ -484,7 +484,7 @@ case "$cmd" in
     clawmobile_require_termux
     clawmobile_lite_env
     ensure_bin_wrapper
-    CLAWMOBILE_LITE_INSTALL_OPENCLAW="${CLAWMOBILE_LITE_INSTALL_OPENCLAW:-1}" "$SCRIPT_DIR/install.sh"
+    CLAWMOBILE_TERMUX_INSTALL_OPENCLAW="${CLAWMOBILE_TERMUX_INSTALL_OPENCLAW:-1}" "$SCRIPT_DIR/install.sh"
     if [ "$setup_mode" = "--quick" ]; then
       run_quick_setup "${setup_args[@]}"
     elif [ "$setup_mode" = "--non-interactive" ]; then
@@ -534,7 +534,7 @@ case "$cmd" in
     exec "$SCRIPT_DIR/reset.sh" "$@"
     ;;
   repair)
-    CLAWMOBILE_LITE_FORCE_BUILD=1 CLAWMOBILE_LITE_FORCE_PLUGIN_INSTALL=1 exec "$SCRIPT_DIR/run.sh" "$@"
+    CLAWMOBILE_TERMUX_FORCE_BUILD=1 CLAWMOBILE_TERMUX_FORCE_PLUGIN_INSTALL=1 exec "$SCRIPT_DIR/run.sh" "$@"
     ;;
   pair|pairing)
     exec "$SCRIPT_DIR/pairing.sh" "$@"

@@ -23,12 +23,11 @@ body:
     attributes:
       label: Area
       options:
-        - Lite installer
+        - Termux runtime installer
         - Mobile UI tools
         - Trace-to-skill learning
         - Generated skill feedback
         - Documentation
-        - Full DroidRun/MobileRun backend
         - Other
   - type: textarea
     id: alternatives

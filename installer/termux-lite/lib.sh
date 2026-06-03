@@ -11,8 +11,6 @@ clawmobile_lite_env() {
   local openclaw_android_bin="$openclaw_android_home/bin"
   local openclaw_android_node="$openclaw_android_home/node/bin"
 
-  export CLAW_MOBILE_ADB_ONLY=1
-  export CLAWMOBILE_LITE=1
   export CLAW_MOBILE_TERMUX_BIN="${CLAW_MOBILE_TERMUX_BIN:-/data/data/com.termux/files/usr/bin}"
   export OPENCLAW_STATE_DIR="${OPENCLAW_STATE_DIR:-$HOME/.openclaw}"
   export OPENCLAW_WORKSPACE="${OPENCLAW_WORKSPACE:-$OPENCLAW_STATE_DIR/workspace}"
@@ -54,6 +52,174 @@ clawmobile_require_termux() {
   fi
 }
 
+clawmobile_android_cmd() {
+  if command -v cmd >/dev/null 2>&1; then
+    command cmd "$@"
+  elif [ -x /system/bin/cmd ]; then
+    /system/bin/cmd "$@"
+  else
+    return 127
+  fi
+}
+
+clawmobile_android_dumpsys() {
+  if command -v dumpsys >/dev/null 2>&1; then
+    command dumpsys "$@"
+  elif [ -x /system/bin/dumpsys ]; then
+    /system/bin/dumpsys "$@"
+  else
+    return 127
+  fi
+}
+
+clawmobile_termux_installer_package() {
+  local line=""
+  local installer=""
+
+  line="$(clawmobile_android_cmd package list packages -i com.termux 2>/dev/null | head -n 1 || true)"
+  case "$line" in
+    *installer=*)
+      installer="${line##*installer=}"
+      installer="${installer%%[[:space:]]*}"
+      ;;
+  esac
+
+  if [ -z "$installer" ]; then
+    installer="$(clawmobile_android_dumpsys package com.termux 2>/dev/null | sed -n 's/.*installerPackageName=//p' | head -n 1 || true)"
+    installer="${installer%%[[:space:]]*}"
+  fi
+
+  printf '%s\n' "${installer:-unknown}"
+}
+
+clawmobile_termux_version() {
+  local version=""
+
+  if command -v termux-info >/dev/null 2>&1; then
+    version="$(termux-info 2>/dev/null | sed -n 's/^TERMUX_VERSION=//p' | head -n 1 || true)"
+  fi
+
+  if [ -z "$version" ]; then
+    version="$(clawmobile_android_dumpsys package com.termux 2>/dev/null | sed -n 's/.*versionName=//p' | head -n 1 || true)"
+    version="${version%%[[:space:]]*}"
+  fi
+
+  printf '%s\n' "${version:-unknown}"
+}
+
+clawmobile_termux_apk_release() {
+  local release=""
+
+  if command -v termux-info >/dev/null 2>&1; then
+    release="$(termux-info 2>/dev/null | sed -n 's/^TERMUX_APP__APK_RELEASE=//p' | head -n 1 || true)"
+  fi
+
+  printf '%s\n' "${release:-unknown}"
+}
+
+clawmobile_termux_source_kind() {
+  local installer="${1:-}"
+  local apk_release="${2:-}"
+
+  case "$apk_release" in
+    F_DROID|FDROID|F-DROID|fdroid)
+      printf '%s\n' "fdroid"
+      return 0
+      ;;
+    GOOGLE_PLAY|GOOGLEPLAY|PLAY_STORE|PLAYSTORE|google_play)
+      printf '%s\n' "google_play"
+      return 0
+      ;;
+    GITHUB|GITHUB_RELEASE|github)
+      printf '%s\n' "github_or_sideload"
+      return 0
+      ;;
+  esac
+
+  case "$installer" in
+    com.android.vending)
+      printf '%s\n' "google_play"
+      ;;
+    org.fdroid.fdroid|org.fdroid.basic)
+      printf '%s\n' "fdroid"
+      ;;
+    ""|null|"<null>"|com.android.packageinstaller|com.google.android.packageinstaller|packageinstaller)
+      printf '%s\n' "github_or_sideload"
+      ;;
+    *)
+      printf '%s\n' "unknown"
+      ;;
+  esac
+}
+
+clawmobile_termux_source_label() {
+  local kind="${1:-unknown}"
+
+  case "$kind" in
+    google_play) printf '%s\n' "Google Play" ;;
+    fdroid) printf '%s\n' "F-Droid" ;;
+    github_or_sideload) printf '%s\n' "GitHub/sideload" ;;
+    *) printf '%s\n' "unknown" ;;
+  esac
+}
+
+clawmobile_termux_source_preflight() {
+  local installer=""
+  local version=""
+  local apk_release=""
+  local kind=""
+  local label=""
+
+  [ "${CLAWMOBILE_TERMUX_SOURCE_CHECK:-1}" = "1" ] || return 0
+  [ "${CLAWMOBILE_TERMUX_SOURCE_CHECK_DONE:-0}" = "1" ] && return 0
+
+  installer="$(clawmobile_termux_installer_package)"
+  version="$(clawmobile_termux_version)"
+  apk_release="$(clawmobile_termux_apk_release)"
+  kind="$(clawmobile_termux_source_kind "$installer" "$apk_release")"
+  label="$(clawmobile_termux_source_label "$kind")"
+  export CLAWMOBILE_TERMUX_SOURCE_CHECK_DONE=1
+
+  case "$kind" in
+    google_play)
+      if [ "${CLAWMOBILE_ALLOW_PLAY_TERMUX:-0}" = "1" ]; then
+        cat >&2 <<MSG
+[lite] WARNING: Google Play Termux detected (version=$version, apk_release=$apk_release, installer=$installer).
+
+ClawMobile's supported install baseline is Termux from F-Droid or the official
+Termux GitHub releases. Continuing best-effort because
+CLAWMOBILE_ALLOW_PLAY_TERMUX=1.
+MSG
+        return 0
+      fi
+
+      cat >&2 <<MSG
+[lite] ERROR: Google Play Termux detected (version=$version, apk_release=$apk_release, installer=$installer).
+
+ClawMobile's supported install baseline is Termux from F-Droid or the official
+Termux GitHub releases. Google Play Termux is a separate/best-effort path and
+may differ in package availability, Termux:API behavior, and Android
+permissions.
+
+Install Termux from F-Droid/GitHub and rerun setup. To continue best-effort on
+Google Play Termux anyway, rerun with:
+  CLAWMOBILE_ALLOW_PLAY_TERMUX=1 clawmobile setup --quick
+
+If the clawmobile command has not been installed yet and you are running from a
+repository checkout, use:
+  CLAWMOBILE_ALLOW_PLAY_TERMUX=1 ./installer/termux-lite/clawmobile setup --quick
+MSG
+      exit 1
+      ;;
+    fdroid|github_or_sideload)
+      echo "[lite] Termux source check: $label (version=$version, apk_release=$apk_release, installer=$installer)."
+      ;;
+    *)
+      echo "[lite] WARNING: Termux source is unknown (version=$version, apk_release=$apk_release, installer=$installer); continuing best-effort." >&2
+      ;;
+  esac
+}
+
 clawmobile_require_openclaw() {
   if command -v openclaw >/dev/null 2>&1; then
     return 0
@@ -70,7 +236,7 @@ From this repo, you can also run:
   ./installer/termux-lite/install-openclaw.sh
 
 Or let install.sh do that first:
-  CLAWMOBILE_LITE_INSTALL_OPENCLAW=1 ./installer/termux-lite/install.sh
+  CLAWMOBILE_TERMUX_INSTALL_OPENCLAW=1 ./installer/termux-lite/install.sh
 MSG
   exit 1
 }
@@ -83,11 +249,11 @@ clawmobile_require_npm() {
   cat >&2 <<'MSG'
 [lite] ERROR: npm was not found in PATH.
 
-If OpenClaw was installed by the Lite bootstrap, verify:
+If OpenClaw was installed by the ClawMobile Termux runtime bootstrap, verify:
   ~/.openclaw-android/bin/npm
 
 Or reinstall OpenClaw with:
-  CLAWMOBILE_LITE_INSTALL_OPENCLAW=1 ./installer/termux-lite/install.sh
+  CLAWMOBILE_TERMUX_INSTALL_OPENCLAW=1 ./installer/termux-lite/install.sh
 MSG
   exit 1
 }
@@ -253,18 +419,18 @@ clawmobile_pkg() {
 clawmobile_plugin_needs_lite_build() {
   local plugin_dir="$1"
 
-  if [ "${CLAWMOBILE_LITE_FORCE_BUILD:-0}" = "1" ]; then
-    echo "[lite] building plugin (CLAWMOBILE_LITE_FORCE_BUILD=1)..."
+  if [ "${CLAWMOBILE_TERMUX_FORCE_BUILD:-0}" = "1" ]; then
+    echo "[lite] building plugin (CLAWMOBILE_TERMUX_FORCE_BUILD=1)..."
     return 0
   fi
 
-  if [ ! -f "$plugin_dir/dist/index.js" ] || [ ! -f "$plugin_dir/dist/CLAWMOBILE_LITE.txt" ]; then
-    echo "[lite] building plugin (Lite dist output missing)..."
+  if [ ! -f "$plugin_dir/dist/index.js" ] || [ ! -f "$plugin_dir/dist/CLAWMOBILE_TERMUX_RUNTIME.txt" ]; then
+    echo "[lite] building plugin (Termux runtime dist output missing)..."
     return 0
   fi
 
   if [ -e "$plugin_dir/dist/pyexec" ] || [ -e "$plugin_dir/dist/backends/droidrun.js" ]; then
-    echo "[lite] building plugin (non-Lite dist artifacts present)..."
+    echo "[lite] building plugin (full-backend dist artifacts present)..."
     return 0
   fi
 
@@ -287,15 +453,15 @@ clawmobile_build_plugin_lite() {
   local plugin_dir="$repo_root/openclaw-plugin-mobile-ui"
 
   if ! clawmobile_plugin_needs_lite_build "$plugin_dir"; then
-    echo "[lite] Plugin Lite build is current; skipping build."
+    echo "[lite] Plugin Termux runtime build is current; skipping build."
     return 0
   fi
 
-  echo "[lite] Building plugin in capability-aware Lite mode..."
+  echo "[lite] Building plugin in capability-aware Termux runtime mode..."
   (
     cd "$plugin_dir"
     npm install --include=dev --no-audit --no-fund
-    CLAWMOBILE_LITE=1 CLAW_MOBILE_ADB_ONLY=1 npm run build:lite
+    npm run build
   )
 }
 
@@ -369,7 +535,7 @@ clawmobile_seed_openclaw_workspace_defaults() {
   defaults_workspace="$tmp_root/workspace"
   mkdir -p "$tmp_root/home"
 
-  echo "[lite] Restoring OpenClaw starter workspace files before injecting Lite seed..."
+  echo "[lite] Restoring OpenClaw starter workspace files before injecting the ClawMobile workspace seed..."
   if (
     HOME="$tmp_root/home"
     OPENCLAW_STATE_DIR="$tmp_root/home/.openclaw"
@@ -396,7 +562,7 @@ clawmobile_seed_openclaw_workspace_defaults() {
       fi
     done
   else
-    echo "[lite] WARNING: failed to generate OpenClaw starter workspace files; continuing with Lite seed only." >&2
+    echo "[lite] WARNING: failed to generate OpenClaw starter workspace files; continuing with the ClawMobile workspace seed only." >&2
   fi
 
   rm -rf "$tmp_root"
@@ -456,8 +622,8 @@ clawmobile_plugin_needs_install() {
   local extension_dir="$3"
   local install_stamp="$4"
 
-  if [ "${CLAWMOBILE_LITE_FORCE_PLUGIN_INSTALL:-0}" = "1" ]; then
-    echo "[lite] plugin install required (CLAWMOBILE_LITE_FORCE_PLUGIN_INSTALL=1)"
+  if [ "${CLAWMOBILE_TERMUX_FORCE_PLUGIN_INSTALL:-0}" = "1" ]; then
+    echo "[lite] plugin install required (CLAWMOBILE_TERMUX_FORCE_PLUGIN_INSTALL=1)"
     return 0
   fi
 
@@ -569,12 +735,12 @@ clawmobile_sync_workspace_seed() {
     else
       cp -R "$skills_src"/. "$skills_dst"/
     fi
-    echo "[lite] Synced Lite skills -> $skills_dst"
+    echo "[lite] Synced ClawMobile runtime skills -> $skills_dst"
   else
-    echo "[lite] WARNING: Lite seed skills not found at $skills_src" >&2
+    echo "[lite] WARNING: ClawMobile runtime seed skills not found at $skills_src" >&2
   fi
 
-  echo "[lite] Synced Lite workspace seed -> $workspace"
+  echo "[lite] Synced ClawMobile Termux runtime workspace seed -> $workspace"
 }
 
 clawmobile_select_adb_device() {

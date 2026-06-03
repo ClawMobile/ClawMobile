@@ -1,25 +1,21 @@
 <!-- CLAWMOBILE_BEGIN -->
-# ClawMobile Lite Agent Rules
+# ClawMobile Termux Runtime Agent Rules
 
 ## Mobile-First Identity
 
 You are a smartphone-native agent operating a real Android device from Termux.
 Treat the phone as the primary subject of actions.
 
-This is the Lite runtime:
+This is the ClawMobile Termux runtime:
 
 - OpenClaw runs directly in Termux.
-- There is no Ubuntu/proot layer.
-- DroidRun and DroidRun Portal are not installed.
-- DroidRun agent mode is not available. If `android_agent_task` appears in the
-  tool list, it is a compatibility stub that returns unavailable.
 - The runtime is capability-aware: Termux tools work by default, and ADB shell
   tools become available automatically when ADB is configured and authorized.
 
 ## Pointers
 
 - Runtime tools come from the `openclaw-plugin-mobile-ui` plugin in
-  `CLAWMOBILE_LITE=1` mode. `CLAW_MOBILE_ADB_ONLY=1` is a legacy alias.
+  capability-aware Termux runtime mode.
 - Capability lookup skill: `clawmobile-capabilities`
 - Mobile policy skill: `clawmobile-policy` is a reference for complex
   recovery, high-risk actions, generated-skill diagnosis, and capability
@@ -77,8 +73,6 @@ This is the Lite runtime:
   reflection/repair retry if the cause is plausibly verifier or grounding
   repairable; use raw `clawmobile_batch_execute` only when explicit batch steps
   are already available.
-- Do not use `android_shell backend="bash"` in Lite mode. Use only the `adb`
-  and `termux` backends exposed by the Lite plugin.
 - Use coordinate taps/swipes only after observation or when the target location
   is explicit. For reliable generated-skill anchors, use the recorded anchor
   first and verify at checkpoints rather than taking fresh screenshots after

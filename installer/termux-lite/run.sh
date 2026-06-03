@@ -21,10 +21,10 @@ clawmobile_build_plugin_lite "$REPO_ROOT"
 clawmobile_install_plugin "$PLUGIN_DIR"
 clawmobile_sync_workspace_seed "$REPO_ROOT"
 
-if [ "${CLAWMOBILE_LITE_REFRESH_DEFAULTS_ON_RUN:-0}" = "1" ]; then
-  echo "[lite] Refreshing OpenClaw Lite defaults before gateway start..."
+if [ "${CLAWMOBILE_TERMUX_REFRESH_DEFAULTS_ON_RUN:-0}" = "1" ]; then
+  echo "[lite] Refreshing OpenClaw Termux runtime defaults before gateway start..."
   openclaw config set tools.profile full </dev/null
 fi
 
-echo "[lite] Starting OpenClaw Gateway in capability-aware Lite mode..."
+echo "[lite] Starting OpenClaw Gateway in capability-aware Termux runtime mode..."
 exec openclaw gateway --bind "$GATEWAY_BIND" --port "$GATEWAY_PORT" --verbose

@@ -171,7 +171,7 @@ export async function detectMobileCapabilities() {
 
   return {
     ok: stage !== "unavailable",
-    mode: "lite_capability_aware",
+    mode: "termux_capability_aware",
     stage,
     capabilities,
     backends: {
@@ -219,7 +219,7 @@ export function capabilityUnavailable(
 ) {
   const reason =
     message ||
-    `Capability '${capability}' is not available in the current Lite permission stage.`;
+    `Capability '${capability}' is not available in the current Termux runtime permission stage.`;
   return {
     ok: false,
     code: -1,

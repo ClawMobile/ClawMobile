@@ -28,13 +28,13 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-Only the minimal files needed by ClawMobile Lite's Termux bootstrap are kept
+Only the minimal files needed by the ClawMobile Termux runtime bootstrap are kept
 here:
 
 - `glibc-compat.js`
 - `patch-openclaw-paths.sh`
 - `systemctl`
 
-ClawMobile Lite uses these files to run OpenClaw directly in Termux through the
+ClawMobile uses these files to run OpenClaw directly in Termux through the
 Termux `glibc-runner` dynamic linker and the official Linux arm64 Node.js
 binary, without cloning the upstream installer at install time.

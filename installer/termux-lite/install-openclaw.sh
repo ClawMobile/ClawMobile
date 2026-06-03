@@ -7,6 +7,7 @@ source "$SCRIPT_DIR/lib.sh"
 
 clawmobile_require_termux
 clawmobile_lite_env
+clawmobile_termux_source_preflight
 
 PROJECT_DIR="${CLAWMOBILE_OPENCLAW_ANDROID_HOME:-$HOME/.openclaw-android}"
 BIN_DIR="$PROJECT_DIR/bin"
@@ -266,11 +267,12 @@ remove_bashrc_block() {
 
 write_shell_env() {
   local bashrc="$HOME/.bashrc"
-  local start="# >>> ClawMobile Lite OpenClaw Android >>>"
-  local end="# <<< ClawMobile Lite OpenClaw Android <<<"
+  local start="# >>> ClawMobile Termux OpenClaw Android >>>"
+  local end="# <<< ClawMobile Termux OpenClaw Android <<<"
 
   touch "$bashrc"
   remove_bashrc_block "$start" "$end"
+  remove_bashrc_block "# >>> ClawMobile Lite OpenClaw Android >>>" "# <<< ClawMobile Lite OpenClaw Android <<<"
   remove_bashrc_block "# >>> OpenClaw on Android >>>" "# <<< OpenClaw on Android <<<"
 
   {
@@ -330,7 +332,7 @@ install_openclaw_package() {
         (cd "$clawdhub_dir" && npm install undici --no-fund --no-audit) || warn "undici install failed; clawdhub may not work."
       fi
     else
-      warn "clawdhub installation failed; ClawMobile Lite can still use local seeded skills."
+      warn "clawdhub installation failed; ClawMobile can still use local seeded skills."
     fi
   fi
 
@@ -356,7 +358,7 @@ verify_install() {
   fi
 }
 
-info "Installing OpenClaw directly in Termux with ClawMobile Lite bootstrap..."
+info "Installing OpenClaw directly in Termux for the ClawMobile Termux runtime..."
 info "Reference implementation inspected: https://github.com/AidanPark/openclaw-android"
 info "This script does not clone the upstream installer."
 
@@ -371,4 +373,4 @@ write_shell_env
 install_openclaw_package
 verify_install
 
-info "Install complete. New shells will load the ClawMobile Lite OpenClaw environment automatically."
+info "Install complete. New shells will load the ClawMobile Termux OpenClaw environment automatically."

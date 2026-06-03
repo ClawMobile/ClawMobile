@@ -16,8 +16,9 @@ This repository is still evolving quickly, so the goal of this guide is to keep 
   - Default Termux runtime workspace content copied into the OpenClaw workspace.
 - `installer/workspace-seed-lite/skills/`
   - Default skill-owned policy, capability, and trace-induction guidance.
-- `installer/termux/`, `installer/ubuntu/`, and `installer/workspace-seed/`
-  - Legacy/full DroidRun backend path for advanced research experiments.
+
+The legacy DroidRun/MobileRun full backend is archived on the
+`legacy-full-backend-archive` branch. It is no longer updated on `main`.
 
 ## Common contribution areas
 
@@ -36,9 +37,6 @@ When possible, keep changes narrow and avoid mixing runtime refactors, app-speci
 Public default-runtime skills live under:
 - `installer/workspace-seed-lite/skills/`
 
-The legacy/full backend skills live under:
-- `installer/workspace-seed/skills/`
-
 When adding a new skill, keep the boundary clear:
 - use skills for policy, capability interpretation, and workflow guidance
 - use the base plugin for device-generic runtime primitives
@@ -46,54 +44,28 @@ When adding a new skill, keep the boundary clear:
 - keep generated traces, screenshots, and local feedback artifacts out of commits
   unless they are sanitized examples
 
-## Capability contract workflow
+## Capability guidance
 
-The legacy/full backend capability skill is generated from a structured
-contract.
-
-Source of truth:
-- `installer/workspace-seed/skills/clawmobile-capabilities/contract.json`
-
-Generated artifact:
-- `installer/workspace-seed/skills/clawmobile-capabilities/SKILL.md`
-
-Generator:
-- `installer/workspace-seed/skills/clawmobile-capabilities/generate_skill.py`
-
-You only need this workflow when you are changing the capability catalog itself, for example:
-- adding a new deterministic capability
-- changing COMPLETE vs BOOTSTRAP classification
-- updating preferred tools/backends
-- changing capability notes or examples
-
-After editing the contract, regenerate the skill:
-
-```sh
-python3 installer/workspace-seed/skills/clawmobile-capabilities/generate_skill.py
-```
-
-Commit the contract change and the regenerated `SKILL.md` together.
-
-The default Termux runtime currently keeps its public capability guidance
-directly in:
+The default Termux runtime keeps public capability guidance directly in:
 - `installer/workspace-seed-lite/skills/clawmobile-capabilities/SKILL.md`
 
 If you update default runtime capabilities, keep the policy wording, tool
-contracts, and runtime implementation aligned.
+contracts, and runtime implementation aligned. This guidance is not generated
+from a legacy full-backend capability contract on `main`.
 
 ## Local verification
 
 Before opening a change, at minimum:
 
 1. Re-read the changed docs/scripts for path correctness.
-2. If you changed the capability contract, regenerate `SKILL.md`.
-3. If you changed the plugin TypeScript, run both plugin builds:
+2. If you changed default capability guidance, check the matching tool
+   implementation and workspace policy wording.
+3. If you changed the plugin TypeScript, run the runtime plugin build:
 
 ```sh
 cd openclaw-plugin-mobile-ui
 npm install
 npm run build
-npm run build:lite
 npm run test:trace-induction
 ```
 

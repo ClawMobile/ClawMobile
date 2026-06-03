@@ -1027,7 +1027,7 @@ function validateGeneralizedSkill(generalized: any, sourceCandidate: any) {
     warnings.push("evolution.can_update_from_future_traces should be true for single-trace generalized skills");
   }
   if (generalized.validation_policy?.verify_every_step === true) {
-    warnings.push("validation_policy.verify_every_step should normally be false for generated Lite skills");
+    warnings.push("validation_policy.verify_every_step should normally be false for generated ClawMobile skills");
   }
   if (asArray(generalized.evolution?.open_uncertainties).length === 0) {
     warnings.push("evolution.open_uncertainties is empty");

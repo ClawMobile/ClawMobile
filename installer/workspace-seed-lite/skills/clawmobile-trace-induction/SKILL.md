@@ -33,7 +33,11 @@ Use this flow when the user asks to record or create a new candidate skill from
 a demonstration.
 
 1. Pick a concise `task_hint` from the user's request, such as
-   `wechat.send_message`. Ask only if the task is genuinely unclear.
+   `wechat.send_message`. If the user intentionally asks to record the next
+   demonstration without naming the task, use a generic hint such as
+   `recorded_mobile_task` and infer the task later from trace evidence. Ask
+   only when you cannot tell whether the user wants to record a new
+   demonstration, update an existing skill, or process an existing trace.
 2. Call `clawmobile_record_start` with `task_hint`.
 3. Tell the user to perform the demonstration naturally on the phone and reply
    when finished.

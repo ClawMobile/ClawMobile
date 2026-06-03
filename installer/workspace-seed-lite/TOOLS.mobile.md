@@ -1,17 +1,16 @@
 <!-- CLAWMOBILE_BEGIN -->
-# ClawMobile Lite Tools
+# ClawMobile Termux Runtime Tools
 
 This runtime provides lightweight Android control from Termux. It detects
 available permissions at runtime and unlocks ADB shell tools automatically when
 ADB is configured.
 
-DroidRun agent mode is not available in Lite mode. If the compatibility
-`android_agent_task` tool is visible, it returns a structured unavailable
-result and should not be used for Lite tasks.
+Use the capability-aware observation, input, shell, OCR, and generated-skill
+tools below for mobile tasks.
 
 ## Health / Observation
 
-- `android_health` — reports the current Lite capability stage, backend state,
+- `android_health` — reports the current capability stage, backend state,
   and capability booleans.
 - `android_screenshot` — takes a screenshot when `screenshot=true`.
 - `android_ui_dump` — captures the current UI hierarchy when
@@ -82,8 +81,6 @@ the local UI dump cache for follow-up queries.
   commands such as `adb pair`, `adb connect`, and `adb devices` before ADB shell
   is available.
 
-Lite mode does not expose `android_shell backend="bash"`.
-
 ## Completion
 
 - `android_signal_complete` — local completion signal through Termux:API.
@@ -101,8 +98,8 @@ Lite mode does not expose `android_shell backend="bash"`.
   `parameters: {"title_text":"...","body_text":"..."}`. If an agent is unsure
   about the exact parameter names, call `clawmobile_skill_status` first; do not
   assume the runner lacks parameter support.
-- `clawmobile_batch_execute` — executes a small deterministic Lite batch plan
-  for generated-skill fast paths. It supports recorded-coordinate taps,
+- `clawmobile_batch_execute` — executes a small deterministic generated-skill
+  batch plan for generated-skill fast paths. It supports recorded-coordinate taps,
   deterministic text taps, parameter typing, swipes, key events, waits,
   screenshots, UI dump, OCR dump, and simple UI-text assertions. It does not
   run arbitrary code and does not call an LLM.
@@ -172,7 +169,7 @@ reading the policy skill first.
   `error:"capability_unavailable"`.
 - If ADB is unauthorized, ask the user to accept the debugging prompt on the
   phone.
-- Lite intentionally does not expose the older WeChat-specific visual
+- The Termux runtime intentionally does not expose the older WeChat-specific visual
   heuristics such as input-box or green-button search; generated skills should
   use recorded anchors, OCR, screenshots, UI dump, and explicit verification.
 

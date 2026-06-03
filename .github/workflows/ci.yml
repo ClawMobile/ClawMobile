@@ -30,11 +30,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build plugin
+      - name: Build Termux runtime plugin
         run: npm run build
-
-      - name: Build Lite plugin
-        run: npm run build:lite
 
       - name: Run trace induction tests
         run: npm run test:trace-induction

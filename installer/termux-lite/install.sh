@@ -10,20 +10,21 @@ PLUGIN_DIR="$REPO_ROOT/openclaw-plugin-mobile-ui"
 
 clawmobile_require_termux
 clawmobile_lite_env
+clawmobile_termux_source_preflight
 
-echo "[lite] Installing ClawMobile Lite prerequisites..."
+echo "[lite] Installing ClawMobile Termux runtime prerequisites..."
 clawmobile_pkg update -y
 clawmobile_pkg install -y git curl termux-api android-tools rsync
 
-CLAWMOBILE_LITE_INSTALL_OCR="${CLAWMOBILE_LITE_INSTALL_OCR:-1}"
-if [ "$CLAWMOBILE_LITE_INSTALL_OCR" = "1" ]; then
+CLAWMOBILE_TERMUX_INSTALL_OCR="${CLAWMOBILE_TERMUX_INSTALL_OCR:-1}"
+if [ "$CLAWMOBILE_TERMUX_INSTALL_OCR" = "1" ]; then
   echo "[lite] Installing OCR engine (tesseract)..."
   clawmobile_pkg install -y tesseract
 else
-  echo "[lite] Skipping OCR engine install (CLAWMOBILE_LITE_INSTALL_OCR=0)."
+  echo "[lite] Skipping OCR engine install (CLAWMOBILE_TERMUX_INSTALL_OCR=0)."
 fi
 
-if ! command -v openclaw >/dev/null 2>&1 && [ "${CLAWMOBILE_LITE_INSTALL_OPENCLAW:-0}" = "1" ]; then
+if ! command -v openclaw >/dev/null 2>&1 && [ "${CLAWMOBILE_TERMUX_INSTALL_OPENCLAW:-0}" = "1" ]; then
   "$SCRIPT_DIR/install-openclaw.sh"
   clawmobile_lite_env
 fi

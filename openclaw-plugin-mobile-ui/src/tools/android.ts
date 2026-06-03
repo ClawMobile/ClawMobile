@@ -23,14 +23,9 @@ import { ensureUiDumpsDir, truncateString } from "./workspace";
 import { signalComplete } from "./attention";
 import { buildUiKeywordIndex, queryUiXml, type UiXmlQueryInput } from "./ui_xml";
 
-// Composite mobile runtime wrappers.
-// These are the higher-level tool implementations exposed as `android_*`.
-// They sit above backend adapters and currently still contain some backend
-// selection policy, which is why Step 1 only documents that seam.
-
-export function isLiteMode() {
-  return process.env.CLAW_MOBILE_ADB_ONLY === "1" || process.env.CLAWMOBILE_LITE === "1";
-}
+// Composite mobile runtime wrappers exposed as `android_*`.
+// They sit above backend adapters and enforce the Termux runtime capability
+// stage before calling ADB, screenshot, UI, or OCR helpers.
 
 const recentUiDumps = new Map<string, { path: string; xml: string; createdAt: number }>();
 let latestUiDumpId = "";
@@ -68,48 +63,26 @@ function readRememberedUiDump(dumpId?: string) {
   return { id: requested, ...entry };
 }
 
-async function requireLiteCapability(
+async function requireRuntimeCapability(
   capability: MobileCapabilityName,
   message?: string
 ) {
-  if (!isLiteMode()) return null;
   const detected = await detectMobileCapabilities();
   if (detected.capabilities[capability]) return null;
   return capabilityUnavailable(capability, detected, message);
 }
 
 export async function android_health() {
-  if (isLiteMode()) {
-    const detected = await detectMobileCapabilities();
-    return { ...detected, droidrun: { enabled: false } };
-  }
-
-  try {
-    const { droidrun_health } = await import("../backends/droidrun");
-    return droidrun_health();
-  } catch (error: any) {
-    if (String(error?.code || "") === "MODULE_NOT_FOUND" || /Cannot find module/.test(String(error?.message || error))) {
-      const detected = await detectMobileCapabilities();
-      return {
-        ...detected,
-        droidrun: {
-          enabled: false,
-          missing: true,
-          reason: "droidrun backend is not bundled in this Lite build",
-        },
-      };
-    }
-    throw error;
-  }
+  return await detectMobileCapabilities();
 }
 
 export async function android_screenshot() {
   const start = Date.now();
   auditStart("android_screenshot", "adb", start);
   try {
-    const unavailable = await requireLiteCapability(
+    const unavailable = await requireRuntimeCapability(
       "screenshot",
-      "Screenshots require an ADB/shell-level backend. Termux-only Lite can still run local Termux tools."
+      "Screenshots require an ADB/shell-level backend. Termux-only stage can still run local Termux tools."
     );
     if (unavailable) {
       auditEnd("android_screenshot", start, unavailable, { resolved_backend: "unavailable" });
@@ -129,7 +102,7 @@ export async function android_tap(input: { x: number; y: number }) {
   const start = Date.now();
   auditStart("android_tap", "adb", start);
   try {
-    const unavailable = await requireLiteCapability(
+    const unavailable = await requireRuntimeCapability(
       "ui_input",
       "Screen taps require an ADB/shell-level backend. Configure ADB to unlock UI control."
     );
@@ -149,7 +122,7 @@ export async function android_tap(input: { x: number; y: number }) {
 
 type AndroidTypeInput = {
   text: string;
-  // Deprecated legacy fields from the old DroidRun-backed contract.
+  // Deprecated fields from older callers.
   // We still accept them at runtime so older callers get a structured
   // rejection instead of silently ignoring the request.
   index?: number;
@@ -174,12 +147,12 @@ export async function android_type(input: AndroidTypeInput) {
       auditEnd("android_type", start, res, {
         resolved_backend: "unsupported",
         requested_backend: "adb",
-        rejection_reason: "legacy_index_or_clear_not_supported_in_lite_mode",
+        rejection_reason: "legacy_index_or_clear_not_supported_in_termux_runtime",
       });
       return res;
     }
 
-    const unavailable = await requireLiteCapability(
+    const unavailable = await requireRuntimeCapability(
       "ui_input",
       "Typing into the focused Android field requires an ADB/shell-level backend."
     );
@@ -207,7 +180,7 @@ export async function android_swipe(input: {
   const start = Date.now();
   auditStart("android_swipe", "adb", start);
   try {
-    const unavailable = await requireLiteCapability(
+    const unavailable = await requireRuntimeCapability(
       "ui_input",
       "Screen swipes require an ADB/shell-level backend. Configure ADB to unlock UI control."
     );
@@ -230,9 +203,9 @@ export async function android_ui_dump(input?: { rawXml?: boolean; compressed?: b
   const start = Date.now();
   auditStart("android_ui_dump", "adb", start);
   try {
-    const unavailable = await requireLiteCapability(
+    const unavailable = await requireRuntimeCapability(
       "ui_observe",
-      "UI hierarchy dumps require an ADB/shell-level backend. Termux-only Lite cannot inspect other app UIs."
+      "UI hierarchy dumps require an ADB/shell-level backend. Termux-only stage cannot inspect other app UIs."
     );
     if (unavailable) {
       auditEnd("android_ui_dump", start, unavailable, { resolved_backend: "unavailable" });
@@ -287,9 +260,9 @@ export async function android_ui_query(input: UiXmlQueryInput = {}) {
   const start = Date.now();
   auditStart("android_ui_query", "adb", start);
   try {
-    const unavailable = await requireLiteCapability(
+    const unavailable = await requireRuntimeCapability(
       "ui_observe",
-      "UI hierarchy queries require an ADB/shell-level backend. Termux-only Lite cannot inspect other app UIs."
+      "UI hierarchy queries require an ADB/shell-level backend. Termux-only stage cannot inspect other app UIs."
     );
     if (unavailable) {
       auditEnd("android_ui_query", start, unavailable, { resolved_backend: "unavailable" });
@@ -371,14 +344,14 @@ function normalizeTextMatchPickStrategy(value?: string | null): TextMatchPickStr
 }
 
 async function requireOcrInputCapabilities(input?: { path?: string }) {
-  const ocrUnavailable = await requireLiteCapability(
+  const ocrUnavailable = await requireRuntimeCapability(
     "ocr",
     "OCR requires the local tesseract binary. Install it in Termux with `pkg install tesseract`."
   );
   if (ocrUnavailable) return ocrUnavailable;
 
   if (!String(input?.path || "").trim()) {
-    return requireLiteCapability(
+    return requireRuntimeCapability(
       "screenshot",
       "OCR without a provided image path requires screenshot capability from an ADB/shell-level backend."
     );
@@ -409,7 +382,7 @@ async function resolveObservationScreenshot(input?: { path?: string }) {
     }
   }
 
-  const unavailable = await requireLiteCapability(
+  const unavailable = await requireRuntimeCapability(
     "screenshot",
     "OCR text queries without a provided screenshot path require screenshot capability from an ADB/shell-level backend."
   );
@@ -699,42 +672,6 @@ export async function android_resolve_text_queries(input: {
     return res;
   } catch (error) {
     auditError("android_resolve_text_queries", start, error, { backend: "tesseract" });
-    throw error;
-  }
-}
-
-export async function android_agent_task(input: {
-  goal: string;
-  steps?: number;
-  timeout?: number;
-  deviceSerial?: string;
-  tcp?: boolean;
-}) {
-  if (isLiteMode()) {
-    return {
-      ok: false,
-      error: "droidrun_disabled_in_lite_mode",
-      message: "ClawMobile Lite exposes capability-aware Termux/ADB tools only.",
-    };
-  }
-
-  const start = Date.now();
-  const envDefaultS = Number(process.env.CLAW_MOBILE_AGENT_TIMEOUT_S || 600);
-  const defaultS = Number.isFinite(envDefaultS) && envDefaultS > 0 ? envDefaultS : 600;
-  const maxS = 1800;
-  const timeoutS = Math.min(Math.max(input?.timeout ?? defaultS, 1), maxS);
-  auditStart("android_agent_task", "droidrun", start);
-  try {
-    const { droidrun_agent_task } = await import("../backends/droidrun");
-    const res = await droidrun_agent_task({ ...input, timeout: timeoutS });
-    const elapsedS = Math.round((Date.now() - start) / 1000);
-    auditEnd("android_agent_task", start, res);
-    if ((res as any)?.error === "timeout") {
-      return { ok: false, error: "timeout", elapsed_s: elapsedS, timeout_s: timeoutS, logPath: (res as any)?.logPath };
-    }
-    return res;
-  } catch (error) {
-    auditError("android_agent_task", start, error, { backend: "droidrun" });
     throw error;
   }
 }

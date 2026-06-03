@@ -6,7 +6,7 @@ import {
   getTermuxShellPath,
 } from "../runtime/mobileCapabilities";
 
-export type ShellBackend = "adb" | "termux" | "bash";
+export type ShellBackend = "adb" | "termux";
 
 export type ShellResult = {
   ok: boolean;
@@ -116,28 +116,14 @@ export async function android_shell(input: {
     return { ok: false, code: -1, stdout: "", stderr: "command blocked by safety denylist" };
   }
 
-  if (
-    backend === "bash" &&
-    (process.env.CLAW_MOBILE_ADB_ONLY === "1" || process.env.CLAWMOBILE_LITE === "1")
-  ) {
-    return {
-      ok: false,
-      code: -1,
-      stdout: "",
-      stderr: "bash backend is disabled in ClawMobile Lite; use backend=adb or backend=termux",
-    };
-  }
-
   if (backend === "adb") {
-    if (process.env.CLAW_MOBILE_ADB_ONLY === "1" || process.env.CLAWMOBILE_LITE === "1") {
-      const detected = await detectMobileCapabilities();
-      if (!detected.capabilities.android_shell) {
-        return capabilityUnavailable(
-          "android_shell",
-          detected,
-          "ADB shell commands require a ready ADB/shell-level backend. Termux-only Lite can use backend=termux."
-        );
-      }
+    const detected = await detectMobileCapabilities();
+    if (!detected.capabilities.android_shell) {
+      return capabilityUnavailable(
+        "android_shell",
+        detected,
+        "ADB shell commands require a ready ADB/shell-level backend. Termux-only stage can use backend=termux."
+      );
     }
 
     const adbArgs = await buildAdbCommandArgs(["shell", cmd]);
@@ -159,5 +145,10 @@ export async function android_shell(input: {
     return await runWithTimeout(termuxShell, ["-lc", cmd], timeoutMs);
   }
 
-  return await runWithTimeout("bash", ["-lc", cmd], timeoutMs);
+  return {
+    ok: false,
+    code: -1,
+    stdout: "",
+    stderr: "unsupported backend; use backend=adb or backend=termux",
+  };
 }

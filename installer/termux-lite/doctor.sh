@@ -13,6 +13,40 @@ section() {
 clawmobile_require_termux
 clawmobile_lite_env
 
+section "termux app"
+termux_installer="$(clawmobile_termux_installer_package)"
+termux_version="$(clawmobile_termux_version)"
+termux_apk_release="$(clawmobile_termux_apk_release)"
+termux_source_kind="$(clawmobile_termux_source_kind "$termux_installer" "$termux_apk_release")"
+termux_source_label="$(clawmobile_termux_source_label "$termux_source_kind")"
+echo "source=$termux_source_label"
+echo "source_kind=$termux_source_kind"
+echo "installer=$termux_installer"
+echo "apk_release=$termux_apk_release"
+echo "version=$termux_version"
+echo "prefix=${PREFIX:-}"
+if [ "$termux_source_kind" = "google_play" ]; then
+  echo "warning=Google Play Termux is best-effort only; use F-Droid or official GitHub Termux for supported installs."
+fi
+
+section "termux package sources"
+if [ -f "${PREFIX:-}/etc/apt/sources.list" ]; then
+  sed -n '1,5p' "$PREFIX/etc/apt/sources.list"
+else
+  echo "sources.list missing"
+fi
+
+section "termux package availability"
+if command -v apt-cache >/dev/null 2>&1; then
+  for pkg in git curl termux-api android-tools tesseract; do
+    installed="$(apt-cache policy "$pkg" 2>/dev/null | sed -n 's/^[[:space:]]*Installed: //p' | head -n 1 || true)"
+    candidate="$(apt-cache policy "$pkg" 2>/dev/null | sed -n 's/^[[:space:]]*Candidate: //p' | head -n 1 || true)"
+    echo "$pkg installed=${installed:-unknown} candidate=${candidate:-unknown}"
+  done
+else
+  echo "apt-cache missing"
+fi
+
 section "openclaw"
 if command -v openclaw >/dev/null 2>&1; then
   openclaw --version || true
@@ -47,7 +81,7 @@ if command -v tesseract >/dev/null 2>&1; then
 else
   echo "tesseract missing"
   echo "install: ./installer/termux-lite/install.sh"
-  echo "skip during install: CLAWMOBILE_LITE_INSTALL_OCR=0 ./installer/termux-lite/install.sh"
+  echo "skip during install: CLAWMOBILE_TERMUX_INSTALL_OCR=0 ./installer/termux-lite/install.sh"
 fi
 
 section "plugin"
@@ -62,8 +96,6 @@ if command -v openclaw >/dev/null 2>&1; then
 fi
 
 section "environment"
-echo "CLAWMOBILE_LITE=${CLAWMOBILE_LITE:-}"
-echo "CLAW_MOBILE_ADB_ONLY=${CLAW_MOBILE_ADB_ONLY:-}"
 echo "OPENCLAW_STATE_DIR=${OPENCLAW_STATE_DIR:-}"
 echo "OPENCLAW_WORKSPACE=${OPENCLAW_WORKSPACE:-}"
 echo "CLAWDHUB_WORKDIR=${CLAWDHUB_WORKDIR:-}"

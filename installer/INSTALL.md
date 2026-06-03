@@ -4,15 +4,40 @@ This is the recommended public installation path for **ClawMobile**. It runs
 OpenClaw directly in Termux and includes the mobile tool runtime, OCR, optional
 ADB control, and the public-preview generated-skill workflow.
 
-The implementation is the ClawMobile Termux runtime, also called the Lite
-runtime in technical docs. Most users should start here.
+Most users should start here.
 
 ---
 
 ## Before You Start
 
-Use the latest Termux from F-Droid or GitHub. The old Play Store Termux build is
-not recommended because its package repositories are outdated.
+Install Termux before running ClawMobile. The supported baseline is the latest
+Termux from [F-Droid](https://f-droid.org/packages/com.termux/); if F-Droid is
+unavailable, use the official
+[Termux GitHub releases](https://github.com/termux/termux-app/releases).
+If you install optional Termux companion apps such as Termux:API, install them
+from the same source as Termux.
+
+ClawMobile currently treats the Google Play Termux build as best-effort only:
+it uses a separate Termux codebase/package path and may differ in package
+availability, Termux:API behavior, and Android permission behavior. For demos,
+experiments, and supported installs, use F-Droid or GitHub Termux. If you are
+switching from another Termux source, back up anything important, uninstall
+Termux and Termux companion apps first, then reinstall all Termux-related apps
+from the same source.
+
+The installer checks the Termux source before installing packages. If you are
+intentionally testing the Google Play build, rerun with:
+
+```sh
+CLAWMOBILE_ALLOW_PLAY_TERMUX=1 clawmobile setup --quick
+```
+
+If you are running from an existing repository checkout before the `clawmobile`
+command has been installed, use:
+
+```sh
+CLAWMOBILE_ALLOW_PLAY_TERMUX=1 ./installer/termux-lite/clawmobile setup --quick
+```
 
 Prepare:
 
@@ -57,6 +82,9 @@ If you omitted `--start`, a quick health check is:
 clawmobile doctor
 ```
 
+The doctor output includes the Termux source/version, apt source, key package
+availability, OpenClaw, Node/npm, ADB, Termux:API, plugin, and workspace checks.
+
 If you omitted `--start`, start the gateway with:
 
 ```sh
@@ -80,7 +108,8 @@ The default runtime provides:
   feedback
 - optional Telegram quick setup with numeric user allowlisting
 
-Full runtime details are in [termux-lite/README.md](termux-lite/README.md).
+Runtime internals and developer commands are in
+[termux-lite/README.md](termux-lite/README.md).
 Common setup failures are covered in [FAQ.md](FAQ.md).
 
 Before publishing logs or recording directories, review them for screenshots,
@@ -173,11 +202,9 @@ calls.
 
 ---
 
-## Advanced Backend
+## Archived Backend
 
-The legacy full DroidRun/MobileRun backend is still available for research that
-specifically needs Ubuntu/proot, DroidRun Portal, Accessibility-backed control,
-or code-generated multi-step UI execution.
-
-Most public users should not start there. See
-[FULL_BACKEND.md](FULL_BACKEND.md) when you intentionally want that path.
+The legacy full DroidRun/MobileRun backend is no longer updated on `main`.
+Historical files are available on the `legacy-full-backend-archive` branch for
+researchers who specifically need the old Ubuntu/proot, DroidRun Portal, or
+Accessibility-backed path.

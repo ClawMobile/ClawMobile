@@ -10,7 +10,6 @@
   <a href="https://clawmobile.ae/">Website</a> ·
   <a href="https://arxiv.org/abs/2602.22942">Paper</a> ·
   <a href="installer/INSTALL.md">Install</a> ·
-  <a href="installer/termux-lite/README.md">Termux Runtime</a> ·
   <a href="installer/FAQ.md">FAQ</a> ·
   <a href="SECURITY.md">Security</a> ·
   <a href="CONTRIBUTING.md">Contributing</a> ·
@@ -101,7 +100,12 @@ ClawMobile treats the phone as the runtime.
 
 ## Quick Start
 
-From a fresh Termux install:
+Install Termux from [F-Droid](https://f-droid.org/packages/com.termux/) first.
+If F-Droid is unavailable, use the official
+[Termux GitHub releases](https://github.com/termux/termux-app/releases).
+The Google Play Termux build is not the supported ClawMobile install path.
+
+Then run in Termux:
 
 ```bash
 # Install ClawMobile with the guided quick setup and start the gateway
@@ -123,8 +127,8 @@ are unfamiliar, see the FAQ before starting.
 
 More setup paths:
 
-- [Termux runtime guide](installer/termux-lite/README.md)
 - [Installation guide](installer/INSTALL.md)
+- [Runtime reference](installer/termux-lite/README.md)
 - [FAQ](installer/FAQ.md)
 
 ## Try These First
@@ -140,8 +144,10 @@ What can you do on this phone?
 What phone capabilities are available right now?
 ```
 
+After ADB is authorized, try the learning flow:
+
 ```text
-What app or screen is open on the phone right now?
+Use clawmobile-trace-induction to record my next phone demonstration.
 ```
 
 ## What Can It Do?
@@ -212,8 +218,9 @@ demonstration. Reliability improves with additional demos and execution
 feedback, and fast paths may fall back to normal UI recovery when a workflow is
 not stable enough.
 
-The older DroidRun/MobileRun backend remains available as an advanced research
-path for Accessibility-backed and code-generated UI execution.
+The older DroidRun/MobileRun backend has been archived and is no longer updated
+on `main`. Historical files remain available on the
+`legacy-full-backend-archive` branch.
 
 ## Privacy And Safety
 
@@ -248,17 +255,6 @@ out of public commits unless you have reviewed them first.
   deterministic fast paths for stable generated-skill actions are still
   experimental accelerators.
 
-## Runtime Backends
-
-| Runtime | Status | Best for |
-| --- | --- | --- |
-| **ClawMobile default Termux runtime** | Recommended public path | Termux-first setup, local OpenClaw gateway, mobile tools, ADB UI control, OCR, learned skills |
-| **Full DroidRun/MobileRun backend** | Advanced / experimental | Ubuntu/proot setup, DroidRun Portal, Accessibility-backed control, code-generated multi-step UI execution experiments |
-
-The default Termux runtime is the public starting point because it is easier to
-install, easier to debug, and aligned with generated skills. The full backend is
-still valuable for research into faster UI execution.
-
 ## Repository Map
 
 - `openclaw-plugin-mobile-ui/`
@@ -266,21 +262,17 @@ still valuable for research into faster UI execution.
   generated-skill pipeline, and Termux runtime batch fast path.
 
 - `installer/termux-lite/`
-  Recommended public Termux runtime installer and scripts.
+  Current Termux runtime scripts. The directory name is historical; this is the
+  maintained default runtime on `main`.
 
 - `installer/workspace-seed-lite/`
   Default OpenClaw workspace seed, policies, and trace-induction skills.
 
-- `installer/termux/`, `installer/ubuntu/`, `installer/workspace-seed/`
-  Legacy/full DroidRun path for advanced backend experiments. See
-  [installer/FULL_BACKEND.md](installer/FULL_BACKEND.md).
-
 ## Where To Go Next
 
 - Install ClawMobile: [installer/INSTALL.md](installer/INSTALL.md)
-- Understand the Termux runtime: [installer/termux-lite/README.md](installer/termux-lite/README.md)
+- Runtime reference: [installer/termux-lite/README.md](installer/termux-lite/README.md)
 - Troubleshoot setup: [installer/FAQ.md](installer/FAQ.md)
-- Advanced full backend: [installer/FULL_BACKEND.md](installer/FULL_BACKEND.md)
 - Report issues safely: [SECURITY.md](SECURITY.md)
 - Contribute fixes or skills: [CONTRIBUTING.md](CONTRIBUTING.md)
 - Follow public changes: [CHANGELOG.md](CHANGELOG.md)

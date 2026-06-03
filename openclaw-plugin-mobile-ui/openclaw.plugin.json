@@ -1,7 +1,7 @@
 {
   "id": "openclaw-plugin-mobile-ui",
   "name": "Mobile UI",
-  "description": "Android mobile runtime tools for OpenClaw. Set CLAWMOBILE_LITE=1 for capability-aware Termux/ADB Lite mode.",
+  "description": "Android mobile runtime tools for OpenClaw's capability-aware Termux/ADB runtime.",
   "version": "0.1.0",
   "activation": {
     "onStartup": true
@@ -18,7 +18,6 @@
       "android_match_text_queries",
       "android_resolve_text_queries",
       "android_ocr_dump",
-      "android_agent_task",
       "clawmobile_record_start",
       "clawmobile_record_stop",
       "clawmobile_record_parse",

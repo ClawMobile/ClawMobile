@@ -1,11 +1,11 @@
 ---
 name: clawmobile-capabilities
-description: Capability-stage map for the ClawMobile Lite runtime.
+description: Capability-stage map for the ClawMobile Termux runtime.
 ---
 
-# ClawMobile Lite Capabilities
+# ClawMobile Termux Runtime Capabilities
 
-Use this skill to map common phone actions to the currently available Lite
+Use this skill to map common phone actions to the currently available runtime
 capabilities. Call `android_health` when the current permission stage is
 unknown.
 

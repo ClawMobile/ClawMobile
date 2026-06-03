@@ -1,8 +1,8 @@
 # Known Issues & FAQ
 
 The recommended public runtime is **ClawMobile** on the default Termux runtime.
-This FAQ starts with that path and keeps legacy full-backend notes only where
-they are still useful.
+This FAQ starts with that path and includes only a short pointer to the archived
+legacy full backend.
 
 If something feels randomly broken, first check:
 
@@ -19,11 +19,74 @@ repository checkout:
 
 ## Which Termux should I install?
 
-Use the latest Termux from F-Droid or GitHub. The old Play Store Termux package
-is not recommended because its repositories are outdated.
+Use the latest Termux from
+[F-Droid](https://f-droid.org/packages/com.termux/). If F-Droid is unavailable,
+use the official
+[Termux GitHub releases](https://github.com/termux/termux-app/releases).
+ClawMobile currently treats the Google Play Termux build as best-effort only
+because it follows a separate Termux codebase/package path and may differ in
+package availability, Termux:API behavior, and Android permission behavior. For
+demos, experiments, and supported installs, use F-Droid or GitHub Termux.
+
+If you switch Termux sources, back up anything important, uninstall Termux and
+Termux companion apps first, then reinstall all Termux-related apps from the
+same source.
+
+If the installer detects Google Play Termux, it stops before changing packages.
+Install Termux from F-Droid/GitHub and rerun setup. To intentionally continue on
+Google Play Termux for debugging, use:
+
+```sh
+CLAWMOBILE_ALLOW_PLAY_TERMUX=1 clawmobile setup --quick
+```
+
+If the `clawmobile` command is not installed yet and you are running from a
+repository checkout, use:
+
+```sh
+CLAWMOBILE_ALLOW_PLAY_TERMUX=1 ./installer/termux-lite/clawmobile setup --quick
+```
 
 Also install Termux:API only if you want optional phone integrations such as
-clipboard, battery, notifications, or text-to-speech.
+clipboard, battery, notifications, or text-to-speech, and install it from the
+same source as Termux.
+
+To confirm the installed source and package state, run:
+
+```sh
+clawmobile doctor
+```
+
+The first sections report the Termux source, version, apt source, and candidates
+for key packages such as `termux-api`, `android-tools`, and `tesseract`.
+
+## Setup stops because Google Play Termux was detected
+
+ClawMobile blocks Google Play Termux before changing packages because that build
+is best-effort for this runtime. The supported path is Termux from F-Droid or
+the official Termux GitHub releases.
+
+Recommended fix:
+
+1. Back up anything important from the old Termux home directory.
+2. Install Termux from F-Droid or the official Termux GitHub releases.
+3. Re-run the ClawMobile bootstrap or checkout setup.
+
+For explicit debugging on Google Play Termux, rerun with:
+
+```sh
+CLAWMOBILE_ALLOW_PLAY_TERMUX=1 clawmobile setup --quick
+```
+
+If the `clawmobile` command is not installed yet and you are running from a
+repository checkout, use:
+
+```sh
+CLAWMOBILE_ALLOW_PLAY_TERMUX=1 ./installer/termux-lite/clawmobile setup --quick
+```
+
+This only bypasses the source gate; package availability and Termux:API behavior
+may still differ from the supported F-Droid/GitHub path.
 
 ## GitHub raw URL or `curl` does not work
 
@@ -129,7 +192,7 @@ setup. Re-running setup is safe; it is designed to repair an incomplete install.
 
 You can skip the model or channel during quick setup and run `clawmobile setup`
 later for OpenClaw's full interactive setup. See
-[termux-lite/README.md](termux-lite/README.md) for the full install flow.
+[INSTALL.md](INSTALL.md) for the main install flow.
 
 ## Setup finished. What should I run next?
 
@@ -268,8 +331,8 @@ it. Do not commit this file or paste it into public logs.
 Force a plugin rebuild and reinstall:
 
 ```sh
-CLAWMOBILE_LITE_FORCE_BUILD=1 \
-CLAWMOBILE_LITE_FORCE_PLUGIN_INSTALL=1 \
+CLAWMOBILE_TERMUX_FORCE_BUILD=1 \
+CLAWMOBILE_TERMUX_FORCE_PLUGIN_INSTALL=1 \
 clawmobile run
 ```
 
@@ -312,18 +375,8 @@ After a full reset:
 clawmobile setup --quick --start
 ```
 
-## Full DroidRun backend notes
+## Archived full backend notes
 
-The legacy full backend uses Termux + Ubuntu/proot + DroidRun/MobileRun. Use it
-only when you specifically need the advanced DroidRun path.
-
-Full backend entrypoints are still under:
-
-```sh
-./installer/termux/install.sh
-./installer/termux/onboard.sh
-./installer/termux/run.sh
-./installer/termux/reset.sh
-```
-
-Most public users should start with the default ClawMobile install instead.
+The legacy full backend used Termux + Ubuntu/proot + DroidRun/MobileRun. It is
+no longer updated on `main`. Historical files are available on the
+`legacy-full-backend-archive` branch.

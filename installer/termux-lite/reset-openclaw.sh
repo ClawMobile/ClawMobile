@@ -27,8 +27,8 @@ Usage:
 
 Levels:
   soft       Stop OpenClaw gateway processes only.
-  workspace  Remove only ClawMobile Lite seeded AGENTS/TOOLS blocks and skills.
-  plugin     Remove the ClawMobile Lite plugin registration/install directory.
+  workspace  Remove only ClawMobile Termux runtime seeded AGENTS/TOOLS blocks and skills.
+  plugin     Remove the ClawMobile Termux runtime plugin registration/install directory.
   state      Remove OpenClaw state dir after plugin cleanup.
   full       Also uninstall the global OpenClaw npm package.
 
@@ -159,7 +159,7 @@ index($0, end_marker) {inblock=0; next}
 }
 
 reset_workspace() {
-  log "Resetting Lite workspace seed..."
+  log "Resetting Termux runtime workspace seed..."
   clean_seeded_prompt_file "$WORKSPACE/AGENTS.md"
   clean_seeded_prompt_file "$WORKSPACE/TOOLS.md"
   run_best_effort rm -rf -- "$WORKSPACE/AGENTS.mobile.md" "$WORKSPACE/TOOLS.mobile.md"
@@ -170,7 +170,7 @@ reset_workspace() {
 }
 
 reset_plugin() {
-  log "Resetting Lite plugin install state..."
+  log "Resetting Termux runtime plugin install state..."
 
   if [ "$DRY_RUN" -eq 1 ]; then
     dry_run_cmd openclaw plugins uninstall "$PLUGIN_ID"

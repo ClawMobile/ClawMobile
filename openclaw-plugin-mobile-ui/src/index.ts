@@ -4,7 +4,6 @@ import {
   android_tap,
   android_type,
   android_swipe,
-  android_agent_task,
   android_ui_dump,
   android_ui_query,
   android_match_text_queries,
@@ -151,10 +150,6 @@ const batchStepSchema = {
   additionalProperties: false,
 };
 
-function isLiteMode() {
-  return process.env.CLAW_MOBILE_ADB_ONLY === "1" || process.env.CLAWMOBILE_LITE === "1";
-}
-
 function asContent(obj: any) {
   return { content: [{ type: "text", text: JSON.stringify(obj, null, 2) }] };
 }
@@ -181,15 +176,12 @@ function register(api: any) {
   // Public plugin surface for OpenClaw.
   // This file is the contract boundary between the OpenClaw runtime and the
   // mobile runtime implementation below.
-  const liteMode = isLiteMode();
 
   // ---- composite mobile runtime tools ----
   api.registerTool(
     toolDef(
       "android_health",
-      liteMode
-        ? "Check ClawMobile Lite capability stage and available Termux/ADB backends."
-        : "Check droidrun/python availability (mobile executor health).",
+      "Check ClawMobile Termux runtime capability stage and available Termux/ADB backends.",
       { type: "object", properties: {}, additionalProperties: false },
       async () => android_health()
     )
@@ -442,28 +434,6 @@ function register(api: any) {
       async (args) => android_ocr_dump(args)
     )
   );
-
-  if (!liteMode) {
-    api.registerTool(
-      toolDef(
-        "android_agent_task",
-        "Run a high-level Android task using the full mobile agent backend.",
-        {
-          type: "object",
-          properties: {
-            goal: { type: "string" },
-            steps: { type: "integer" },
-            timeout: { type: "integer" },
-            deviceSerial: { type: "string" },
-            tcp: { type: "boolean" }
-          },
-          required: ["goal"],
-          additionalProperties: false
-        },
-        async (args) => android_agent_task(args)
-      )
-    );
-  }
 
   // ---- demonstration recorder and trace-to-skill workflow ----
   api.registerTool(
@@ -778,7 +748,7 @@ function register(api: any) {
   api.registerTool(
     toolDef(
       "clawmobile_batch_execute",
-      "Execute a small deterministic ClawMobile Lite batch plan for generated-skill fast paths. No LLM/code execution; stops on structured failures.",
+      "Execute a small deterministic ClawMobile generated-skill batch plan for fast paths. No LLM/code execution; stops on structured failures.",
       {
         type: "object",
         properties: {
@@ -1012,11 +982,11 @@ function register(api: any) {
   api.registerTool(
     toolDef(
       "android_shell",
-      "Fallback shell execution via backend: adb | termux | bash. Lite auto-detects whether adb is available.",
+      "Fallback shell execution via backend: adb | termux. The Termux runtime auto-detects whether adb is available.",
       {
         type: "object",
         properties: {
-          backend: { type: "string", enum: liteMode ? ["adb", "termux"] : ["adb", "termux", "bash"] },
+          backend: { type: "string", enum: ["adb", "termux"] },
           cmd: { type: "string" },
           timeoutMs: { type: "integer" },
         },
@@ -1042,7 +1012,7 @@ pluginEntry.id = "openclaw-plugin-mobile-ui";
 pluginEntry.pluginId = "openclaw-plugin-mobile-ui";
 pluginEntry.displayName = "Mobile UI";
 pluginEntry.description =
-  "Android mobile runtime tools for OpenClaw. Set CLAWMOBILE_LITE=1 for capability-aware Termux/ADB Lite mode.";
+  "Android mobile runtime tools for OpenClaw's capability-aware Termux/ADB runtime.";
 pluginEntry.register = register;
 pluginEntry.activate = register;
 

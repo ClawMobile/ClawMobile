@@ -10,10 +10,8 @@
   },
 
   "scripts": {
-    "build": "node ./node_modules/typescript/bin/tsc -p tsconfig.json && node scripts/copy-assets.mjs",
-    "build:lite": "node ./node_modules/typescript/bin/tsc -p tsconfig.json && node scripts/prepare-lite.mjs",
+    "build": "node ./node_modules/typescript/bin/tsc -p tsconfig.json && node scripts/prepare-lite.mjs",
     "dev": "node ./node_modules/typescript/bin/tsc -p tsconfig.json -w",
-    "copy-assets": "node scripts/copy-assets.mjs",
     "test:trace-induction": "node scripts/test-trace-induction.cjs"
   },
 

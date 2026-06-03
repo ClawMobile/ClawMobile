@@ -1,11 +1,11 @@
 ---
 name: clawmobile-policy
-description: Reference policy for complex ClawMobile Lite recovery, generated-skill execution, and capability boundaries. Routine UI lookup should follow AGENTS/TOOLS without reading this skill.
+description: Reference policy for complex ClawMobile Termux runtime recovery, generated-skill execution, and capability boundaries. Routine UI lookup should follow AGENTS/TOOLS without reading this skill.
 ---
 
-# ClawMobile Lite Policy
+# ClawMobile Termux Runtime Policy
 
-Use this skill as a reference for complex ClawMobile Lite decisions. Do not read
+Use this skill as a reference for complex ClawMobile Termux runtime decisions. Do not read
 it for routine mobile UI lookup, simple shell work, or generated-skill fast path
 execution when `AGENTS.mobile.md` and `TOOLS.mobile.md` already provide enough
 guidance.
@@ -16,7 +16,7 @@ guidance.
 - A task is high-risk or requires balancing screenshots, OCR, UI XML, and
   generated-skill replay.
 - A generated skill needs feedback, status interpretation, or failure analysis.
-- You need the Lite runtime capability boundaries.
+- You need the Termux runtime capability boundaries.
 
 ## Verification Policy
 
@@ -108,11 +108,11 @@ intermediate action.
 
 ## Limits
 
-Termux-only Lite can run OpenClaw, local shell commands, files, network tools,
+Termux-only stage can run OpenClaw, local shell commands, files, network tools,
 and Termux:API integrations where Android permissions allow them. It cannot
 inspect or control other apps' UIs.
 
-Termux-only Lite can still help the user enable wireless ADB. When the user
+Termux-only stage can still help the user enable wireless ADB. When the user
 provides a pairing port/code or connect port from Android wireless debugging,
 run `adb pair`, `adb connect`, and `adb devices` through
 `android_shell backend="termux"`, then recheck `android_health`. This is a
@@ -122,12 +122,12 @@ ready. After the first successful connection, try `adb tcpip 5555` and
 when it is available. If the 5555 switch fails, keep using the temporary
 connect port and retry after ADB is authorized.
 
-ADB-shell Lite can open apps, press keys, type, swipe, tap, dump UI XML, take
+ADB shell stage can open apps, press keys, type, swipe, tap, dump UI XML, take
 screenshots, and run bounded ADB shell commands. It is still not root, not a
 high-level UI agent, and should not pretend to infer multi-step app workflows
 without observing and verifying each step.
 
-The generated-skill workflow is available in Lite through
+The generated-skill workflow is available in the Termux runtime through
 `clawmobile-trace-induction`. Recording a fresh trace still requires
 ADB/shell-level input-event and screenshot access. Parsing, summarizing,
 generalizing, and promoting an existing trace are local file operations.
