@@ -62,9 +62,7 @@ install_termux_packages() {
   if [ "${CLAWMOBILE_TERMUX_UPGRADE:-0}" = "1" ]; then
     clawmobile_pkg upgrade -y
   fi
-  clawmobile_pkg install -y git curl tar xz-utils coreutils findutils gawk python make cmake clang binutils pacman
-
-  command -v pacman >/dev/null 2>&1 || die "pacman was not installed; Termux package index may be stale or mirror fallback failed."
+  clawmobile_pkg install -y git curl tar xz-utils coreutils findutils gawk python make cmake clang binutils
 
   if [ ! -e "$PREFIX/bin/ar" ] && [ -x "$PREFIX/bin/llvm-ar" ]; then
     ln -s "$PREFIX/bin/llvm-ar" "$PREFIX/bin/ar"
@@ -85,23 +83,53 @@ install_glibc_runner() {
   local pacman_conf="$PREFIX/etc/pacman.conf"
   local siglevel_patched=false
 
-  if [ -f "$PROJECT_DIR/.glibc-arch" ] && [ -x "$GLIBC_LDSO" ]; then
+  if [ -x "$GLIBC_LDSO" ]; then
     info "glibc-runner already installed."
     ensure_glibc_hosts
+    touch "$PROJECT_DIR/.glibc-arch"
     return
   fi
 
-  info "Installing glibc-runner through Termux pacman..."
-  if [ -f "$pacman_conf" ] && ! grep -q "^SigLevel = Never" "$pacman_conf"; then
+  info "Installing glibc-runner through Termux glibc apt repository..."
+  if clawmobile_pkg install -y glibc-repo && \
+     clawmobile_pkg update -y && \
+     clawmobile_pkg install -y glibc-runner; then
+    if [ -x "$GLIBC_LDSO" ]; then
+      ensure_glibc_hosts
+      touch "$PROJECT_DIR/.glibc-arch"
+      return
+    fi
+    warn "glibc-runner apt install finished, but $GLIBC_LDSO was not found."
+  else
+    warn "glibc-runner apt install failed; trying Termux pacman fallback."
+  fi
+
+  info "Installing glibc-runner through Termux pacman fallback..."
+  clawmobile_pkg install -y pacman || die "failed to install pacman for glibc-runner fallback."
+  command -v pacman >/dev/null 2>&1 || die "pacman was not installed; Termux package index may be stale or mirror fallback failed."
+
+  if [ -f "$pacman_conf" ]; then
     cp "$pacman_conf" "${pacman_conf}.bak"
-    sed -i 's/^SigLevel[[:space:]]*=.*/SigLevel = Never/' "$pacman_conf"
+    if grep -q "^SigLevel[[:space:]]*=" "$pacman_conf"; then
+      sed -i 's/^SigLevel[[:space:]]*=.*/SigLevel = Never/' "$pacman_conf"
+    else
+      printf '\nSigLevel = Never\n' >> "$pacman_conf"
+    fi
+    if grep -q "^RemoteFileSigLevel[[:space:]]*=" "$pacman_conf"; then
+      sed -i 's/^RemoteFileSigLevel[[:space:]]*=.*/RemoteFileSigLevel = Never/' "$pacman_conf"
+    else
+      printf '\nRemoteFileSigLevel = Never\n' >> "$pacman_conf"
+    fi
     siglevel_patched=true
   fi
 
   pacman-key --init 2>/dev/null || true
   pacman-key --populate 2>/dev/null || true
 
-  if ! pacman -Sy glibc-runner --noconfirm --assume-installed bash,patchelf,resolv-conf; then
+  if ! pacman -Sy glibc-runner --noconfirm \
+    --assume-installed bash \
+    --assume-installed patchelf \
+    --assume-installed resolv-conf; then
     if [ "$siglevel_patched" = true ] && [ -f "${pacman_conf}.bak" ]; then
       mv "${pacman_conf}.bak" "$pacman_conf"
     fi
