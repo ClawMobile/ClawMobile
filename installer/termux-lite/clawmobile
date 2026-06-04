@@ -12,7 +12,7 @@ Usage: clawmobile <command> [args]
 ClawMobile Termux runtime command wrapper.
 
 Commands:
-  install             Install/update Termux runtime prerequisites, OpenClaw plugin, OCR, and workspace seed.
+  install             Install/update Termux runtime prerequisites, OpenClaw plugin, optional OCR, and workspace seed.
   install-openclaw    Install/update OpenClaw for Android/Termux.
   onboard             Run OpenClaw onboarding for the Termux runtime.
   setup               Install OpenClaw + Termux runtime, then onboard.

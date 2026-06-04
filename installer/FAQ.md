@@ -172,6 +172,26 @@ clawmobile setup --quick
 If the selected network cannot reach Termux mirrors, switch networks and rerun
 setup. Re-running setup is safe; it is designed to repair an incomplete install.
 
+## OCR tools say `tesseract` is missing
+
+OCR is optional and is not installed by default. Install it only when you need
+text recognition from screenshots:
+
+```sh
+CLAWMOBILE_TERMUX_INSTALL_OCR=1 clawmobile install
+```
+
+Then verify:
+
+```sh
+tesseract --version
+tesseract --list-langs
+```
+
+If package mirrors are slow or failing, you can keep using ClawMobile without
+OCR; ADB control, screenshots, UIAutomator XML, trace recording, and generated
+skill promotion do not require the OCR package.
+
 ## What does quick setup ask for?
 
 `clawmobile setup --quick` asks for three kinds of information:
@@ -241,7 +261,7 @@ Fix:
 ## ADB is not available
 
 ClawMobile still works without ADB for Termux-side tools, files, network tasks,
-and local OCR on existing images.
+and local OCR on existing images when the optional OCR engine is installed.
 
 ADB is needed for UI control, live screenshots, UIAutomator XML, Android shell,
 fresh trace recording, and generated-skill execution against apps.

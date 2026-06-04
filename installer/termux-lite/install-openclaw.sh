@@ -62,7 +62,7 @@ install_termux_packages() {
   if [ "${CLAWMOBILE_TERMUX_UPGRADE:-0}" = "1" ]; then
     clawmobile_pkg upgrade -y
   fi
-  clawmobile_pkg install -y git curl tar xz-utils coreutils findutils gawk python make cmake clang binutils
+  clawmobile_pkg install -y git curl tar xz-utils coreutils findutils gawk
 
   if [ ! -e "$PREFIX/bin/ar" ] && [ -x "$PREFIX/bin/llvm-ar" ]; then
     ln -s "$PREFIX/bin/llvm-ar" "$PREFIX/bin/ar"
@@ -332,7 +332,11 @@ install_openclaw_package() {
   export CLAWDHUB_WORKDIR="$HOME/.openclaw/workspace"
   export CPATH="$PREFIX/include/glib-2.0:$PREFIX/lib/glib-2.0/include"
 
-  python -c "import yaml" 2>/dev/null || pip install pyyaml -q || true
+  if command -v python >/dev/null 2>&1; then
+    python -c "import yaml" 2>/dev/null || {
+      command -v pip >/dev/null 2>&1 && pip install pyyaml -q || true
+    }
+  fi
 
   if npm list -g openclaw >/dev/null 2>&1 || [ -d "$PREFIX/lib/node_modules/openclaw" ]; then
     info "Existing OpenClaw install detected; reinstalling package cleanly..."

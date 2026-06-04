@@ -80,7 +80,7 @@ ClawMobile treats the phone as the runtime.
 | Capability | Why it matters |
 | --- | --- |
 | **Local agent runtime** | The agent runs where the apps, files, notifications, and Android state already live. |
-| **Phone-native tool surface** | Use shell commands, files, network access, OCR, screenshots, UIAutomator XML, app/window state, and touch input from one OpenClaw surface. |
+| **Phone-native tool surface** | Use shell commands, files, network access, optional OCR, screenshots, UIAutomator XML, app/window state, and touch input from one OpenClaw surface. |
 | **Progressive permissions** | Start with Termux tools, then unlock Termux:API and ADB-backed UI control when the user chooses. |
 | **Learned mobile skills** | Record a task once, generate an OpenClaw skill, and improve it with more demos or execution feedback. |
 
@@ -157,7 +157,7 @@ enabled.
 
 | Stage | Enabled by | Example capabilities |
 | --- | --- | --- |
-| **Termux** | Default runtime | OpenClaw gateway, shell tools, files, network, local OCR |
+| **Termux** | Default runtime | OpenClaw gateway, shell tools, files, network, optional local OCR |
 | **Termux:API** | Termux:API app and package | Clipboard, notifications, battery, text-to-speech |
 | **ADB shell** | Authorized `adb devices` connection | Taps, swipes, typing, screenshots, UIAutomator XML, Android shell commands |
 
@@ -199,7 +199,7 @@ stable generated-skill steps, not a replacement for normal recovery.
 | OpenClaw gateway on Android | The local agent runtime running on the phone. |
 | ClawMobile workspace | Policies, capability contracts, and reusable skills. |
 | `mobile-ui` plugin | Tool bridge between OpenClaw and mobile backends. |
-| Mobile backends | Termux tools, Termux:API, ADB/Android shell, OCR, and generated skill storage. |
+| Mobile backends | Termux tools, Termux:API, ADB/Android shell, optional OCR, and generated skill storage. |
 | Android apps and device state | The real mobile environment the agent observes and acts on. |
 
 The important design choice is progressive capability. The same agent can run
@@ -209,7 +209,7 @@ authorizes them.
 ## Project Status
 
 ClawMobile is in public preview for real Android devices. The default Termux
-runtime includes the installer, OpenClaw mobile plugin, OCR support,
+runtime includes the installer, OpenClaw mobile plugin, optional OCR support,
 ADB-backed UI tools, and the trace-to-skill workflow.
 
 Generated skills are useful today, but they are still preview software. They

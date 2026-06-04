@@ -80,8 +80,8 @@ if command -v tesseract >/dev/null 2>&1; then
   tesseract --list-langs 2>/dev/null || true
 else
   echo "tesseract missing"
-  echo "install: ./installer/termux-lite/install.sh"
-  echo "skip during install: CLAWMOBILE_TERMUX_INSTALL_OCR=0 ./installer/termux-lite/install.sh"
+  echo "optional: install with CLAWMOBILE_TERMUX_INSTALL_OCR=1 clawmobile install"
+  echo "checkout fallback: CLAWMOBILE_TERMUX_INSTALL_OCR=1 ./installer/termux-lite/install.sh"
 fi
 
 section "plugin"

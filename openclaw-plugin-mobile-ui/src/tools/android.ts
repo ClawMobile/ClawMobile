@@ -346,7 +346,7 @@ function normalizeTextMatchPickStrategy(value?: string | null): TextMatchPickStr
 async function requireOcrInputCapabilities(input?: { path?: string }) {
   const ocrUnavailable = await requireRuntimeCapability(
     "ocr",
-    "OCR requires the local tesseract binary. Install it in Termux with `pkg install tesseract`."
+    "OCR requires the optional local tesseract binary. Install it with `CLAWMOBILE_TERMUX_INSTALL_OCR=1 clawmobile install`."
   );
   if (ocrUnavailable) return ocrUnavailable;
 

@@ -5,7 +5,7 @@ For normal installation, start with the
 [installation guide](../INSTALL.md).
 
 ClawMobile runs OpenClaw directly in Termux and adds Android-aware tools for
-local files, shell commands, networking, OCR, optional ADB UI control,
+local files, shell commands, networking, optional OCR, optional ADB UI control,
 demonstration recording, generated skills, and execution feedback.
 
 The `termux-lite/` directory name is historical. It is the maintained default
@@ -118,7 +118,7 @@ are available at tool-call time.
 
 | Stage | How it is reached | Available examples |
 | --- | --- | --- |
-| Termux | Default after ClawMobile starts | OpenClaw, local shell, files, network, CLI tools, local OCR on existing image files |
+| Termux | Default after ClawMobile starts | OpenClaw, local shell, files, network, CLI tools, and local OCR on existing image files when the optional OCR engine is installed |
 | Termux:API | Termux:API app plus `termux-api` package are present | toast, notifications, clipboard, battery status, text-to-speech |
 | ADB shell | `adb devices` shows a device in `device` state | taps, swipes, typing, screenshots, UIAutomator XML, `adb shell` commands |
 
@@ -182,17 +182,21 @@ when the fast path cannot finish.
 OCR is a generic observation substrate and can be useful for generated skills,
 but it is not required for trace recording or promotion.
 
-The setup path installs the local OCR engine by default. Verify it with:
+The setup path does not install the local OCR engine by default. This keeps the
+normal install smaller and avoids large optional packages on slow or unreliable
+Termux mirrors.
+
+Install OCR when you need screenshot text recognition:
+
+```sh
+CLAWMOBILE_TERMUX_INSTALL_OCR=1 clawmobile install
+```
+
+Verify it with:
 
 ```sh
 tesseract --version
 tesseract --list-langs
-```
-
-Skip OCR during setup when you need the smallest possible install:
-
-```sh
-CLAWMOBILE_TERMUX_INSTALL_OCR=0 clawmobile setup --quick
 ```
 
 English OCR is installed by the Termux `tesseract` package. For simplified

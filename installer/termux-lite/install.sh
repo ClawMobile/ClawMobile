@@ -16,12 +16,13 @@ echo "[lite] Installing ClawMobile Termux runtime prerequisites..."
 clawmobile_pkg update -y
 clawmobile_pkg install -y git curl termux-api android-tools rsync
 
-CLAWMOBILE_TERMUX_INSTALL_OCR="${CLAWMOBILE_TERMUX_INSTALL_OCR:-1}"
+CLAWMOBILE_TERMUX_INSTALL_OCR="${CLAWMOBILE_TERMUX_INSTALL_OCR:-0}"
 if [ "$CLAWMOBILE_TERMUX_INSTALL_OCR" = "1" ]; then
   echo "[lite] Installing OCR engine (tesseract)..."
   clawmobile_pkg install -y tesseract
 else
-  echo "[lite] Skipping OCR engine install (CLAWMOBILE_TERMUX_INSTALL_OCR=0)."
+  echo "[lite] Skipping optional OCR engine install."
+  echo "[lite] Install later with: CLAWMOBILE_TERMUX_INSTALL_OCR=1 clawmobile install"
 fi
 
 if ! command -v openclaw >/dev/null 2>&1 && [ "${CLAWMOBILE_TERMUX_INSTALL_OPENCLAW:-0}" = "1" ]; then

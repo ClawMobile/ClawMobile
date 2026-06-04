@@ -1,8 +1,9 @@
 # ClawMobile Installation Guide
 
 This is the recommended public installation path for **ClawMobile**. It runs
-OpenClaw directly in Termux and includes the mobile tool runtime, OCR, optional
-ADB control, and the public-preview generated-skill workflow.
+OpenClaw directly in Termux and includes the mobile tool runtime, optional OCR,
+optional ADB control, and the public-preview
+generated-skill workflow.
 
 Most users should start here.
 
@@ -102,7 +103,7 @@ The default runtime provides:
 
 - OpenClaw running directly in Termux
 - capability-aware Termux/ADB/mobile tools
-- OCR as a base observation substrate
+- optional OCR for screenshot text recognition
 - recorder and offline trace parser
 - preview generated skill candidate, promotion, generalization, update, and
   feedback
@@ -138,10 +139,35 @@ clawmobile reset --level workspace
 
 ---
 
+## Optional OCR Setup
+
+OCR is useful when ClawMobile needs text from screenshots, but it is not needed
+for first install, gateway startup, ADB control, trace recording, or generated
+skill promotion. It is not installed by default so the normal setup stays
+smaller and less sensitive to slow package mirrors.
+
+Install OCR when you need screenshot text recognition:
+
+```sh
+CLAWMOBILE_TERMUX_INSTALL_OCR=1 clawmobile install
+```
+
+Verify it with:
+
+```sh
+tesseract --version
+tesseract --list-langs
+```
+
+If an OCR tool is called before OCR is installed, ClawMobile reports the missing
+capability and points back to this install command.
+
+---
+
 ## Optional ADB Setup
 
 ClawMobile can run without ADB for Termux-side tools, files, network tasks, and
-local OCR on existing images.
+local OCR on existing images when the optional OCR engine is installed.
 
 ADB is required for app UI control, live screenshots, UIAutomator XML, Android
 shell commands, fresh trace recording, and generated-skill execution against
