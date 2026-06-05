@@ -36,6 +36,7 @@ Commands:
 Useful non-interactive setup environment:
   OPENAI_API_KEY=... clawmobile setup --non-interactive --auth-choice openai-api-key
   ANTHROPIC_API_KEY=... clawmobile setup --non-interactive --auth-choice anthropic-api-key
+  DEEPSEEK_API_KEY=... clawmobile setup --non-interactive --auth-choice deepseek-api-key
 
 Pass extra OpenClaw onboard flags after setup/onboard.
 
@@ -151,7 +152,75 @@ prompt_secret() {
   answer="${answer//\[\?2004h/}"
   answer="${answer//\[\?2004l/}"
   answer="${answer//$'\e'/}"
+  answer="$(printf '%s' "$answer" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
   printf '%s' "$answer"
+}
+
+quick_provider_id() {
+  case "$1" in
+    openai-api-key) printf '%s' "openai" ;;
+    anthropic-api-key) printf '%s' "anthropic" ;;
+    deepseek-api-key) printf '%s' "deepseek" ;;
+    *) printf '%s' "" ;;
+  esac
+}
+
+quick_recommended_model() {
+  case "$1" in
+    openai-api-key) printf '%s' "openai/gpt-5.5" ;;
+    anthropic-api-key) printf '%s' "anthropic/claude-sonnet-4-6" ;;
+    deepseek-api-key) printf '%s' "deepseek/deepseek-v4-flash" ;;
+    *) printf '%s' "" ;;
+  esac
+}
+
+prompt_quick_model() {
+  local auth_choice="$1"
+  local default_model=""
+  local model_id=""
+
+  default_model="$(quick_recommended_model "$auth_choice")"
+  if [ -z "$default_model" ]; then
+    cat >&2 <<'EOF'
+
+Model:
+  No verified quick default is available for this provider in the current
+  OpenClaw catalog. Quick setup will save the key, but model routing may need
+  full setup later.
+EOF
+    return 0
+  fi
+
+  cat >&2 <<EOF
+
+Model:
+  Recommended: $default_model
+  Press Enter to use it, or paste another OpenClaw model id.
+EOF
+  model_id="$(prompt_default "Model id" "$default_model")"
+  printf '%s' "$model_id"
+}
+
+configure_quick_model_provider() {
+  local auth_choice="$1"
+  local model_id="$2"
+  local provider_id=""
+  local profile_id=""
+
+  [ "$auth_choice" != "skip" ] || return 0
+  [ -n "$model_id" ] || return 0
+
+  provider_id="$(quick_provider_id "$auth_choice")"
+  if [ -z "$provider_id" ]; then
+    echo "[lite] Skipping explicit model config for this provider; use full setup if model routing is incomplete."
+    return 0
+  fi
+
+  profile_id="$provider_id:default"
+  echo "[lite] Configuring model provider: $profile_id -> $model_id"
+  config_set_json "auth.profiles[\"$profile_id\"]" "{\"provider\":\"$provider_id\",\"mode\":\"api_key\"}"
+  config_set_json "agents.defaults.models[\"$model_id\"]" '{"alias":"GPT"}'
+  openclaw config set "agents.defaults.model.primary" "$model_id" </dev/null >/dev/null 2>&1 || true
 }
 
 choose_model_provider() {
@@ -162,14 +231,12 @@ choose_model_provider() {
 Model provider:
   1) OpenAI (recommended)
   2) Anthropic
-  3) Gemini / Google AI Studio
-  4) OpenRouter
-  5) DeepSeek
-  6) Custom OpenAI-compatible endpoint
-  7) Skip for now
-  8) Use full OpenClaw interactive setup
+  3) DeepSeek
+  4) Skip for now
+  5) Use full OpenClaw interactive setup
 
 You will need an API key from the selected provider unless you skip setup.
+Gemini, OpenRouter, and custom endpoints should use full setup for now.
 See installer/termux-lite/README.md and installer/FAQ.md for examples.
 EOF
   printf 'Choose model provider [1]: ' >&2
@@ -272,11 +339,9 @@ run_quick_setup() {
   local env_var=""
   local api_key=""
   local store_key=""
+  local quick_model_id=""
   local telegram_token=""
   local telegram_user_id=""
-  local custom_base_url=""
-  local custom_model_id=""
-  local custom_compatibility=""
   local extra=()
 
   provider_choice="$(choose_model_provider)"
@@ -289,32 +354,14 @@ run_quick_setup() {
       auth_choice="anthropic-api-key"
       env_var="ANTHROPIC_API_KEY"
       ;;
-    3|gemini|google|google-ai|google-ai-studio|gemini-api-key)
-      auth_choice="gemini-api-key"
-      env_var="GEMINI_API_KEY"
-      ;;
-    4|openrouter|openrouter-api-key)
-      auth_choice="openrouter-api-key"
-      env_var="OPENROUTER_API_KEY"
-      ;;
-    5|deepseek|deepseek-api-key)
+    3|deepseek|deepseek-api-key)
       auth_choice="deepseek-api-key"
       env_var="DEEPSEEK_API_KEY"
       ;;
-    6|custom|custom-api-key)
-      auth_choice="custom-api-key"
-      env_var="$(prompt_default "Provider API key environment variable" "CUSTOM_API_KEY")"
-      custom_base_url="$(prompt_default "Custom base URL" "https://api.openai.com/v1")"
-      custom_model_id="$(prompt_default "Custom model id" "model-id")"
-      custom_compatibility="$(prompt_default "Compatibility mode" "openai")"
-      extra+=("--custom-base-url" "$custom_base_url")
-      extra+=("--custom-model-id" "$custom_model_id")
-      extra+=("--custom-compatibility" "$custom_compatibility")
-      ;;
-    7|skip|none)
+    4|skip|none)
       auth_choice="skip"
       ;;
-    8|full|interactive)
+    5|full|interactive|gemini|google|google-ai|google-ai-studio|gemini-api-key|openrouter|openrouter-api-key|custom|custom-api-key)
       echo "[lite] Switching to full OpenClaw interactive setup."
       "$SCRIPT_DIR/onboard.sh" "$@"
       return 0
@@ -340,6 +387,10 @@ run_quick_setup() {
     fi
   fi
 
+  if [ "$auth_choice" != "skip" ]; then
+    quick_model_id="$(prompt_quick_model "$auth_choice")"
+  fi
+
   channel_choice="$(choose_channel)"
   case "$(printf '%s' "$channel_choice" | tr '[:upper:]' '[:lower:]')" in
     1|telegram|tg)
@@ -362,6 +413,7 @@ run_quick_setup() {
   echo "[lite] ADB setup is optional and can be done later from OpenClaw."
   echo "[lite] Long-term session-memory hooks are left off by default."
   run_onboard_non_interactive "${extra[@]}"
+  configure_quick_model_provider "$auth_choice" "$quick_model_id"
   if [ -n "$telegram_token" ]; then
     configure_telegram_channel "$telegram_token" "$telegram_user_id"
   else

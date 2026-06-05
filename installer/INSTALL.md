@@ -44,8 +44,9 @@ Prepare:
 
 - an Android phone that can run Termux
 - a stable network connection for Termux packages, Node.js, and OpenClaw
-- a model provider API key, such as OpenAI, Anthropic, Gemini, OpenRouter,
-  DeepSeek, or another OpenAI-compatible endpoint
+- a model provider API key. Quick setup currently has verified defaults for
+  OpenAI, Anthropic, and DeepSeek; use full setup for Gemini, OpenRouter, or
+  another OpenAI-compatible endpoint.
 - optionally, a Telegram bot token from BotFather and your numeric Telegram
   user ID if you want the phone to receive commands from Telegram
 - optionally, Android developer options and ADB authorization if you want UI

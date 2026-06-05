@@ -56,6 +56,8 @@ shortest guided setup is:
 
 `--quick` asks for the model provider/API key, optionally configures Telegram,
 applies ClawMobile defaults, and leaves ADB as a later capability upgrade.
+The guided model path currently uses verified defaults for OpenAI, Anthropic,
+and DeepSeek; use full setup for Gemini, OpenRouter, or custom endpoints.
 `--start` launches the OpenClaw gateway immediately after setup and keeps it in
 the current Termux session.
 
@@ -252,14 +254,14 @@ available for local development and debugging:
 Useful bootstrap overrides:
 
 ```sh
-CLAWMOBILE_OPENCLAW_NPM_SPEC=openclaw@2026.5.7
+CLAWMOBILE_OPENCLAW_NPM_SPEC=openclaw@2026.6.1
 CLAWMOBILE_OPENCLAW_NODE_VERSION=22.22.0
 CLAWMOBILE_INSTALL_CLAWDHUB=0
 CLAWMOBILE_OPENCLAW_RUN_UPDATE=0
 CLAWMOBILE_TERMUX_UPGRADE=1
 ```
 
-The bootstrap pins OpenClaw to `openclaw@2026.5.7` by default. It does not run
+The bootstrap pins OpenClaw to `openclaw@2026.6.1` by default. It does not run
 `openclaw update` after installing a pinned version unless
 `CLAWMOBILE_OPENCLAW_RUN_UPDATE=1` is set. Use
 `CLAWMOBILE_OPENCLAW_NPM_SPEC=openclaw@latest` only when intentionally testing
