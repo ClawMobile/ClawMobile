@@ -196,9 +196,11 @@ skill promotion do not require the OCR package.
 
 `clawmobile setup --quick` asks for three kinds of information:
 
-- **Model provider/API key**: choose the model service OpenClaw will use, such
-  as OpenAI, Anthropic, Gemini, OpenRouter, DeepSeek, or a custom
-  OpenAI-compatible endpoint. Get the API key from that provider's dashboard.
+- **Model provider/API key**: choose the model service OpenClaw will use.
+  Quick setup currently has verified defaults for OpenAI, Anthropic, and
+  DeepSeek. Use full setup for Gemini, OpenRouter, or a custom
+  OpenAI-compatible endpoint until their model routing is verified in the
+  current OpenClaw catalog. Get the API key from that provider's dashboard.
   Quick setup shows pasted keys by default so you can confirm the input on your
   phone. Use `CLAWMOBILE_HIDE_SECRETS=1 clawmobile setup --quick` if you want
   hidden input.

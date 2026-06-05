@@ -43,6 +43,37 @@ clawmobile_lite_env() {
     NPM_CONFIG_REGISTRY="$(cat "$openclaw_android_home/.npm-registry")"
     export NPM_CONFIG_REGISTRY
   fi
+
+  clawmobile_load_openclaw_env
+}
+
+clawmobile_load_openclaw_env() {
+  local env_file="${OPENCLAW_ENV_FILE:-${OPENCLAW_STATE_DIR:-$HOME/.openclaw}/.env}"
+  local line=""
+  local name=""
+  local value=""
+  local current=""
+
+  [ -f "$env_file" ] || return 0
+
+  while IFS= read -r line || [ -n "$line" ]; do
+    case "$line" in
+      ""|\#*) continue ;;
+      *=*) ;;
+      *) continue ;;
+    esac
+
+    name="${line%%=*}"
+    value="${line#*=}"
+    if ! printf '%s\n' "$name" | grep -Eq '^[A-Za-z_][A-Za-z0-9_]*$'; then
+      continue
+    fi
+
+    current="${!name-}"
+    if [ -z "$current" ]; then
+      export "$name=$value"
+    fi
+  done < "$env_file"
 }
 
 clawmobile_require_termux() {
