@@ -61,7 +61,7 @@ function guidanceForAnchor(name: string, anchor: any) {
   if (reliability === "observed_failure") {
     return compact({
       ...base,
-      guidance: "This anchor has a recorded failure; if it came from a generated fast path, use one bounded fast-path reflection/repair before permanently avoiding it. Otherwise verify carefully before relying on it.",
+      guidance: "This anchor has a recorded failure; use it as diagnostic evidence during normal skill-guided execution. If it came from a generated fast path and the repair is clearly bounded, one fast-path reflection may be useful.",
       last_failure: anchor.last_failure,
     });
   }
@@ -147,7 +147,7 @@ function fastPathSelfRepairGuidance(generalized: any, failurePatterns: any[]) {
     failure_summary: latestFailure.last_summary || latestFailure.observations,
     repair_hint: latestFailure.repair_hint,
     instruction:
-      "Do not skip the generated fast path solely because of this prior failure. Reflect once with the structured failure evidence, apply only bounded repairs, then retry the fast path once before falling back to normal UI execution.",
+      "Use the failure as diagnostic context during normal skill-guided execution. If the issue is a clearly bounded entry-state, text-query, or verifier mismatch, reflect once and retry the fast path at most once.",
   });
 }
 
@@ -168,7 +168,7 @@ export function deriveExecutionGuidance(generalized: any) {
   }
   if (failurePatterns.length > 0) {
     if (fastPathSelfRepair.recommended === true) {
-      hints.push("Known generated fast-path failure patterns exist; attempt one bounded fast-path reflection/repair and retry before switching to normal UI execution.");
+      hints.push("Known generated fast-path failure patterns exist; prefer normal skill-guided execution, and use one bounded fast-path reflection only when the failure is safely repairable.");
     } else {
       hints.push("Known failure patterns exist; check them before repeating a failed anchor or step.");
     }

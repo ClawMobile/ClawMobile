@@ -55,17 +55,19 @@ Do not claim success unless the tool result supports it.
 
 ## Generated-Skill Policy
 
-Generated skills should favor stable recorded anchors and checkpoint
-verification. If a generated skill has an eligible fast path, run it before
-manually expanding its procedure unless the task is high-risk or required
-parameters are missing.
+Generated skills should be used as compact app/task knowledge first. Prefer
+their app model, applicability rules, anchors, verification hints, and prior
+execution evidence to avoid repeated UI probing. If a generated skill has an
+eligible fast path, treat it as an optional acceleration route, not the
+definition of the skill.
 
 When the generated skill name is known, call `clawmobile_skill_status` before
-manual expansion. If the user request provides the skill's required values,
-call `clawmobile_skill_run_fast_path` with a top-level `parameters` object, for
-example `parameters: {"title_text":"...","body_text":"..."}`. Do not reject
-the runner because of uncertainty about parameter passing; `parameters` is the
-primary argument and `parameter_values` is an alias.
+manual expansion when prior execution evidence may matter. If the user request
+provides the skill's required values and the app state matches a fast path, you
+may call `clawmobile_skill_run_fast_path` with a top-level `parameters` object,
+for example `parameters: {"title_text":"...","body_text":"..."}`. Do not
+reject the runner because of uncertainty about parameter passing; `parameters`
+is the primary argument and `parameter_values` is an alias.
 
 `clawmobile_skill_run_fast_path` loads the generated skill's
 `generalized_skill.json`, executes the deterministic fast path, and can perform
@@ -81,14 +83,16 @@ contexts and failure patterns in the generated skill's `evolution` block.
 Use `clawmobile_skill_status` when structured generated-skill experience is
 more useful than reading the full generated `SKILL.md`.
 
-When a generated fast path fails, use a one-repair loop before falling back:
+When a generated fast path fails, continue with normal grounded execution using
+the same skill context. Use a one-repair loop only when the structured failure
+suggests a small safe repair:
 
 1. Record or preserve the fast-path failure evidence.
 2. Inspect the structured failure and cheap UI state. If the failure is a
    repairable verifier/text-query issue, call
    `clawmobile_skill_reflect_fast_path_failure` with an agent-written diagnosis
    and one bounded repair.
-3. Retry `clawmobile_skill_run_fast_path` once with the same parameters.
+3. Retry `clawmobile_skill_run_fast_path` at most once with the same parameters.
 4. If the repaired fast path still fails, use normal stepwise
    execution/regrounding and record feedback.
 5. If normal execution fails too, clearly report the failed step and suggest a

@@ -13,7 +13,12 @@
     "build": "node ./node_modules/typescript/bin/tsc -p tsconfig.json && node scripts/prepare-lite.mjs",
     "dev": "node ./node_modules/typescript/bin/tsc -p tsconfig.json -w",
     "companion:server": "node dist/companion/server.js",
+    "test:companion-sharing": "node scripts/test-companion-sharing.cjs",
     "test:trace-induction": "node scripts/test-trace-induction.cjs"
+  },
+
+  "dependencies": {
+    "nostr-tools": "^2.23.5"
   },
 
   "devDependencies": {

@@ -25,6 +25,18 @@ export type CompanionHealth = {
 export type IntentRequest = {
   text: string;
   sessionId?: string;
+  attachments?: IntentAttachment[];
+};
+
+export type IntentAttachment = {
+  id: string;
+  clientId?: string;
+  type: "image" | string;
+  mimeType?: string;
+  displayName?: string;
+  sizeBytes?: number;
+  path?: string;
+  createdAt?: number;
 };
 
 export type TerminalCommandRequest = {
@@ -59,9 +71,12 @@ export type IntentSubmitResponse = {
   success: boolean;
   runId: string;
   sessionId?: string;
+  state?: CompanionRunStatus["state"];
   result: string;
   message: string;
+  userText?: string;
   canvas: CanvasSchema;
+  attachments?: IntentAttachment[];
   gatewayRun?: unknown;
 };
 
@@ -76,13 +91,25 @@ export type CompanionRunStatus = {
   result?: string;
   progress?: CompanionRunProgress;
   prompt?: string;
+  userText?: string;
+  attachments?: IntentAttachment[];
   submittedAt?: number;
   startedAt?: number;
   updatedAt?: number;
   endedAt?: number;
   runtimeMs?: number;
+  tokenUsage?: CompanionRunTokenUsage;
   canvas?: CanvasSchema;
   raw?: unknown;
+};
+
+export type CompanionRunTokenUsage = {
+  inputTokens?: number;
+  outputTokens?: number;
+  totalTokens?: number;
+  cachedTokens?: number;
+  reasoningTokens?: number;
+  estimatedCost?: string;
 };
 
 export type CompanionRunProgress = {

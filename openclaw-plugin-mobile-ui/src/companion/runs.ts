@@ -3,13 +3,15 @@ import os from "os";
 import path from "path";
 import { intentCanvas } from "./canvas";
 import { callOpenClawGateway, expectedCompanionSessionKey, normalizeCompanionSessionId, type OpenClawAgentSubmitResult } from "./openclawAgentClient";
-import type { CompanionRunProgress, CompanionRunProgressEvent, CompanionRunStatus } from "./types";
+import type { CompanionRunProgress, CompanionRunProgressEvent, CompanionRunStatus, CompanionRunTokenUsage, IntentAttachment } from "./types";
 
 type StoredRun = {
   runId: string;
   sessionId: string;
   sessionKey?: string;
   text: string;
+  userText?: string;
+  attachments?: IntentAttachment[];
   acceptedAt: number;
   updatedAt?: number;
   state?: CompanionRunStatus["state"];
@@ -30,6 +32,7 @@ type TrajectorySummary = {
   updatedAt?: number;
   endedAt?: number;
   progress?: CompanionRunProgress;
+  tokenUsage?: CompanionRunTokenUsage;
 };
 
 type TranscriptSummary = {
@@ -38,11 +41,16 @@ type TranscriptSummary = {
   startedAt?: number;
   endedAt?: number;
   progressEvents: CompanionRunProgressEvent[];
+  tokenUsage?: CompanionRunTokenUsage;
 };
 
 const submittedRuns = new Map<string, StoredRun>();
 
-export async function rememberSubmittedRun(text: string, result: OpenClawAgentSubmitResult) {
+export async function rememberSubmittedRun(
+  text: string,
+  result: OpenClawAgentSubmitResult,
+  options: { userText?: string; attachments?: IntentAttachment[] } = {},
+) {
   const existing = submittedRuns.get(result.runId)
     || (await findStoredRun(result.runId).catch(() => null));
   const stored = {
@@ -51,6 +59,8 @@ export async function rememberSubmittedRun(text: string, result: OpenClawAgentSu
     sessionId: result.sessionId,
     sessionKey: normalizedStoredSessionKey(result.sessionId, result.sessionKey),
     text,
+    userText: options.userText || existing?.userText,
+    attachments: options.attachments && options.attachments.length > 0 ? options.attachments : existing?.attachments,
     acceptedAt: existing?.acceptedAt || result.acceptedAt || Date.now(),
     updatedAt: Date.now(),
     state: "running" as const,
@@ -133,13 +143,14 @@ export async function deleteSession(sessionId: string) {
   };
 }
 
-export async function listRuns(): Promise<CompanionRunStatus[]> {
+export async function listRuns(options: { limit?: number } = {}): Promise<CompanionRunStatus[]> {
+  const limit = Math.max(1, Math.min(options.limit ?? 100, 100));
   const storedRuns = await readStoredRuns();
   const sessions = await readSessionsIndex();
   const archivedSessionIds = await readArchivedSessionIds();
   if (storedRuns.length > 0) {
     return Promise.all(
-      storedRuns.slice(0, 5).map(async (stored) => {
+      storedRuns.slice(0, limit).map(async (stored) => {
         const session = findSessionForStoredRun(sessions, stored);
         const fallback = session
           ? statusFromSessionInfo(session, stored.runId, stored)
@@ -153,7 +164,7 @@ export async function listRuns(): Promise<CompanionRunStatus[]> {
     sessions
       .filter((session: any) => isCompanionSession(session))
       .filter((session: any) => !archivedSessionIds.has(companionSessionIdFromSession(session)))
-      .slice(0, 5)
+      .slice(0, limit)
       .map(async (session: any) => {
       const fallback = statusFromSessionInfo(session);
       return enrichFromSessionFile(fallback, session);
@@ -192,6 +203,7 @@ function statusFromHistory(runId: string, sessionKey: string, history: any, stor
   const state = normalizeState(sessionInfo.status, sessionInfo.hasActiveRun, sessionInfo);
   const result = latestAssistantText(history?.messages);
   const prompt = stored?.text || latestUserText(history?.messages) || "";
+  const userText = stored?.userText || latestUserText(history?.messages) || prompt;
   const message = result || messageForState(state);
 
   return {
@@ -204,6 +216,8 @@ function statusFromHistory(runId: string, sessionKey: string, history: any, stor
     message,
     result,
     prompt,
+    userText,
+    attachments: stored?.attachments,
     submittedAt: stored?.acceptedAt,
     startedAt: numberOrUndefined(sessionInfo.startedAt),
     updatedAt: numberOrUndefined(sessionInfo.updatedAt),
@@ -231,12 +245,14 @@ async function enrichFromSessionFile(
   if (!transcript && !trajectory) return status;
 
   const prompt = stored?.text || transcript?.prompt || trajectory?.prompt || status.prompt || "";
+  const userText = stored?.userText || status.userText;
   const result = transcript?.result || trajectory?.result || status.result;
   const progress = mergeProgress(status.progress, transcript?.progressEvents || [], trajectory?.progress);
   const state = resolveState(status.state, result, trajectory?.state, progress);
   const message = result || progress?.text || status.message;
   const startedAt = transcript?.startedAt || trajectory?.startedAt || status.startedAt;
   const endedAt = transcript?.endedAt || trajectory?.endedAt || status.endedAt;
+  const tokenUsage = mergeTokenUsage(status.tokenUsage, transcript?.tokenUsage, trajectory?.tokenUsage);
 
   return {
     ...status,
@@ -246,11 +262,14 @@ async function enrichFromSessionFile(
     result,
     progress,
     prompt,
+    userText,
+    attachments: stored?.attachments || status.attachments,
     submittedAt: stored?.acceptedAt || status.submittedAt,
     startedAt,
     updatedAt: trajectory?.updatedAt || status.updatedAt,
     endedAt,
     runtimeMs: startedAt && endedAt ? endedAt - startedAt : status.runtimeMs,
+    tokenUsage,
     canvas: prompt || result ? intentCanvas(prompt, message) : status.canvas,
   };
 }
@@ -274,6 +293,8 @@ function statusFromSessionInfo(sessionInfo: any, preferredRunId?: string, stored
     message,
     progress: state === "running" ? storedStatus?.progress : undefined,
     prompt: stored?.text,
+    userText: stored?.userText,
+    attachments: stored?.attachments,
     submittedAt: stored?.acceptedAt,
     startedAt: numberOrUndefined(sessionInfo?.startedAt),
     updatedAt: numberOrUndefined(sessionInfo?.updatedAt),
@@ -310,6 +331,8 @@ function statusFromStoredRun(stored: StoredRun): CompanionRunStatus {
       ],
     },
     prompt: stored.text,
+    userText: stored.userText,
+    attachments: stored.attachments,
     submittedAt: stored.acceptedAt,
     updatedAt: stored.updatedAt,
   };
@@ -359,12 +382,14 @@ async function readSessionTranscript(
   let startedAt: number | undefined;
   let endedAt: number | undefined;
   const progressEvents: CompanionRunProgressEvent[] = [];
+  let tokenUsage: CompanionRunTokenUsage | undefined;
   let isTargetTurn = !targetPrompt;
   let candidatePrompt = "";
   let candidateResult = "";
   let candidateStartedAt: number | undefined;
   let candidateEndedAt: number | undefined;
   let candidateProgressEvents: CompanionRunProgressEvent[] = [];
+  let candidateTokenUsage: CompanionRunTokenUsage | undefined;
 
   for (const line of raw.split(/\r?\n/)) {
     if (!line.trim()) continue;
@@ -385,6 +410,11 @@ async function readSessionTranscript(
       const toolEvents = toolCallEventsFromMessage(event);
       progressEvents.push(...toolEvents);
       if (targetPrompt) candidateProgressEvents.push(...toolEvents);
+      const messageUsage = tokenUsageFromMessage(event);
+      if (messageUsage) {
+        tokenUsage = accumulateTokenUsage(tokenUsage, messageUsage);
+        if (targetPrompt) candidateTokenUsage = accumulateTokenUsage(candidateTokenUsage, messageUsage);
+      }
     } else if (role === "toolResult" && turnIsActive) {
       const toolEvent = toolResultEventFromMessage(event);
       if (toolEvent) {
@@ -407,6 +437,7 @@ async function readSessionTranscript(
           candidateStartedAt = messageTimestamp(event);
           candidateEndedAt = undefined;
           candidateProgressEvents = [];
+          candidateTokenUsage = undefined;
         } else if (isTargetTurn && candidateResult) {
           isTargetTurn = false;
         } else if (isTargetTurn) {
@@ -430,9 +461,10 @@ async function readSessionTranscript(
       startedAt: candidateStartedAt,
       endedAt: candidateEndedAt,
       progressEvents: candidateProgressEvents,
+      tokenUsage: candidateTokenUsage,
     };
   }
-  return { prompt, result, startedAt, endedAt, progressEvents };
+  return { prompt, result, startedAt, endedAt, progressEvents, tokenUsage };
 }
 
 async function readSessionTrajectory(
@@ -463,6 +495,7 @@ async function readSessionTrajectory(
   let updatedAt: number | undefined;
   let endedAt: number | undefined;
   const progressEvents: CompanionRunProgressEvent[] = [];
+  let tokenUsage: CompanionRunTokenUsage | undefined;
 
   for (const event of events) {
     const at = trajectoryTimestamp(event);
@@ -489,6 +522,7 @@ async function readSessionTrajectory(
 
     const progressEvent = progressEventFromTrajectory(event);
     if (progressEvent) progressEvents.push(progressEvent);
+    tokenUsage = accumulateTokenUsage(tokenUsage, tokenUsageFromTrajectory(event));
   }
 
   const latestProgress = progressEvents[progressEvents.length - 1];
@@ -500,6 +534,7 @@ async function readSessionTrajectory(
     startedAt,
     updatedAt,
     endedAt,
+    tokenUsage,
     progress: latestProgress
       ? {
         text: latestProgress.label,
@@ -838,6 +873,146 @@ function tokenDetail(event: any): string | undefined {
   return undefined;
 }
 
+function tokenUsageFromTrajectory(event: any): CompanionRunTokenUsage | undefined {
+  if (String(event?.type || "") !== "model.completed") return undefined;
+  return tokenUsageFromRaw(event?.data?.usage);
+}
+
+function tokenUsageFromMessage(event: any): CompanionRunTokenUsage | undefined {
+  return tokenUsageFromRaw(event?.message?.usage);
+}
+
+function tokenUsageFromRaw(usage: any): CompanionRunTokenUsage | undefined {
+  if (!usage || typeof usage !== "object") return undefined;
+
+  const inputTokens = firstNumber(
+    usage.inputTokens,
+    usage.input_tokens,
+    usage.promptTokens,
+    usage.prompt_tokens,
+    usage.input,
+  );
+  const outputTokens = firstNumber(
+    usage.outputTokens,
+    usage.output_tokens,
+    usage.completionTokens,
+    usage.completion_tokens,
+    usage.output,
+  );
+  const cachedTokens = firstNumber(
+    usage.cachedTokens,
+    usage.cached_tokens,
+    usage.cacheRead,
+    usage.cache_read,
+  );
+  const reasoningTokens = firstNumber(
+    usage.reasoningTokens,
+    usage.reasoning_tokens,
+  );
+  const totalTokens = firstNumber(
+    usage.totalTokens,
+    usage.total_tokens,
+    usage.total,
+  ) || sumDefined(inputTokens, outputTokens, cachedTokens, reasoningTokens);
+  const estimatedCost = formatEstimatedCost(
+    firstNumber(
+      usage.estimatedCost,
+      usage.estimated_cost,
+      usage.costUsd,
+      usage.cost_usd,
+      usage.cost?.total,
+      usage.cost,
+    ),
+  );
+
+  if (
+    inputTokens === undefined &&
+    outputTokens === undefined &&
+    cachedTokens === undefined &&
+    reasoningTokens === undefined &&
+    totalTokens === undefined &&
+    estimatedCost === undefined
+  ) {
+    return undefined;
+  }
+
+  return {
+    inputTokens,
+    outputTokens,
+    totalTokens,
+    cachedTokens,
+    reasoningTokens,
+    estimatedCost,
+  };
+}
+
+function accumulateTokenUsage(
+  left?: CompanionRunTokenUsage,
+  right?: CompanionRunTokenUsage,
+): CompanionRunTokenUsage | undefined {
+  if (!left) return right;
+  if (!right) return left;
+  return compactTokenUsage({
+    inputTokens: sumDefined(left.inputTokens, right.inputTokens),
+    outputTokens: sumDefined(left.outputTokens, right.outputTokens),
+    totalTokens: sumDefined(left.totalTokens, right.totalTokens),
+    cachedTokens: sumDefined(left.cachedTokens, right.cachedTokens),
+    reasoningTokens: sumDefined(left.reasoningTokens, right.reasoningTokens),
+    estimatedCost: right.estimatedCost || left.estimatedCost,
+  });
+}
+
+function mergeTokenUsage(
+  ...items: Array<CompanionRunTokenUsage | undefined>
+): CompanionRunTokenUsage | undefined {
+  const merged = items.reduce<CompanionRunTokenUsage>((current, usage) => {
+    if (!usage) return current;
+    return {
+      inputTokens: usage.inputTokens ?? current.inputTokens,
+      outputTokens: usage.outputTokens ?? current.outputTokens,
+      totalTokens: usage.totalTokens ?? current.totalTokens,
+      cachedTokens: usage.cachedTokens ?? current.cachedTokens,
+      reasoningTokens: usage.reasoningTokens ?? current.reasoningTokens,
+      estimatedCost: usage.estimatedCost ?? current.estimatedCost,
+    };
+  }, {});
+  return compactTokenUsage(merged);
+}
+
+function compactTokenUsage(usage: CompanionRunTokenUsage): CompanionRunTokenUsage | undefined {
+  if (
+    usage.inputTokens === undefined &&
+    usage.outputTokens === undefined &&
+    usage.totalTokens === undefined &&
+    usage.cachedTokens === undefined &&
+    usage.reasoningTokens === undefined &&
+    usage.estimatedCost === undefined
+  ) {
+    return undefined;
+  }
+  return usage;
+}
+
+function firstNumber(...values: any[]): number | undefined {
+  for (const value of values) {
+    const number = numberOrUndefined(value);
+    if (number !== undefined) return number;
+  }
+  return undefined;
+}
+
+function sumDefined(...values: Array<number | undefined>): number | undefined {
+  const numbers = values.filter((value): value is number => value !== undefined);
+  if (numbers.length === 0) return undefined;
+  return numbers.reduce((sum, value) => sum + value, 0);
+}
+
+function formatEstimatedCost(value: number | undefined): string | undefined {
+  if (value === undefined) return undefined;
+  if (value <= 0) return undefined;
+  return `$${value < 0.01 ? value.toFixed(4) : value.toFixed(2)}`;
+}
+
 function finalStatusDetail(event: any): string | undefined {
   const finalStatus = typeof event?.data?.finalStatus === "string" ? event.data.finalStatus : "";
   const status = typeof event?.data?.status === "string" ? event.data.status : "";
@@ -958,6 +1133,8 @@ async function readCompanionRunRegistry(): Promise<CompanionRunRegistry> {
       sessionId: normalizeCompanionSessionId(String(run.sessionId || "default")),
       sessionKey: typeof run.sessionKey === "string" ? run.sessionKey : undefined,
       text: typeof run.text === "string" ? run.text : "",
+      userText: typeof run.userText === "string" ? run.userText : undefined,
+      attachments: Array.isArray(run.attachments) ? run.attachments : undefined,
       acceptedAt: typeof run.acceptedAt === "number" ? run.acceptedAt : 0,
       updatedAt: typeof run.updatedAt === "number" ? run.updatedAt : undefined,
       state: ["running", "done", "failed", "unknown"].includes(String(run.state || ""))
