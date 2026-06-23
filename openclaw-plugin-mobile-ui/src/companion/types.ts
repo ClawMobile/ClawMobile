@@ -110,6 +110,7 @@ export type CompanionRunTokenUsage = {
   cachedTokens?: number;
   reasoningTokens?: number;
   estimatedCost?: string;
+  estimatedCostUsd?: number;
 };
 
 export type CompanionRunProgress = {
