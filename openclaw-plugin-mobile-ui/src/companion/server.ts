@@ -84,6 +84,14 @@ async function route(req: http.IncomingMessage, res: http.ServerResponse) {
   const method = req.method || "GET";
   const requestUrl = new URL(req.url || "/", "http://localhost");
 
+  if (shouldBlockBrowserRequest(req, requestUrl.pathname)) {
+    writeJson(res, 403, {
+      success: false,
+      message: "Browser-origin requests are not allowed for local companion control endpoints.",
+    });
+    return;
+  }
+
   if (method === "OPTIONS") {
     writeJson(res, 204, {});
     return;
@@ -191,6 +199,7 @@ async function route(req: http.IncomingMessage, res: http.ServerResponse) {
     writeJson(res, 200, setupNostrIdentity({
       secretKey: body?.secretKey || body?.nsec,
       relays: Array.isArray(body?.relays) ? body.relays : undefined,
+      revealSecret: body?.revealSecret === true,
     }));
     return;
   }
@@ -900,10 +909,55 @@ function writeJson(res: http.ServerResponse, statusCode: number, value: any) {
   const body = statusCode === 204 ? "" : JSON.stringify(value, null, 2);
   res.statusCode = statusCode;
   res.setHeader("Content-Type", "application/json; charset=utf-8");
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Headers", "content-type, authorization, x-clawmobile-attachment-id, x-clawmobile-filename, x-clawmobile-attachment-type");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+  const corsOrigin = (process.env.CLAWMOBILE_COMPANION_CORS_ORIGIN || "").trim();
+  if (corsOrigin) {
+    res.setHeader("Access-Control-Allow-Origin", corsOrigin);
+    res.setHeader("Access-Control-Allow-Headers", "content-type, authorization, x-clawmobile-attachment-id, x-clawmobile-filename, x-clawmobile-attachment-type");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+  }
   res.end(body);
+}
+
+function shouldBlockBrowserRequest(req: http.IncomingMessage, pathname: string) {
+  if (process.env.CLAWMOBILE_COMPANION_ALLOW_BROWSER_ORIGIN === "1") {
+    return false;
+  }
+  if (!isSensitiveCompanionRoute(pathname)) {
+    return false;
+  }
+
+  const origin = String(req.headers.origin || "").trim();
+  if (origin) {
+    return !isAllowedCorsOrigin(origin);
+  }
+
+  const fetchSite = String(req.headers["sec-fetch-site"] || "").toLowerCase();
+  if (fetchSite && fetchSite !== "none" && fetchSite !== "same-origin") {
+    return true;
+  }
+
+  const referer = String(req.headers.referer || "").trim();
+  return Boolean(referer && !refererStartsWithLocalCompanion(referer));
+}
+
+function isSensitiveCompanionRoute(pathname: string) {
+  return pathname !== "/" && pathname !== "/health";
+}
+
+function isAllowedCorsOrigin(origin: string) {
+  const configured = (process.env.CLAWMOBILE_COMPANION_CORS_ORIGIN || "").trim();
+  return Boolean(configured && (configured === "*" || configured === origin));
+}
+
+function refererStartsWithLocalCompanion(referer: string) {
+  try {
+    const url = new URL(referer);
+    const port = url.port || (url.protocol === "https:" ? "443" : "80");
+    return ["127.0.0.1", "localhost", "[::1]"].includes(url.hostname) &&
+      port === String(parsePort(process.env.CLAWMOBILE_COMPANION_PORT, DEFAULT_PORT));
+  } catch {
+    return false;
+  }
 }
 
 async function readJsonBody<T>(req: http.IncomingMessage): Promise<T> {

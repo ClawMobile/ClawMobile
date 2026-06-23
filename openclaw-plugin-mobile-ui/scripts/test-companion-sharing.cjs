@@ -18,6 +18,12 @@ const identity = nostr.setupNostrIdentity({ relays: ["wss://relay.example.com"] 
 assert.strictEqual(identity.ok, true);
 assert.ok(identity.npub.startsWith("npub1"));
 assert.ok(identity.nsec.startsWith("nsec1"));
+const reusedIdentity = nostr.setupNostrIdentity({ relays: ["wss://relay.example.com"] });
+assert.strictEqual(reusedIdentity.ok, true);
+assert.strictEqual(reusedIdentity.npub, identity.npub);
+assert.strictEqual(reusedIdentity.nsec, undefined);
+const revealedIdentity = nostr.setupNostrIdentity({ relays: ["wss://relay.example.com"], revealSecret: true });
+assert.strictEqual(revealedIdentity.nsec, identity.nsec);
 
 const peerSecret = generateSecretKey();
 const peerPubkey = getPublicKey(peerSecret);

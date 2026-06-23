@@ -5,7 +5,12 @@ OpenClaw directly in Termux and includes the mobile tool runtime, optional OCR,
 optional ADB control, and the public-preview
 generated-skill workflow.
 
-Most users should start here.
+Most users should start with the native Android app when possible. The app keeps
+Termux as the runtime, but provides guided setup, status, tasks, skills, logs,
+and trusted contacts from a phone-native UI. Use the Termux CLI path below for
+advanced installs, remote debugging, or automation.
+
+Android app guide: [../docs/android-companion-app.md](../docs/android-companion-app.md)
 
 ---
 

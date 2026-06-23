@@ -139,14 +139,20 @@ Termux:
 clawmobile server
 ```
 
-The current `companion-server-mvp` branch already includes this companion server
-surface under `openclaw-plugin-mobile-ui/src/companion/`. Treat that
-implementation as the baseline for Android testing and backend follow-up work.
+ClawMobile includes this companion server surface under
+`openclaw-plugin-mobile-ui/src/companion/`. Treat that implementation as the
+baseline for Android testing and backend follow-up work.
 
 By default it listens on the local loopback host at `127.0.0.1:8765`, so the
 Android companion app can call it on the same device without exposing a shell
 endpoint to the local network. It checks the existing OpenClaw gateway at
 `127.0.0.1:18789`.
+
+The companion HTTP surface is intended for the native Android app, not arbitrary
+browser pages. Browser-origin requests to local control endpoints are rejected
+by default, and CORS headers are only emitted when
+`CLAWMOBILE_COMPANION_CORS_ORIGIN` is explicitly configured for local
+development.
 
 Current MVP endpoints:
 
@@ -194,8 +200,9 @@ GET  /runs
 `/health` returns ClawMobile capability health plus OpenClaw gateway reachability.
 `/runtime/start` starts the existing Termux gateway through `run.sh` if it is not
 already reachable. `/runtime/log` returns the current gateway log tail for the
-Android cockpit terminal. Terminal endpoints execute commands inside Termux and
-are restricted to loopback requests by default. `/intent` accepts a user task,
+Android cockpit terminal. Terminal endpoints execute commands inside Termux.
+Companion control endpoints are restricted to loopback requests by default.
+`/intent` accepts a user task,
 returns a run id and session id, and lets the Android app poll `/runs/:runId`
 and `/runs?limit=100` for chat history, progress, tool activity, final result,
 and optional token usage.
@@ -213,7 +220,8 @@ send encrypted direct messages, fetch inbox messages, keep local trusted-agent
 conversation history, and import received skill shares as pending drafts. Shared
 skill packages intentionally omit raw traces, screenshots, private artifacts,
 and executable fast paths; received packages are never auto-run and require
-explicit local import.
+explicit local import. The Nostr recovery key is returned when a new identity is
+generated, and later only when the caller explicitly requests a reveal.
 
 ### Skills Library API Contract
 
@@ -410,7 +418,9 @@ includes `success`, `state`, Android-facing `status`, `message`,
   execution.
 - Keep generated skills visually distinct from ordinary installed skills, but
   keep the detail page structure shared.
-- See `docs/companion-android-contract.md` for the Android companion contract.
+- See the public [Android companion app guide](../../docs/android-companion-app.md)
+  for the user-facing app overview. The local companion HTTP interface is an
+  internal implementation detail and may change between releases.
 
 ### Remaining Skills Backend Work
 

@@ -17,6 +17,18 @@ repository checkout:
 ./installer/termux-lite/clawmobile doctor
 ```
 
+## Should I use the Android app or the Termux CLI?
+
+Most testers should use the Android companion app first. It guides Termux SSH
+pairing, runs setup, starts ClawMobile, shows runtime status, and provides the
+Tasks, Skills, Social, Settings, logs, and shell UI.
+
+Use the Termux CLI when you are developing the runtime, debugging installer
+issues, running from a remote shell, or automating repeatable test setups.
+
+Both paths use the same Termux runtime. The Android app is the phone-native
+control surface; Termux remains where ClawMobile and OpenClaw actually run.
+
 ## Which Termux should I install?
 
 Use the latest Termux from

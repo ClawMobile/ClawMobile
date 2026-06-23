@@ -69,11 +69,13 @@ export function getNostrStatus() {
   };
 }
 
-export function setupNostrIdentity(input: { secretKey?: string; relays?: string[] } = {}) {
+export function setupNostrIdentity(input: { secretKey?: string; relays?: string[]; revealSecret?: boolean } = {}) {
   const config = readConfig();
+  const existingSecret = hexToBytes(config.secretKeyHex || "");
+  const generatedSecret = !input.secretKey && !existingSecret;
   const secretKey = input.secretKey
     ? parseSecretKey(input.secretKey)
-    : hexToBytes(config.secretKeyHex || "") || generateSecretKey();
+    : existingSecret || generateSecretKey();
   const publicKey = getPublicKey(secretKey);
   const relays = normalizeRelays(input.relays?.length ? input.relays : config.relays);
   const next: NostrConfig = {
@@ -84,17 +86,22 @@ export function setupNostrIdentity(input: { secretKey?: string; relays?: string[
     updatedAt: Date.now(),
   };
   writeConfig(next);
-  return {
+  const response: Record<string, any> = {
     ok: true,
     configured: true,
     publicKey,
     npub: nip19.npubEncode(publicKey),
-    nsec: nip19.nsecEncode(secretKey),
     relays,
     message: input.secretKey
       ? "Nostr identity imported."
-      : "Nostr identity is ready. Save the nsec value if this is a newly generated key.",
+      : generatedSecret
+        ? "Nostr identity is ready. Save the nsec value; it is shown only when generated or explicitly revealed."
+        : "Nostr identity is ready.",
   };
+  if (generatedSecret || input.revealSecret === true) {
+    response.nsec = nip19.nsecEncode(secretKey);
+  }
+  return response;
 }
 
 export function listNostrContacts() {

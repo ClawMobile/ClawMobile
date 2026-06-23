@@ -1,0 +1,17 @@
+{
+  "name": "ClawMobile Companion",
+  "packageName": "ai.clawmobile.companion",
+  "version": "0.1.2",
+  "versionCode": 3,
+  "releaseUrl": "https://github.com/ClawMobile/ClawMobile/releases/latest",
+  "apkUrl": "https://github.com/ClawMobile/ClawMobile/releases/latest/download/ClawMobile-v0.1.2.apk",
+  "sha256": "772f6967ea9e489ae58963abffdea01991d3678ff578f5ef24230519d9783547",
+  "signed": "release",
+  "notes": [
+    "Install this APK to use the native Android companion shell for ClawMobile.",
+    "Use the Social tab to create an Agent ID, add trusted contacts, exchange messages, and share compact skill knowledge.",
+    "Messages from unknown senders are filtered from the app UI by default.",
+    "Keep the Recovery Key private; it restores the same Agent ID on another device.",
+    "If an earlier debug-signed test APK is installed, uninstall it before installing this release-signed APK."
+  ]
+}
