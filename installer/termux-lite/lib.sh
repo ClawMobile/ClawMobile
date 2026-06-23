@@ -44,7 +44,34 @@ clawmobile_lite_env() {
     export NPM_CONFIG_REGISTRY
   fi
 
+  clawmobile_sync_openclaw_compat
   clawmobile_load_openclaw_env
+}
+
+clawmobile_sync_openclaw_compat() {
+  local script_dir
+  local openclaw_android_home="${CLAWMOBILE_OPENCLAW_ANDROID_HOME:-$HOME/.openclaw-android}"
+  local patch_dir="$openclaw_android_home/patches"
+  local compat_file=""
+  local glibc_etc="${PREFIX:-/data/data/com.termux/files/usr}/glibc/etc"
+  local hosts_file="$glibc_etc/hosts"
+
+  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  compat_file="$script_dir/openclaw-compat/glibc-compat.js"
+  if [ -f "$compat_file" ]; then
+    mkdir -p "$patch_dir"
+    cp "$compat_file" "$patch_dir/glibc-compat.js"
+  fi
+
+  [ -d "$glibc_etc" ] || return 0
+  if [ ! -f "$hosts_file" ]; then
+    cat > "$hosts_file" <<'HOSTS'
+127.0.0.1 localhost localhost.localdomain loopback
+::1 localhost ip6-localhost ip6-loopback
+HOSTS
+  elif ! grep -Eq '(^|[[:space:]])loopback([[:space:]]|$)' "$hosts_file"; then
+    printf '127.0.0.1 loopback\n' >> "$hosts_file"
+  fi
 }
 
 clawmobile_load_openclaw_env() {

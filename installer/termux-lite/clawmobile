@@ -25,6 +25,7 @@ Commands:
                       Run setup with OpenClaw non-interactive local onboarding.
   configure defaults  Apply ClawMobile Termux runtime defaults for tools/web search/skills.
   run | start         Start OpenClaw gateway in capability-aware Termux runtime mode.
+  server | app-server Start the local HTTP server used by the Android companion app.
   doctor | status     Print Termux runtime health checks.
   reset [args]        Run Termux runtime reset helper.
   repair              Force rebuild/reinstall plugin, sync seed, then start gateway.
@@ -91,6 +92,10 @@ configure_lite_defaults() {
   config_set_json "tools.web.search.timeoutSeconds" "30"
   config_set_json "tools.web.search.cacheTtlMinutes" "15"
   openclaw config unset tools.web.search.provider </dev/null >/dev/null 2>&1 || true
+  # The bundled Codex plugin is useful on desktops, but Android/Termux routes
+  # can stall on its app-server transport. Keep ClawMobile on the regular
+  # OpenClaw agent path unless the user explicitly re-enables it.
+  config_set_json "plugins.entries[\"codex\"].enabled" "false"
   config_set_json "skills.install.nodeManager" '"npm"'
   config_set_json "skills.install.preferBrew" "false"
 }
@@ -161,6 +166,15 @@ quick_provider_id() {
     openai-api-key) printf '%s' "openai" ;;
     anthropic-api-key) printf '%s' "anthropic" ;;
     deepseek-api-key) printf '%s' "deepseek" ;;
+    *) printf '%s' "" ;;
+  esac
+}
+
+auth_env_var_for_choice() {
+  case "$1" in
+    openai-api-key) printf '%s' "OPENAI_API_KEY" ;;
+    anthropic-api-key) printf '%s' "ANTHROPIC_API_KEY" ;;
+    deepseek-api-key) printf '%s' "DEEPSEEK_API_KEY" ;;
     *) printf '%s' "" ;;
   esac
 }
@@ -457,6 +471,18 @@ run_onboard_non_interactive() {
     auth_choice="skip"
   fi
 
+  local env_var=""
+  local env_value=""
+  env_var="$(auth_env_var_for_choice "$auth_choice")"
+  if [ -n "$env_var" ]; then
+    env_value="${!env_var-}"
+    if [ -n "$env_value" ]; then
+      upsert_env_var "$env_var" "$env_value"
+    else
+      echo "[lite] WARNING: $env_var is not set; gateway startup will fail until the secret is added to ~/.openclaw/.env." >&2
+    fi
+  fi
+
   echo "[lite] Running OpenClaw non-interactive onboarding: auth=$auth_choice port=$gateway_port bind=$gateway_bind"
   openclaw onboard \
     --non-interactive \
@@ -541,6 +567,9 @@ case "$cmd" in
       run_quick_setup "${setup_args[@]}"
     elif [ "$setup_mode" = "--non-interactive" ]; then
       run_onboard_non_interactive "${setup_args[@]}"
+      if [ -n "${TELEGRAM_BOT_TOKEN:-}" ]; then
+        configure_telegram_channel "$TELEGRAM_BOT_TOKEN" "${CLAWMOBILE_TELEGRAM_USER_ID:-${TELEGRAM_USER_ID:-}}"
+      fi
     else
       "$SCRIPT_DIR/onboard.sh" "${setup_args[@]}"
     fi
@@ -578,6 +607,9 @@ case "$cmd" in
     ;;
   run|start)
     exec "$SCRIPT_DIR/run.sh" "$@"
+    ;;
+  server|app-server|companion-server)
+    exec "$SCRIPT_DIR/companion-server.sh" "$@"
     ;;
   doctor|status)
     exec "$SCRIPT_DIR/doctor.sh" "$@"

@@ -71,11 +71,16 @@ install_termux_packages() {
 
 ensure_glibc_hosts() {
   local glibc_etc="$PREFIX/glibc/etc"
-  if [ -d "$glibc_etc" ] && [ ! -f "$glibc_etc/hosts" ]; then
+  local hosts_file="$glibc_etc/hosts"
+
+  [ -d "$glibc_etc" ] || return 0
+  if [ ! -f "$hosts_file" ]; then
     cat > "$glibc_etc/hosts" <<'HOSTS'
-127.0.0.1 localhost localhost.localdomain
+127.0.0.1 localhost localhost.localdomain loopback
 ::1 localhost ip6-localhost ip6-loopback
 HOSTS
+  elif ! grep -Eq '(^|[[:space:]])loopback([[:space:]]|$)' "$hosts_file"; then
+    printf '127.0.0.1 loopback\n' >> "$hosts_file"
   fi
 }
 

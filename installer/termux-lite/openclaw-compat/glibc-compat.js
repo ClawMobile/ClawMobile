@@ -21,6 +21,34 @@
 const os = require('os');
 const fs = require('fs');
 const path = require('path');
+const net = require('net');
+
+// Android glibc Node can mis-handle IPv4 literal bind hosts in Termux,
+// turning 127.0.0.1/0.0.0.0 into unavailable synthetic addresses.
+// Route loopback binds through localhost and wildcard binds through the
+// default listen host while keeping OpenClaw config semantics unchanged.
+try {
+  const _originalListen = net.Server.prototype.listen;
+  net.Server.prototype.listen = function listen(...args) {
+    if (args[0] && typeof args[0] === 'object' && !Array.isArray(args[0])) {
+      const options = args[0];
+      if (options.host === '127.0.0.1') {
+        args[0] = { ...options, host: 'localhost' };
+      } else if (options.host === '0.0.0.0') {
+        const copy = { ...options };
+        delete copy.host;
+        args[0] = copy;
+      }
+    } else if (typeof args[0] === 'number') {
+      if (args[1] === '127.0.0.1') {
+        args[1] = 'localhost';
+      } else if (args[1] === '0.0.0.0') {
+        args.splice(1, 1);
+      }
+    }
+    return _originalListen.apply(this, args);
+  };
+} catch {}
 
 // ─── process.execPath fix ────────────────────────────────────
 // When node runs via grun (ld.so node.real), process.execPath points to
@@ -204,7 +232,7 @@ try {
 
   // Localhost must never go to external DNS. Android/glibc may lack /etc/hosts,
   // causing getaddrinfo to fail or return 0.0.0.0. Short-circuit it here.
-  const _localhostNames = new Set(['localhost', 'localhost.localdomain', 'ip6-localhost', 'ip6-loopback']);
+  const _localhostNames = new Set(['localhost', 'localhost.localdomain', 'loopback', 'ip6-localhost', 'ip6-loopback']);
 
   dns.lookup = function lookup(hostname, options, callback) {
     if (typeof options === 'function') {

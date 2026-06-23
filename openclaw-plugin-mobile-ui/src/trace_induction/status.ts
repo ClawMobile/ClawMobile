@@ -155,8 +155,8 @@ function summarizeFastPath(generalized: any, skillName: string) {
     fallback: fastPath.fallback || "",
     recommended_first_attempt: eligible,
     call_guidance: eligible
-      ? "When user intent matches and required parameters are available, call the runner before manually expanding the procedure. The runner performs bounded checkpoints and returns structured failure data for repair/fallback."
-      : "Fast path exists but is not currently eligible; use normal grounded execution unless explicitly debugging.",
+      ? "Fast path is an optional acceleration route. Use it only when user intent, required parameters, and current app state match; otherwise run with skill context and normal grounded tools."
+      : "Fast path exists but is not currently eligible; use the skill's app knowledge during normal grounded execution.",
     example_arguments: eligible
       ? {
           skill_name: skillName,
@@ -173,19 +173,21 @@ function recommendedNextAction(generalized: any, skillName: string, executionGui
   if (selfRepair.recommended === true) return selfRepair;
 
   const fastPath = summarizeFastPath(generalized, skillName);
-  if (fastPath?.eligible) {
-    return {
+  return {
+    mode: "run_with_skill_context",
+    reason: "knowledge_first_default",
+    priority: "default_agent_route",
+    guidance:
+      "Use app_model, knowledge_shortcuts, applicability, anchors, verification, and prior execution evidence to avoid repeated probing. Fast path is optional.",
+    secondary_action: fastPath?.eligible ? {
       tool: fastPath.runner_tool,
-      reason: "eligible_fast_path_available",
-      priority: "try_before_manual_step_expansion",
+      reason: "eligible_optional_fast_path",
       required_parameters: fastPath.required_parameters,
       example_arguments: fastPath.example_arguments,
       fallback_after_failure:
-        "If the runner fails, inspect its structured failure. Use clawmobile_skill_reflect_fast_path_failure once when it recommends a safe repair; otherwise continue with normal UI tools and record feedback.",
-    };
-  }
-
-  return null;
+        "If the runner fails, inspect its structured failure, continue with normal grounded execution using the same skill context, and record feedback when useful.",
+    } : undefined,
+  };
 }
 
 export function getSkillStatus(input: StatusInput) {
@@ -243,6 +245,9 @@ export function getSkillStatus(input: StatusInput) {
       failure_pattern_count: asArray(evolution.failure_patterns).length,
       open_uncertainty_count: asArray(evolution.open_uncertainties).length,
     },
+    app_model: generalized.app_model || {},
+    knowledge_shortcuts: asArray(generalized.knowledge_shortcuts).slice(0, 12),
+    execution_routes: asArray(generalized.execution_routes).slice(0, 8),
     fast_path: fastPath,
     anchor_stats: summarizeAnchorStats(generalized.anchors),
     anchors: input.include_anchor_details === true ? summarizeAnchors(generalized.anchors) : undefined,

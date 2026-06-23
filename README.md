@@ -3,12 +3,13 @@
 </p>
 
 <p align="center">
-  <b>Turn your Android phone into an agent runtime that learns.</b>
+  <b>Talk to one agent. Let your phone act, learn, and connect.</b>
 </p>
 
 <p align="center">
   <a href="https://clawmobile.ae/">Website</a> ·
   <a href="https://arxiv.org/abs/2602.22942">Paper</a> ·
+  <a href="docs/android-companion-app.md">Android App</a> ·
   <a href="installer/INSTALL.md">Install</a> ·
   <a href="installer/FAQ.md">FAQ</a> ·
   <a href="SECURITY.md">Security</a> ·
@@ -25,80 +26,61 @@
   <img alt="OpenClaw" src="https://img.shields.io/badge/powered%20by-OpenClaw-blue">
 </p>
 
-ClawMobile lets an AI agent live on the Android phone itself. It can talk
-through OpenClaw, use local files and shell tools, observe Android state, control
-apps when you authorize ADB, and turn your own demonstrations into reusable
-skills.
+ClawMobile is an agent-first phone runtime for Android. It explores what phones
+could become when the primary interface is an agent instead of manual app
+switching: the agent can use local tools and files, observe Android state,
+control apps with permission, learn reusable mobile skills, and communicate
+with trusted agents.
 
 Instead of treating the phone as a remote screen, ClawMobile makes it the
 runtime. The phone hosts the gateway, the mobile tools, the recorded evidence,
 and the learned workflows, so personal app tasks can become repeatable skills
 instead of one-off screenshot reasoning sessions.
 
-## See It In Action
+## Get The Android App
 
-Teach ClawMobile by doing the task once on the phone. It records the
-demonstration, turns the trace into a reusable OpenClaw skill, and can run that
-skill later from a natural-language request.
+The Android companion app is the recommended way to try ClawMobile. It sets up
+the Termux runtime over SSH, starts the local service, and gives you a
+phone-native UI for tasks, skills, runtime status, logs, and trusted-agent
+messaging.
+
+Download the
+[latest ClawMobile Companion APK](https://github.com/ClawMobile/ClawMobile/releases/latest),
+or read the [Android app guide](docs/android-companion-app.md).
 
 <table>
   <tr>
     <td align="center">
-      <img src="assets/skill-demo-capabilities.jpg" width="240" alt="ClawMobile listing available skills in Telegram" />
+      <img src="assets/clawmobile-app-home.jpg" width="240" alt="ClawMobile Android app home status dashboard" />
     </td>
     <td align="center">
-      <img src="assets/skill-demo-recording-start.jpg" width="240" alt="ClawMobile starts recording a Google Keep note demonstration" />
+      <img src="assets/clawmobile-app-tasks.jpg" width="240" alt="ClawMobile Android app task request screen" />
     </td>
     <td align="center">
-      <img src="assets/skill-demo-created.jpg" width="240" alt="ClawMobile creates a reusable Google Keep note skill" />
+      <img src="assets/clawmobile-app-social.jpg" width="240" alt="ClawMobile Android app social trusted contacts screen" />
     </td>
   </tr>
   <tr>
-    <td align="center"><strong>Ask what it can do</strong></td>
-    <td align="center"><strong>Demonstrate once</strong></td>
-    <td align="center"><strong>Reuse as a skill</strong></td>
+    <td align="center"><strong>Monitor the runtime</strong></td>
+    <td align="center"><strong>Start tasks</strong></td>
+    <td align="center"><strong>Connect with trusted contacts</strong></td>
   </tr>
 </table>
-
-<table align="center">
-  <tr>
-    <td align="center">
-      <strong>Generated skill running later</strong><br>
-      <video src="https://github.com/user-attachments/assets/7fbeb919-b5fa-48f3-aacb-c64f0132a909" controls width="360"></video>
-    </td>
-  </tr>
-</table>
-
-More demos, including browser, maps, hardware, and script workflows, are in
-[the demo gallery](docs/demos.md).
-
-## Why ClawMobile?
-
-Most mobile-agent systems treat the phone as a screen to be remote-controlled.
-ClawMobile treats the phone as the runtime.
-
-| Capability | Why it matters |
-| --- | --- |
-| **Local agent runtime** | The agent runs where the apps, files, notifications, and Android state already live. |
-| **Phone-native tool surface** | Use shell commands, files, network access, optional OCR, screenshots, UIAutomator XML, app/window state, and touch input from one OpenClaw surface. |
-| **Progressive permissions** | Start with Termux tools, then unlock Termux:API and ADB-backed UI control when the user chooses. |
-| **Learned mobile skills** | Record a task once, generate an OpenClaw skill, and improve it with more demos or execution feedback. |
-
-## What You Can Build
-
-- A phone-side OpenClaw gateway reachable from Telegram or other channels.
-- A personal mobile assistant that can use local files, shell tools, network
-  commands, and device context.
-- App-specific workflows learned from your own demonstrations instead of
-  handwritten automation scripts.
-- Research prototypes for smartphone-native agents with a lightweight local
-  runtime.
-- Reusable mobile skills that carry their own evidence, grounding policy, and
-  feedback history.
-- A practical bridge between language-agent reasoning and deterministic Android
-  actions.
 
 ## Quick Start
+
+### Android App (Recommended)
+
+1. Download the latest APK from the
+   [ClawMobile release page](https://github.com/ClawMobile/ClawMobile/releases/latest).
+2. Open the ClawMobile app and follow the guided setup.
+3. Start ClawMobile from the app, then use Tasks, Skills, Social, and Settings.
+
+The app guides the Termux runtime setup internally, then provides a status
+dashboard, task chat, skills library, logs, and trusted-agent messaging on top
+of that local service.
+
+### Advanced: Termux CLI
 
 Install Termux from [F-Droid](https://f-droid.org/packages/com.termux/) first.
 If F-Droid is unavailable, use the official
@@ -131,10 +113,7 @@ More setup paths:
 - [Runtime reference](installer/termux-lite/README.md)
 - [FAQ](installer/FAQ.md)
 
-## Try These First
-
-After the gateway starts, send one of these requests through your configured
-channel:
+After the gateway starts, try:
 
 ```text
 What can you do on this phone?
@@ -144,60 +123,33 @@ What can you do on this phone?
 What phone capabilities are available right now?
 ```
 
-After ADB is authorized, try the learning flow:
+More demos, including skill learning and Android task examples, are in the
+[demo gallery](docs/demos.md). Runtime capability details are in the
+[runtime reference](installer/termux-lite/README.md).
 
-```text
-Use clawmobile-trace-induction to record my next phone demonstration.
-```
+## Why ClawMobile?
 
-## What Can It Do?
+Mobile agents should not just watch a phone screen from the outside.
+ClawMobile puts the runtime on the Android device, where the apps, files,
+notifications, and user-approved control channels already live.
 
-ClawMobile runs at different capability levels depending on what the user has
-enabled.
+| Capability | Why it matters |
+| --- | --- |
+| **One agent-facing phone surface** | The agent can use local files, shell tools, Android state, screenshots, and app control from the same runtime. |
+| **Progressive user control** | Start with Termux tools, then add Termux:API, ADB, app control, and trusted-agent messaging only when the user enables them. |
+| **From repeated UI work to reusable skills** | Demonstrations and successful runs can become durable app knowledge instead of one-off screen reasoning. |
 
-| Stage | Enabled by | Example capabilities |
-| --- | --- | --- |
-| **Termux** | Default runtime | OpenClaw gateway, shell tools, files, network, optional local OCR |
-| **Termux:API** | Termux:API app and package | Clipboard, notifications, battery, text-to-speech |
-| **ADB shell** | Authorized `adb devices` connection | Taps, swipes, typing, screenshots, UIAutomator XML, Android shell commands |
-
-The Termux stage is already useful for local tools and network tasks. Once ADB
-is authorized, the same runtime gains UI automation and demonstration recording.
-
-## How Skill Learning Works
-
-The demo above shows the user experience. Under the hood, ClawMobile turns a
-one-time phone demonstration into a reusable workflow:
-
-1. Record the task as the user performs it.
-2. Capture touch events, screenshots, app state, and UI evidence.
-3. Generate a parameterized skill candidate.
-4. Promote the candidate into the OpenClaw workspace.
-5. Reuse it, test it, and improve it with feedback or another demo.
-
-The goal is not to hard-code every app. It is to give the agent durable local
-evidence: what the user did, what screen state mattered, what values should be
-parameters, and where recovery may be needed. Over time, generated skills can
-accumulate execution feedback and additional demonstrations instead of relying
-only on one-off screenshot reasoning.
-
-This is especially useful for mobile apps where pure screenshot-based agents can
-mis-click, lose context, or repeat expensive verification loops.
-
-Generated skills are a **public-preview** capability. The core flow can record a
-demo, generate a reusable skill, promote it into the OpenClaw workspace, and use
-later execution feedback as attached evidence. Reliability improves with
-additional demonstrations, cleaner starting app states, and feedback from real
-executions. Fast paths and batch execution are experimental accelerators for
-stable generated-skill steps, not a replacement for normal recovery.
+This makes ClawMobile useful today as a phone-side OpenClaw gateway, a
+personal mobile assistant, a generated-skill testbed, and a practical bridge
+between language-agent reasoning and deterministic Android actions.
 
 ## Runtime Architecture
 
 | Layer | Role |
 | --- | --- |
-| User channel | Telegram or another OpenClaw-supported interface. |
+| User channel | Android app, Telegram, or another OpenClaw-supported interface. |
 | OpenClaw gateway on Android | The local agent runtime running on the phone. |
-| ClawMobile workspace | Policies, capability contracts, and reusable skills. |
+| ClawMobile workspace | Policies, reusable skills, and generated-skill artifacts. |
 | `mobile-ui` plugin | Tool bridge between OpenClaw and mobile backends. |
 | Mobile backends | Termux tools, Termux:API, ADB/Android shell, optional OCR, and generated skill storage. |
 | Android apps and device state | The real mobile environment the agent observes and acts on. |
@@ -206,54 +158,15 @@ The important design choice is progressive capability. The same agent can run
 with only Termux permissions, then use richer phone-control tools when the user
 authorizes them.
 
-## Project Status
+## Status And Safety
 
-ClawMobile is in public preview for real Android devices. The default Termux
-runtime includes the installer, OpenClaw mobile plugin, optional OCR support,
-ADB-backed UI tools, and the trace-to-skill workflow.
+ClawMobile is a public preview for real Android devices. It runs locally in
+Termux, can use strong phone-control capabilities when authorized, and may store
+sensitive runtime artifacts such as API keys, screenshots, traces, logs, and
+generated-skill evidence.
 
-Generated skills are useful today, but they are still preview software. They
-work best on the same device, app version, and starting state used for the
-demonstration. Reliability improves with additional demos and execution
-feedback, and fast paths may fall back to normal UI recovery when a workflow is
-not stable enough.
-
-The older DroidRun/MobileRun backend has been archived and is no longer updated
-on `main`. Historical files remain available on the
-`legacy-full-backend-archive` branch.
-
-## Privacy And Safety
-
-ClawMobile runs locally on the phone, but some artifacts can contain sensitive
-information:
-
-- Model API keys are stored in the local OpenClaw configuration when you choose
-  to save them during setup.
-- Demonstration recordings may include screenshots, touch coordinates, app
-  package/activity names, text entry traces, and device state.
-- Generated skills may preserve evidence paths and summaries from those
-  recordings.
-- ADB authorization gives ClawMobile strong control over the device UI and
-  Android shell.
-
-Keep `logs/`, `recordings/`, token-proxy captures, and generated test artifacts
-out of public commits unless you have reviewed them first.
-
-## Known Limitations
-
-- ADB-backed UI control requires Android developer options, USB or wireless ADB,
-  and an authorized device connection.
-- Termux package mirrors can occasionally be stale or unreachable; the
-  installer includes mirror fallback logic, but network conditions still matter.
-- Generated skills are a preview feature. They start from recorded evidence and
-  are useful immediately for repeatable workflows, but become more robust after
-  additional demonstrations and execution feedback.
-- Generated skills should first be tested on the same device, app version, and
-  starting app state used for the demo. Cross-device, cross-layout, and dynamic
-  list workflows may require additional demonstrations.
-- Screenshot-heavy verification can be slower on phone hardware than on desktop;
-  deterministic fast paths for stable generated-skill actions are still
-  experimental accelerators.
+Read the [status and limitations](docs/status-and-limitations.md) and
+[security policy](SECURITY.md) before sharing traces, logs, or generated skills.
 
 ## Repository Map
 
@@ -270,8 +183,10 @@ out of public commits unless you have reviewed them first.
 
 ## Where To Go Next
 
+- Use the Android app: [docs/android-companion-app.md](docs/android-companion-app.md)
 - Install ClawMobile: [installer/INSTALL.md](installer/INSTALL.md)
 - Runtime reference: [installer/termux-lite/README.md](installer/termux-lite/README.md)
+- Status and limitations: [docs/status-and-limitations.md](docs/status-and-limitations.md)
 - Troubleshoot setup: [installer/FAQ.md](installer/FAQ.md)
 - Report issues safely: [SECURITY.md](SECURITY.md)
 - Contribute fixes or skills: [CONTRIBUTING.md](CONTRIBUTING.md)

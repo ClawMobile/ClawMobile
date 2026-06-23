@@ -65,6 +65,11 @@ Do not use OCR tools unless `android_health.capabilities.ocr` or
 | Run generated-skill fast path | `clawmobile_skill_run_fast_path` when a generated skill provides an eligible fast path; it loads the skill and calls `clawmobile_batch_execute` internally |
 | Run raw deterministic batch | `clawmobile_batch_execute` when explicit batch steps are already available and required ADB/OCR capabilities are available |
 
+Generated skills are app/task knowledge first. Use their app model,
+applicability rules, anchors, verification hints, and prior execution evidence
+to reduce repeated probing during normal agent runs. Use a fast path only when
+its required inputs and app-state assumptions match.
+
 Observe before coordinate actions unless the coordinates are explicitly
 provided by the user, a previous tool result, or a reliable generated-skill
 anchor. For UI XML, call `android_ui_query` directly when the target is known.

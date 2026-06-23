@@ -882,6 +882,117 @@ function buildApplicability(_candidate: any, _anchors: any, notCoveredParameters
   };
 }
 
+function buildAppModel(candidate: any, anchors: any, entryStates: any[], entryStateChecks: any) {
+  const app = asObject(candidate.app);
+  return {
+    schema_version: "clawmobile.app_model.v1",
+    package: app.package || undefined,
+    activity: app.activity || undefined,
+    domain: skillDomain(candidate),
+    intent_family: candidate.intent?.name || "recorded_mobile_task",
+    intent_description: candidate.intent?.description || candidate.task_summary || "",
+    learned_from: "human_demonstration",
+    entry_states: entryStates,
+    entry_state_checks: entryStateChecks,
+    reusable_controls: Object.entries(asObject(anchors)).map(([name, value]) => {
+      const anchor = asObject(value);
+      return {
+        id: name,
+        role: anchor.domain_role || anchor.anchor_role || anchor.action_role || "unknown",
+        stability: anchor.stability,
+        valid_when: anchor.valid_when,
+        grounding_policy: asArray(anchor.grounding_policy),
+      };
+    }),
+    known_limits: [
+      ...Object.keys(asObject(candidate.intent?.not_covered_parameters || {})).map((name) => `parameter_not_covered:${name}`),
+      "single_trace_until_more_evidence_arrives",
+    ],
+  };
+}
+
+function buildKnowledgeShortcuts(candidate: any, anchors: any, procedure: any[], verification: string[], notCoveredParameters: any) {
+  const shortcuts: string[] = [];
+  const app = asObject(candidate.app);
+  if (app.package) {
+    shortcuts.push(`Open or verify the target app with package ${app.package}${app.activity ? ` and activity ${app.activity}` : ""}.`);
+  }
+  for (const state of buildEntryStates(candidate, anchors).slice(0, 4)) {
+    shortcuts.push(`Known entry state ${state.name}${state.note ? `: ${state.note}` : ""}.`);
+  }
+  for (const [name, value] of Object.entries(asObject(anchors)).slice(0, 10)) {
+    const anchor = asObject(value);
+    const role = anchor.domain_role || anchor.anchor_role || anchor.action_role || "unknown";
+    shortcuts.push(`Control ${name} is learned as ${role}; use its grounding policy instead of rediscovering it from scratch.`);
+  }
+  for (const step of procedure.slice(0, 8)) {
+    const item = asObject(step);
+    if (item.action === "type_parameter" && item.parameter) {
+      shortcuts.push(`Parameter ${item.parameter} maps to a text-entry operation after the relevant input control is focused.`);
+    }
+    if (item.action === "tap_text" && item.text) {
+      shortcuts.push(`Text target ${JSON.stringify(item.text)} can be grounded through UI hierarchy before OCR/vision.`);
+    }
+  }
+  for (const [name, value] of Object.entries(asObject(notCoveredParameters))) {
+    const reason = asObject(value).reason;
+    shortcuts.push(`Do not infer unsupported parameter ${name}${reason ? `: ${reason}` : ""}.`);
+  }
+  for (const item of verification.slice(0, 6)) {
+    shortcuts.push(`Task-specific verification: ${item}.`);
+  }
+  return uniqueStrings(shortcuts);
+}
+
+function buildExecutionRoutes(candidate: any, fastPath: any, notCoveredParameters: any) {
+  const routes: any[] = [{
+    id: "agent-with-skill-context",
+    mode: "agent_with_skill_context",
+    title: "Run with skill context",
+    primary: true,
+    can_run: true,
+    description:
+      "Use app_model, knowledge_shortcuts, applicability, anchors, verification, and prior execution evidence during a normal grounded agent run.",
+  }];
+
+  routes.push({
+    id: "default-fast-path",
+    mode: "fast_path",
+    title: "Recorded fast path",
+    primary: false,
+    can_run: fastPath.eligible === true,
+    runner_tool: fastPath.runner_tool || "clawmobile_skill_run_fast_path",
+    description:
+      "Optional compiled route for stable app states and matching inputs. If it fails or is ineligible, continue with agent_with_skill_context.",
+  });
+
+  const notCovered = Object.keys(asObject(notCoveredParameters));
+  if (notCovered.length > 0) {
+    routes.push({
+      id: "ground-missing-parameter",
+      mode: "agent_with_skill_context",
+      title: "Ground unsupported parameter first",
+      primary: false,
+      can_run: true,
+      description: `Use normal agent tools to ground unsupported parameters before applying this skill: ${notCovered.join(", ")}.`,
+    });
+  }
+
+  const boundary = asObject(candidate.automation_boundary);
+  if (boundary.required === true || String(boundary.type || "").includes("handoff")) {
+    routes.push({
+      id: "manual-handoff",
+      mode: "manual_handoff",
+      title: "Manual handoff",
+      primary: false,
+      can_run: true,
+      description: boundary.reason || boundary.description || "Prepare the app state, then stop for user-controlled input.",
+    });
+  }
+
+  return routes;
+}
+
 function buildOpenUncertainties(candidate: any, notCoveredParameters: any) {
   const uncertainties = [
     "Single-trace draft: anchor stability has not been proven across devices, layouts, or app versions.",
@@ -904,8 +1015,10 @@ function buildLifecyclePolicy(candidate: any) {
       include: [
         "task_intent",
         "required_parameters",
+        "app_knowledge",
         "plain_language_steps",
-        "fast_path_availability",
+        "execution_routes",
+        "optional_fast_path_availability",
         "entry_state_checks",
         "uncertain_or_regroundable_anchors",
         "how_to_improve_with_another_demo",
@@ -936,6 +1049,12 @@ function buildGeneralizedSkill(candidate: any, candidatePath: string) {
   const anchors = buildAnchors(candidate);
   const notCoveredParameters = buildNotCoveredParameters(candidate);
   const procedure = buildProcedure(candidate, anchors);
+  const entryStates = buildEntryStates(candidate, anchors);
+  const entryStateChecks = {
+    after_app_open: appStateCheckFromCandidate(candidate),
+  };
+  const fastPath = buildFastPath(procedure, anchors, candidate);
+  const verification = asArray(candidate.verification).map(String);
   const generalized = {
     schema_version: GENERALIZED_SKILL_SCHEMA_VERSION,
     source_traces: candidate.source_trace_id ? [String(candidate.source_trace_id)] : [],
@@ -955,14 +1074,15 @@ function buildGeneralizedSkill(candidate: any, candidatePath: string) {
       primary_skill_format: "generalized_skill_markdown",
     },
     app: candidate.app || {},
-    entry_state_checks: {
-      after_app_open: appStateCheckFromCandidate(candidate),
-    },
-    entry_states: buildEntryStates(candidate, anchors),
+    app_model: buildAppModel(candidate, anchors, entryStates, entryStateChecks),
+    knowledge_shortcuts: buildKnowledgeShortcuts(candidate, anchors, procedure, verification, notCoveredParameters),
+    execution_routes: buildExecutionRoutes(candidate, fastPath, notCoveredParameters),
+    entry_state_checks: entryStateChecks,
+    entry_states: entryStates,
     procedure,
-    fast_path: buildFastPath(procedure, anchors, candidate),
+    fast_path: fastPath,
     anchors,
-    verification: asArray(candidate.verification).map(String),
+    verification,
     validation_policy: {
       mode: "checkpoint",
       verify_every_step: false,
@@ -1093,9 +1213,43 @@ export function renderGeneralizedSkillMarkdown(generalized: any, validation: any
   lines.push("After generating or updating this skill, briefly explain it to the user before treating it as settled.");
   lines.push("- What it does: summarize the intent in one sentence.");
   lines.push("- Parameters: name the required values the user can change.");
-  lines.push("- Steps: describe the procedure in plain language, without raw implementation detail.");
+  lines.push("- App knowledge: name the reusable app entry states, controls, and verification hints this skill learned.");
+  lines.push("- Routes: name the normal skill-guided route and any optional fast path or handoff route.");
+  lines.push("- Steps: describe the procedure in plain language only as one possible route, without raw implementation detail.");
   lines.push("- Confidence: mention any important uncertainty, regrounding point, or unsupported parameter.");
   lines.push("- Improvement path: if the user says the behavior is wrong or incomplete, record another demonstration of the same task and update this skill from that trace.");
+  lines.push("");
+  lines.push("## App Knowledge");
+  lines.push("");
+  const appModel = asObject(generalized.app_model);
+  lines.push("This skill stores reusable app/task knowledge. The agent should use it to avoid repeatedly rediscovering the same app structure.");
+  if (appModel.package || appModel.activity) {
+    lines.push(`- App: ${appModel.package || "unknown"}${appModel.activity ? ` / ${appModel.activity}` : ""}`);
+  }
+  if (appModel.domain) lines.push(`- Domain: ${appModel.domain}`);
+  if (appModel.intent_family) lines.push(`- Intent family: ${appModel.intent_family}`);
+  for (const state of asArray(appModel.entry_states)) {
+    const item = asObject(state);
+    lines.push(`- Entry state: ${item.name || "entry_state"}${item.note ? ` - ${item.note}` : ""}`);
+  }
+  for (const control of asArray(appModel.reusable_controls).slice(0, 12)) {
+    const item = asObject(control);
+    lines.push(`- Reusable control: \`${item.id || "unknown"}\` as ${item.role || "unknown"}${item.stability ? ` (${item.stability})` : ""}`);
+  }
+  lines.push("");
+  lines.push("## Knowledge Shortcuts");
+  lines.push("");
+  lines.push("These are compact facts that should reduce repeated probing, screenshots, UI dumps, or LLM visual reasoning.");
+  for (const item of asArray(generalized.knowledge_shortcuts)) lines.push(`- ${item}`);
+  lines.push("");
+  lines.push("## Execution Routes");
+  lines.push("");
+  lines.push("The skill is not defined by one replay path. Choose the cheapest safe route for the current request and app state.");
+  for (const route of asArray(generalized.execution_routes)) {
+    const item = asObject(route);
+    lines.push(`- \`${item.id || "route"}\`: ${item.title || item.mode || "route"}; mode=${item.mode || "unknown"}; primary=${item.primary === true}; can_run=${item.can_run === true}`);
+    if (item.description) lines.push(`  - ${item.description}`);
+  }
   lines.push("");
   lines.push("## Applicability");
   lines.push("");
@@ -1162,6 +1316,7 @@ export function renderGeneralizedSkillMarkdown(generalized: any, validation: any
   lines.push("");
   lines.push("## Fast Path Batch");
   lines.push("");
+  lines.push("Fast path is an optional compiled execution route, not the definition of this skill.");
   const fastPath = asObject(generalized.fast_path);
   lines.push(`- Preferred runner: \`${fastPath.runner_tool || "clawmobile_skill_run_fast_path"}\``);
   lines.push(`- Batch tool: \`${fastPath.execution_tool || "clawmobile_batch_execute"}\``);
@@ -1177,7 +1332,7 @@ export function renderGeneralizedSkillMarkdown(generalized: any, validation: any
     lines.push(`- Call the preferred runner with \`parameters: { ${requiredParams.map((name) => `${JSON.stringify(name)}: "..."`).join(", ")} }\`.`);
     lines.push("- The runner tool schema has a top-level `parameters` object and `parameter_values` alias; do not manually expand the procedure because of parameter-passing uncertainty.");
   }
-  lines.push("- If eligible, call the preferred runner first with the required `parameters` object instead of manually expanding each step.");
+  lines.push("- If eligible and the current app state matches, the preferred runner can be used instead of manually expanding each step.");
   lines.push("- This is an optional acceleration path. It must stop on structured failure and return artifacts for normal stepwise recovery.");
   lines.push("- If the fast path fails, inspect the structured failure and cheap UI evidence, then use `clawmobile_skill_reflect_fast_path_failure` for one bounded self-repair attempt before falling back to normal stepwise execution.");
   lines.push("- Retry the repaired fast path at most once. If it still fails, continue with normal UI tools, record feedback, and tell the user whether another demo would help.");
@@ -1252,7 +1407,7 @@ export function renderGeneralizedSkillMarkdown(generalized: any, validation: any
   const guidance = asObject(generalized.evolution.execution_guidance);
   const selfRepair = asObject(guidance.fast_path_self_repair);
   if (selfRepair.recommended === true) {
-    lines.push("- Recommended next action: use `clawmobile_skill_reflect_fast_path_failure` once for the latest generated fast-path failure, then retry `clawmobile_skill_run_fast_path` once before normal UI fallback.");
+    lines.push("- Fast-path diagnostic: use the latest generated fast-path failure as context for normal skill-guided execution. If the issue is a clearly bounded entry-state, text-query, or verifier mismatch, `clawmobile_skill_reflect_fast_path_failure` may be used once before an optional retry.");
     if (selfRepair.failed_step || selfRepair.failed_anchor) {
       lines.push(`  - Latest fast-path issue: step=${selfRepair.failed_step || "unknown"}, anchor=${selfRepair.failed_anchor || "unknown"}`);
     }

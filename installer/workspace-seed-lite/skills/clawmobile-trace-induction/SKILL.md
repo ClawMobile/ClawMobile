@@ -84,8 +84,10 @@ Use this flow when a recording directory or `trace.json` is already available.
 9. Also give the user a short skill review:
    - what the skill does
    - required parameters
+   - reusable app knowledge learned from the demo
+   - available execution routes
    - plain-language execution steps
-   - whether fast path is available
+   - whether an optional fast path is available
    - important uncertainties or anchors that may need regrounding
    - how to improve it by recording another demonstration of the same task
 
@@ -164,20 +166,20 @@ generalized skill. The fixed coordinate-heavy version is retained as
 - Generated `SKILL.md` files render a `Prior Execution Experience` section
   from feedback-derived guidance. Use it as evidence for grounding/fallback
   choices, not as a replacement for normal verification.
-- Generated `SKILL.md` files may also render an eligible fast path. When it is
-  eligible and required parameters are clear, prefer
-  `clawmobile_skill_run_fast_path` before manually expanding every step. The
-  tool returns structured failure artifacts so normal stepwise recovery remains
-  available. Pass required skill variables under the top-level `parameters`
-  object. If the exact required names are unclear, call
-  `clawmobile_skill_status`; do not assume the runner lacks parameter support.
+- Generated `SKILL.md` files should be used primarily as compact app/task
+  knowledge. They may also render an eligible fast path, but fast path is an
+  optional acceleration route, not the definition of the skill. Use
+  `clawmobile_skill_run_fast_path` only when the user intent, required
+  parameters, and current app state match the route assumptions. Pass required
+  skill variables under the top-level `parameters` object. If the exact
+  required names are unclear, call `clawmobile_skill_status`; do not assume the
+  runner lacks parameter support.
 - If `clawmobile_skill_run_fast_path` fails, do not immediately abandon the
-  fast path. First inspect the structured failure, current UI evidence, and
-  prior execution status. If the failure looks like a repairable entry-state,
-  text-query, or verifier mismatch, call
-  `clawmobile_skill_reflect_fast_path_failure` with a concise diagnosis and one
-  safe repair, then retry `clawmobile_skill_run_fast_path` once. Only after that
-  retry fails should you switch to normal stepwise execution/regrounding.
+  skill. First inspect the structured failure, current UI evidence, and prior
+  execution status. Continue with normal grounded execution using the same
+  skill context. Use `clawmobile_skill_reflect_fast_path_failure` only for a
+  bounded repair when the failure clearly looks like a repairable entry-state,
+  text-query, or verifier mismatch.
 - If normal stepwise execution also fails, record feedback and tell the user
   whether another demonstration of the same task would likely improve the
   skill. Do not silently hand-code app-specific patches.
@@ -323,8 +325,8 @@ After saving a candidate:
 - Mention that the primary `SKILL.md` is generalized, with `fixed_SKILL.md`
   retained as source evidence.
 - Mention the generalized skill JSON/markdown paths.
-- Include a concise skill review: intent, parameters, steps, fast-path status,
-  and important uncertainties.
+- Include a concise skill review: intent, parameters, reusable app knowledge,
+  execution routes, optional fast-path status, and important uncertainties.
 - If the user is not satisfied, tell them they can demonstrate the same task
   again and the existing skill can be updated from the new trace.
 - If future execution fails, suggest recording a correction demo from the failed
