@@ -904,34 +904,41 @@ function tokenUsageFromRaw(usage: any): CompanionRunTokenUsage | undefined {
     usage.cached_tokens,
     usage.cacheRead,
     usage.cache_read,
+    usage.input_tokens_details?.cached_tokens,
+    usage.prompt_tokens_details?.cached_tokens,
   );
   const reasoningTokens = firstNumber(
     usage.reasoningTokens,
     usage.reasoning_tokens,
+    usage.output_tokens_details?.reasoning_tokens,
+    usage.completion_tokens_details?.reasoning_tokens,
   );
   const totalTokens = firstNumber(
     usage.totalTokens,
     usage.total_tokens,
     usage.total,
-  ) || sumDefined(inputTokens, outputTokens, cachedTokens, reasoningTokens);
-  const estimatedCost = formatEstimatedCost(
-    firstNumber(
-      usage.estimatedCost,
-      usage.estimated_cost,
-      usage.costUsd,
-      usage.cost_usd,
-      usage.cost?.total,
-      usage.cost,
-    ),
   );
+  const fallbackTotalTokens = totalTokens ?? fallbackTotalTokenCount(inputTokens, outputTokens, reasoningTokens);
+  const estimatedCostUsd = firstNumber(
+    usage.estimatedCostUsd,
+    usage.estimated_cost_usd,
+    usage.estimatedCost,
+    usage.estimated_cost,
+    usage.costUsd,
+    usage.cost_usd,
+    usage.cost?.total,
+    usage.cost,
+  );
+  const estimatedCost = formatEstimatedCost(estimatedCostUsd);
 
   if (
     inputTokens === undefined &&
     outputTokens === undefined &&
     cachedTokens === undefined &&
     reasoningTokens === undefined &&
-    totalTokens === undefined &&
-    estimatedCost === undefined
+    fallbackTotalTokens === undefined &&
+    estimatedCost === undefined &&
+    estimatedCostUsd === undefined
   ) {
     return undefined;
   }
@@ -939,10 +946,11 @@ function tokenUsageFromRaw(usage: any): CompanionRunTokenUsage | undefined {
   return {
     inputTokens,
     outputTokens,
-    totalTokens,
+    totalTokens: fallbackTotalTokens,
     cachedTokens,
     reasoningTokens,
     estimatedCost,
+    estimatedCostUsd,
   };
 }
 
@@ -958,7 +966,8 @@ function accumulateTokenUsage(
     totalTokens: sumDefined(left.totalTokens, right.totalTokens),
     cachedTokens: sumDefined(left.cachedTokens, right.cachedTokens),
     reasoningTokens: sumDefined(left.reasoningTokens, right.reasoningTokens),
-    estimatedCost: right.estimatedCost || left.estimatedCost,
+    estimatedCostUsd: sumDefined(left.estimatedCostUsd, right.estimatedCostUsd),
+    estimatedCost: formatEstimatedCost(sumDefined(left.estimatedCostUsd, right.estimatedCostUsd)) || right.estimatedCost || left.estimatedCost,
   });
 }
 
@@ -973,6 +982,7 @@ function mergeTokenUsage(
       totalTokens: usage.totalTokens ?? current.totalTokens,
       cachedTokens: usage.cachedTokens ?? current.cachedTokens,
       reasoningTokens: usage.reasoningTokens ?? current.reasoningTokens,
+      estimatedCostUsd: usage.estimatedCostUsd ?? current.estimatedCostUsd,
       estimatedCost: usage.estimatedCost ?? current.estimatedCost,
     };
   }, {});
@@ -986,7 +996,8 @@ function compactTokenUsage(usage: CompanionRunTokenUsage): CompanionRunTokenUsag
     usage.totalTokens === undefined &&
     usage.cachedTokens === undefined &&
     usage.reasoningTokens === undefined &&
-    usage.estimatedCost === undefined
+    usage.estimatedCost === undefined &&
+    usage.estimatedCostUsd === undefined
   ) {
     return undefined;
   }
@@ -1005,6 +1016,17 @@ function sumDefined(...values: Array<number | undefined>): number | undefined {
   const numbers = values.filter((value): value is number => value !== undefined);
   if (numbers.length === 0) return undefined;
   return numbers.reduce((sum, value) => sum + value, 0);
+}
+
+function fallbackTotalTokenCount(
+  inputTokens: number | undefined,
+  outputTokens: number | undefined,
+  reasoningTokens: number | undefined,
+): number | undefined {
+  if (inputTokens !== undefined || outputTokens !== undefined) {
+    return sumDefined(inputTokens, outputTokens ?? reasoningTokens);
+  }
+  return reasoningTokens;
 }
 
 function formatEstimatedCost(value: number | undefined): string | undefined {
