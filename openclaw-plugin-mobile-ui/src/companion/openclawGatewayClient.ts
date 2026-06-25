@@ -7,8 +7,10 @@ import type { GatewayStatus, RuntimeCommandResponse, RuntimeLogResponse } from "
 
 const DEFAULT_GATEWAY_HOST = "127.0.0.1";
 const DEFAULT_GATEWAY_PORT = 18789;
-const DEFAULT_RUNTIME_START_WAIT_MS = 30_000;
+const DEFAULT_RUNTIME_START_WAIT_MS = 90_000;
+const DEFAULT_RUNTIME_STOP_WAIT_MS = 10_000;
 const GATEWAY_LOG_FILE = "companion-openclaw-gateway.log";
+const GATEWAY_PID_FILE = "companion-openclaw-gateway.pid";
 let startInFlight: { startedAt: number; logPath: string } | null = null;
 
 export function gatewayHost() {
@@ -82,6 +84,9 @@ export async function startRuntime(): Promise<RuntimeCommandResponse> {
         stdio: ["ignore", out, out],
         env: process.env,
       });
+      if (child.pid) {
+        fs.writeFileSync(gatewayPidPath(), `${child.pid}\n`);
+      }
       startInFlight = { startedAt: Date.now(), logPath };
       child.once("exit", () => {
         startInFlight = null;
@@ -110,6 +115,7 @@ export async function startRuntime(): Promise<RuntimeCommandResponse> {
     }
 
     const after = await getGatewayStatus();
+    cleanupGatewayPidFile();
     return {
       success: false,
       state: "not_started",
@@ -118,6 +124,7 @@ export async function startRuntime(): Promise<RuntimeCommandResponse> {
     };
   } catch (error: any) {
     const after = await getGatewayStatus();
+    cleanupGatewayPidFile();
     return {
       success: false,
       state: "failed",
@@ -165,25 +172,21 @@ export function getRuntimeLog(maxBytes = 64 * 1024): RuntimeLogResponse {
 }
 
 export async function stopRuntime(): Promise<RuntimeCommandResponse> {
-  const command = process.env.CLAWMOBILE_RUNTIME_STOP_COMMAND || "";
   const before = await getGatewayStatus();
-
-  if (!command) {
+  if (!before.reachable) {
+    cleanupGatewayPidFile();
     return {
-      success: false,
-      state: before.reachable ? "running" : "not_started",
-      message: "Runtime stop is not configured yet. Stop the Termux gateway session manually.",
+      success: true,
+      state: "not_started",
+      message: "OpenClaw gateway is already stopped.",
       gateway: before,
     };
   }
 
   try {
-    await new Promise<void>((resolve, reject) => {
-      const child = spawn(command, [], { stdio: "ignore", env: process.env });
-      child.once("exit", (code) => (code === 0 ? resolve() : reject(new Error(`stop command exited ${code}`))));
-      child.once("error", reject);
-    });
-    const after = await getGatewayStatus();
+    await stopGatewayProcess();
+    const after = await waitForGatewayStopped();
+    if (!after.reachable) cleanupGatewayPidFile();
     return {
       success: !after.reachable,
       state: after.reachable ? "running" : "not_started",
@@ -201,6 +204,156 @@ export async function stopRuntime(): Promise<RuntimeCommandResponse> {
   }
 }
 
+export async function restartRuntime(): Promise<RuntimeCommandResponse> {
+  const stopped = await stopRuntime();
+  if (!stopped.success) {
+    return {
+      success: false,
+      state: stopped.state,
+      message: `Unable to restart runtime: ${stopped.message}`,
+      gateway: stopped.gateway,
+    };
+  }
+
+  const started = await startRuntime();
+  return {
+    ...started,
+    message: started.success
+      ? `Restarted OpenClaw gateway. ${started.message}`
+      : `Gateway stopped, but restart failed: ${started.message}`,
+  };
+}
+
+async function stopGatewayProcess() {
+  const command = process.env.CLAWMOBILE_RUNTIME_STOP_COMMAND || "";
+  if (command) {
+    await runCommand(command, []);
+    return;
+  }
+
+  const pid = readGatewayPid();
+  const candidates = await listGatewayProcessCandidates();
+  const targets = selectGatewayStopTargets(candidates, pid);
+  for (const candidate of targets) {
+    killPidBestEffort(candidate.pid, "SIGTERM");
+  }
+
+  await delay(750);
+  const stillReachable = await getGatewayStatus(300);
+  if (!stillReachable.reachable) return;
+
+  const remaining = selectGatewayStopTargets(await listGatewayProcessCandidates(), pid);
+  for (const candidate of remaining) {
+    killPidBestEffort(candidate.pid, "SIGKILL");
+  }
+}
+
+async function waitForGatewayStopped() {
+  const deadline = Date.now() + runtimeStopWaitMs();
+  let status = await getGatewayStatus();
+  while (status.reachable && Date.now() < deadline) {
+    await delay(500);
+    status = await getGatewayStatus();
+  }
+  return status;
+}
+
+function runCommand(command: string, args: string[]) {
+  return new Promise<void>((resolve, reject) => {
+    const child = spawn(command, args, { stdio: "ignore", env: process.env });
+    child.once("exit", (code) => (code === 0 ? resolve() : reject(new Error(`${command} exited ${code}`))));
+    child.once("error", reject);
+  });
+}
+
+type ProcessCandidate = {
+  pid: number;
+  ppid: number;
+  command: string;
+};
+
+async function listGatewayProcessCandidates(): Promise<ProcessCandidate[]> {
+  const output = await captureCommand("ps", ["-ef"]).catch(() => "");
+  return output
+    .split(/\r?\n/)
+    .map((line) => {
+      const parts = line.trim().split(/\s+/);
+      if (parts.length < 8) return null;
+      const pid = Number.parseInt(parts[1] || "", 10);
+      const ppid = Number.parseInt(parts[2] || "", 10);
+      const command = parts.slice(7).join(" ");
+      if (!Number.isFinite(pid) || !Number.isFinite(ppid)) return null;
+      if (!isGatewayRuntimeCommand(command)) return null;
+      if (command.includes("companion/server.js")) return null;
+      return { pid, ppid, command };
+    })
+    .filter((candidate): candidate is ProcessCandidate => candidate != null);
+}
+
+function selectGatewayStopTargets(candidates: ProcessCandidate[], recordedPid: number | null) {
+  const selected = new Map<number, ProcessCandidate>();
+  for (const candidate of candidates) {
+    const launchedByCompanion = candidate.ppid === process.pid;
+    const isRecordedProcess = recordedPid != null && candidate.pid === recordedPid;
+    const isRecordedChild = recordedPid != null && candidate.ppid === recordedPid;
+    if (launchedByCompanion || isRecordedProcess || isRecordedChild) {
+      selected.set(candidate.pid, candidate);
+    }
+  }
+  return [...selected.values()];
+}
+
+function isGatewayRuntimeCommand(command: string) {
+  return (
+    /\bopenclaw\b.*\bgateway\b/.test(command) ||
+    /(clawmobile|openclaw|mobile-ui).*\brun\b/.test(command) ||
+    /\brun\b.*(clawmobile|openclaw|mobile-ui)/.test(command)
+  );
+}
+
+function captureCommand(command: string, args: string[]) {
+  return new Promise<string>((resolve, reject) => {
+    const child = spawn(command, args, { stdio: ["ignore", "pipe", "pipe"], env: process.env });
+    let out = "";
+    let err = "";
+    child.stdout.on("data", (chunk) => {
+      out += String(chunk);
+    });
+    child.stderr.on("data", (chunk) => {
+      err += String(chunk);
+    });
+    child.once("exit", (code) => (code === 0 ? resolve(out) : reject(new Error(err || `${command} exited ${code}`))));
+    child.once("error", reject);
+  });
+}
+
+function killPidBestEffort(pid: number, signal: NodeJS.Signals) {
+  if (!Number.isFinite(pid) || pid <= 0 || pid === process.pid) return;
+  try {
+    process.kill(pid, signal);
+  } catch {
+    // Best effort. The process may have already exited.
+  }
+}
+
+function readGatewayPid() {
+  try {
+    const raw = fs.readFileSync(gatewayPidPath(), "utf8").trim();
+    const pid = Number.parseInt(raw, 10);
+    return Number.isFinite(pid) && pid > 0 ? pid : null;
+  } catch {
+    return null;
+  }
+}
+
+function cleanupGatewayPidFile() {
+  try {
+    fs.unlinkSync(gatewayPidPath());
+  } catch {
+    // Nothing to clean.
+  }
+}
+
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -210,6 +363,15 @@ function runtimeStartWaitMs() {
   return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_RUNTIME_START_WAIT_MS;
 }
 
+function runtimeStopWaitMs() {
+  const raw = Number.parseInt(process.env.CLAWMOBILE_RUNTIME_STOP_WAIT_MS || "", 10);
+  return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_RUNTIME_STOP_WAIT_MS;
+}
+
 function gatewayLogPath() {
   return path.join(ensureLogsDir(), GATEWAY_LOG_FILE);
+}
+
+function gatewayPidPath() {
+  return path.join(ensureLogsDir(), GATEWAY_PID_FILE);
 }

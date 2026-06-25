@@ -6,7 +6,7 @@ import path from "path";
 import { URL } from "url";
 import { android_health } from "../tools/android";
 import { clearAgentConversationMessages, listAgentConversationMessages, listAgentConversations, markAgentMessageRead } from "./agentMessages";
-import { getGatewayStatus, getRuntimeLog, startRuntime, stopRuntime } from "./openclawGatewayClient";
+import { getGatewayStatus, getRuntimeLog, restartRuntime, startRuntime, stopRuntime } from "./openclawGatewayClient";
 import { submitIntent } from "./intent";
 import { deleteNostrContact, fetchNostrInbox, getNostrStatus, listNostrContacts, sendNostrAgentMessage, setupNostrIdentity, shareSkillViaNostr, upsertNostrContact } from "./nostr";
 import { archiveSession, deleteSession, getRunStatus, listRuns } from "./runs";
@@ -109,7 +109,7 @@ async function route(req: http.IncomingMessage, res: http.ServerResponse) {
     writeJson(res, 200, {
       name: "ClawMobile Companion Server",
       version: VERSION,
-      endpoints: ["/health", "/attachments", "/intent", "/runtime/start", "/runtime/stop", "/runtime/log", "/terminal/command", "/terminal/session", "/terminal/session/input", "/terminal/session/reset", "/skills", "/skills/route", "/skills/:skillId", "/skills/:skillId/share", "/skills/:skillId/share/nostr", "/skills/:skillId/preview", "/skills/:skillId/run", "/skills/:skillId/fast-paths/:fastPathId/run", "/skill-imports", "/skill-imports/:importId/accept", "/skill-imports/:importId/reject", "/nostr/status", "/nostr/setup-key", "/nostr/contacts", "/nostr/contacts/:contactId", "/nostr/send", "/nostr/inbox", "/agent/conversations", "/agent/conversations/:agentId/messages", "/agent/inbox/fetch", "/agent/messages/:messageId/read", "/runs", "/runs/:runId", "/sessions/:sessionId/archive", "/sessions/:sessionId"],
+      endpoints: ["/health", "/attachments", "/intent", "/runtime/start", "/runtime/stop", "/runtime/restart", "/runtime/log", "/terminal/command", "/terminal/session", "/terminal/session/input", "/terminal/session/reset", "/skills", "/skills/route", "/skills/:skillId", "/skills/:skillId/share", "/skills/:skillId/share/nostr", "/skills/:skillId/preview", "/skills/:skillId/run", "/skills/:skillId/fast-paths/:fastPathId/run", "/skill-imports", "/skill-imports/:importId/accept", "/skill-imports/:importId/reject", "/nostr/status", "/nostr/setup-key", "/nostr/contacts", "/nostr/contacts/:contactId", "/nostr/send", "/nostr/inbox", "/agent/conversations", "/agent/conversations/:agentId/messages", "/agent/inbox/fetch", "/agent/messages/:messageId/read", "/runs", "/runs/:runId", "/sessions/:sessionId/archive", "/sessions/:sessionId"],
     });
     return;
   }
@@ -139,7 +139,13 @@ async function route(req: http.IncomingMessage, res: http.ServerResponse) {
 
   if (method === "POST" && requestUrl.pathname === "/runtime/stop") {
     const result = await stopRuntime();
-    writeJson(res, result.success ? 200 : 501, result);
+    writeJson(res, result.success ? 200 : 500, result);
+    return;
+  }
+
+  if (method === "POST" && requestUrl.pathname === "/runtime/restart") {
+    const result = await restartRuntime();
+    writeJson(res, result.success ? 200 : 500, result);
     return;
   }
 

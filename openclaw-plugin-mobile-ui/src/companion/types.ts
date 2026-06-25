@@ -1,4 +1,4 @@
-export type RuntimeCommandState = "not_started" | "running" | "failed";
+export type RuntimeCommandState = "not_started" | "running" | "failed" | "stopping";
 
 export type GatewayStatus = {
   host: string;
