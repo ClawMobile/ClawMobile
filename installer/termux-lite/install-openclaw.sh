@@ -30,6 +30,7 @@ else
 fi
 NPM_REGISTRY_ORIGIN="${CLAWMOBILE_NPM_REGISTRY_ORIGIN:-https://registry.npmjs.org/}"
 NPM_REGISTRY_MIRROR="${CLAWMOBILE_NPM_REGISTRY_MIRROR:-https://registry.npmmirror.com/}"
+NPM_INSTALL_TIMEOUT_SECONDS="${CLAWMOBILE_NPM_INSTALL_TIMEOUT_SECONDS:-900}"
 
 info() {
   echo "[lite] $*"
@@ -289,6 +290,29 @@ resolve_npm_registry() {
   export NPM_CONFIG_REGISTRY="$registry"
 }
 
+run_npm_install() {
+  local description="$1"
+  shift
+  local code=0
+
+  if command -v timeout >/dev/null 2>&1; then
+    set +e
+    timeout "$NPM_INSTALL_TIMEOUT_SECONDS" npm "$@"
+    code="$?"
+    set -e
+  else
+    set +e
+    npm "$@"
+    code="$?"
+    set -e
+  fi
+
+  if [ "$code" -eq 124 ] || [ "$code" -eq 137 ]; then
+    die "$description timed out after ${NPM_INSTALL_TIMEOUT_SECONDS}s. Check the network or configure a setup proxy, then rerun setup."
+  fi
+  return "$code"
+}
+
 remove_bashrc_block() {
   local start="$1"
   local end="$2"
@@ -351,7 +375,9 @@ install_openclaw_package() {
   fi
 
   info "Installing $OPENCLAW_NPM_SPEC..."
-  npm install -g "$OPENCLAW_NPM_SPEC" --ignore-scripts --no-fund --no-audit
+  run_npm_install "OpenClaw npm install" install -g "$OPENCLAW_NPM_SPEC" \
+    --ignore-scripts --no-fund --no-audit \
+    --fetch-retries=4 --fetch-timeout=60000 --fetch-retry-mintimeout=10000 --fetch-retry-maxtimeout=60000
 
   openclaw_dir="$(npm root -g)/openclaw"
   if [ -d "$openclaw_dir" ]; then
@@ -363,10 +389,15 @@ install_openclaw_package() {
 
   if [ "$INSTALL_CLAWDHUB" != "0" ]; then
     info "Installing clawdhub skill manager..."
-    if npm install -g clawdhub --no-fund --no-audit; then
+    if run_npm_install "clawdhub npm install" install -g clawdhub \
+      --no-fund --no-audit \
+      --fetch-retries=4 --fetch-timeout=60000 --fetch-retry-mintimeout=10000 --fetch-retry-maxtimeout=60000; then
       clawdhub_dir="$(npm root -g)/clawdhub"
       if [ -d "$clawdhub_dir" ] && ! (cd "$clawdhub_dir" && node -e "require('undici')" 2>/dev/null); then
-        (cd "$clawdhub_dir" && npm install undici --no-fund --no-audit) || warn "undici install failed; clawdhub may not work."
+        (cd "$clawdhub_dir" && run_npm_install "undici npm install" install undici \
+          --no-fund --no-audit \
+          --fetch-retries=4 --fetch-timeout=60000 --fetch-retry-mintimeout=10000 --fetch-retry-maxtimeout=60000) || \
+          warn "undici install failed; clawdhub may not work."
       fi
     else
       warn "clawdhub installation failed; ClawMobile can still use local seeded skills."
