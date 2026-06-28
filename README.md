@@ -10,6 +10,7 @@
   <a href="https://clawmobile.ae/">Website</a> ·
   <a href="https://arxiv.org/abs/2602.22942">Paper</a> ·
   <a href="docs/android-companion-app.md">Android App</a> ·
+  <a href="docs/runtime-protocol-v1.md">Runtime Protocol</a> ·
   <a href="installer/INSTALL.md">Install</a> ·
   <a href="installer/FAQ.md">FAQ</a> ·
   <a href="SECURITY.md">Security</a> ·

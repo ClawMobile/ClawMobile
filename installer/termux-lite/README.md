@@ -154,62 +154,72 @@ by default, and CORS headers are only emitted when
 `CLAWMOBILE_COMPANION_CORS_ORIGIN` is explicitly configured for local
 development.
 
-Current MVP endpoints:
+Current MVP endpoints use the shared ClawMobile runtime protocol v1:
 
 ```text
-GET  /health
-POST /attachments
-POST /intent
-POST /runtime/start
-POST /runtime/stop
-GET  /runtime/log
-POST /terminal/command
-GET  /terminal/session
-POST /terminal/session/input
-POST /terminal/session/reset
-GET  /skills
-POST /skills/route
-GET  /skills/:skillId
-POST /skills/:skillId/preview
-POST /skills/:skillId/run
-POST /skills/:skillId/fast-paths/:fastPathId/run
-GET  /skills/:skillId/runs
-GET  /skill-runs/:runId
-GET  /nostr/status
-POST /nostr/setup-key
-GET  /nostr/contacts
-POST /nostr/contacts
-DELETE /nostr/contacts/:contactId
-POST /nostr/send
-GET  /nostr/inbox
-GET  /agent/conversations
-GET  /agent/conversations/:agentId/messages
-POST /agent/conversations/:agentId/messages
-DELETE /agent/conversations/:agentId/messages
-POST /agent/inbox/fetch
-POST /agent/messages/:messageId/read
-POST /skills/:skillId/share
-POST /skills/:skillId/share/nostr
-GET  /skill-imports
-POST /skill-imports
-POST /skill-imports/:importId/accept
-POST /skill-imports/:importId/reject
-GET  /runs
+GET  /v1/health
+GET  /v1/capabilities
+POST /v1/attachments
+GET  /v1/attachments/:attachmentId/content
+POST /v1/runs
+GET  /v1/runs
+GET  /v1/runs/:runId
+POST /v1/runtime/start
+POST /v1/runtime/stop
+POST /v1/runtime/restart
+GET  /v1/runtime/log
+GET  /v1/skills
+POST /v1/skills/route
+GET  /v1/skills/:skillId
+POST /v1/skills/:skillId/preview
+POST /v1/skills/:skillId/run
+POST /v1/skills/:skillId/fast-paths/:fastPathId/run
+GET  /v1/skills/:skillId/runs
+GET  /v1/skill-runs/:runId
+POST /v1/sessions/:sessionId/archive
+DELETE /v1/sessions/:sessionId
+
+POST /v1/extensions/android/terminal/command
+GET  /v1/extensions/android/terminal/session
+POST /v1/extensions/android/terminal/session/input
+POST /v1/extensions/android/terminal/session/reset
+GET  /v1/extensions/nostr/status
+POST /v1/extensions/nostr/setup-key
+GET  /v1/extensions/nostr/contacts
+POST /v1/extensions/nostr/contacts
+DELETE /v1/extensions/nostr/contacts/:contactId
+POST /v1/extensions/nostr/send
+GET  /v1/extensions/nostr/inbox
+GET  /v1/extensions/agent/conversations
+GET  /v1/extensions/agent/conversations/:agentId/messages
+POST /v1/extensions/agent/conversations/:agentId/messages
+DELETE /v1/extensions/agent/conversations/:agentId/messages
+POST /v1/extensions/agent/inbox/fetch
+POST /v1/extensions/agent/messages/:messageId/read
+POST /v1/extensions/skill-sharing/skills/:skillId/share
+POST /v1/extensions/skill-sharing/skills/:skillId/share/nostr
+GET  /v1/extensions/skill-sharing/imports
+POST /v1/extensions/skill-sharing/imports
+POST /v1/extensions/skill-sharing/imports/:importId/accept
+POST /v1/extensions/skill-sharing/imports/:importId/reject
 ```
 
-`/health` returns ClawMobile capability health plus OpenClaw gateway reachability.
-`/runtime/start` starts the existing Termux gateway through `run.sh` if it is not
-already reachable. `/runtime/log` returns the current gateway log tail for the
-Android cockpit terminal. Terminal endpoints execute commands inside Termux.
+`/v1/health` returns ClawMobile capability health plus OpenClaw gateway
+reachability. `/v1/capabilities` reports feature availability, tool summaries,
+and extension routes. `/v1/runtime/start` starts the existing Termux gateway
+through `run.sh` if it is not already reachable. `/v1/runtime/log` returns the
+current gateway log tail for the Android cockpit terminal. Terminal extension
+endpoints execute commands inside Termux.
 Companion control endpoints are restricted to loopback requests by default.
-`/intent` accepts a user task,
-returns a run id and session id, and lets the Android app poll `/runs/:runId`
-and `/runs?limit=100` for chat history, progress, tool activity, final result,
-and optional token usage.
+`/v1/runs` accepts a task request with `instruction`, optional `displayText`,
+session id, and attachments, returns a run id and session id, and lets mobile
+apps poll `/v1/runs/:runId` and `/v1/runs?limit=100` for chat history, progress,
+tool activity, final result, and optional token usage.
 
-`/attachments` accepts raw `image/*` uploads from the Android share sheet and
-saves them under `${CLAWMOBILE_ATTACHMENT_DIR:-$HOME/.clawmobile/companion-attachments}`.
-The Android app includes the returned attachment objects in `/intent.attachments`.
+`/v1/attachments` accepts raw `image/*` uploads from the Android share sheet and
+saves them under
+`${CLAWMOBILE_ATTACHMENT_DIR:-$HOME/.clawmobile/companion-attachments}`.
+The app includes the returned attachment objects in `/v1/runs.attachments`.
 The server appends local image paths to the internal OpenClaw prompt while
 preserving the original user-visible request as `userText`.
 
@@ -225,7 +235,7 @@ generated, and later only when the caller explicitly requests a reveal.
 
 ### Skills Library API Contract
 
-The Android app treats `/skills` as a unified Skills Library, not as a generated
+The app treats `/v1/skills` as a unified Skills Library, not as a generated
 skill-only list. The server should return ordinary installed OpenClaw skills,
 generated skills, imported skills, and future user-created skills through the
 same shape. Generated skills can add richer app/scenario knowledge and fast
@@ -233,7 +243,7 @@ paths, but ordinary skills must remain valid without those fields. A generated
 skill should be presented as reusable app/task knowledge first; fast paths are
 optional execution routes.
 
-`GET /skills` returns compact cards:
+`GET /v1/skills` returns compact cards:
 
 - `id`, `name`, `description`
 - `source`: `installed`, `generated`, `demo`, or `unknown`
@@ -249,7 +259,7 @@ optional execution routes.
 - `requiresConfirmation`
 - `tags`
 
-`GET /skills/:skillId` returns the full detail used by the Android skill page:
+`GET /v1/skills/:skillId` returns the full detail used by the Android skill page:
 
 - `overview`
   - `primaryUse`
@@ -284,7 +294,7 @@ derives this shape from markdown, frontmatter, `generalized_skill.json`,
 
 ### Local Skill Routing
 
-`POST /skills/route` performs local metadata routing without a model call:
+`POST /v1/skills/route` performs local metadata routing without a model call:
 
 ```json
 {
@@ -304,11 +314,11 @@ includes `confidence`, `reasons`, `recommendedRoute`, `secondaryRoutes`,
 `missingInputs`, and an `autoRun` decision. The route step itself has
 `tokenCost: "none_local_metadata_match"`.
 
-`POST /intent` also uses the same local router conservatively. When exactly one
-high-confidence skill match exists, the runtime appends a compact skill context
-to the submitted prompt. When no high-confidence match exists, the submitted
-prompt is unchanged. Set `CLAWMOBILE_AUTO_SKILL_ROUTING=0` to disable this
-automatic context attachment.
+`POST /v1/runs` also uses the same local router conservatively. When exactly
+one high-confidence skill match exists, the runtime appends a compact skill
+context to the submitted instruction. When no high-confidence match exists, the
+submitted instruction is unchanged. Set `CLAWMOBILE_AUTO_SKILL_ROUTING=0` to
+disable this automatic context attachment.
 
 Automatic fast-path execution is not enabled by default. A caller must set
 `allowAutoFastPath: true`, and the route must be high-confidence, have required
@@ -316,7 +326,7 @@ inputs available, avoid high-risk actions, and have no blocking failure history.
 
 ### Skills Execution API
 
-`POST /skills/:skillId/preview` accepts:
+`POST /v1/skills/:skillId/preview` accepts:
 
 ```json
 {
@@ -348,15 +358,16 @@ exists.
 - `agent_guidance`: ordinary installed skill guidance.
 - `broken`: the generated skill metadata could not be loaded.
 
-`POST /skills/:skillId/run` creates a normal OpenClaw agent run with the skill
+`POST /v1/skills/:skillId/run` creates a normal OpenClaw agent run with the skill
 loaded as compact context. It accepts `instruction`, `taskText`, `text`,
 `inputs`, and optional `sessionId`. This route does not force replay. Use it
 as the default route when the UI wants the agent to reuse app knowledge,
 grounding hints, verification rules, prior execution evidence, and available
 tools.
 
-`POST /skills/:skillId/fast-paths/:fastPathId/run` calls the generated skill
-fast-path runner. It accepts:
+`POST /v1/skills/:skillId/fast-paths/:fastPathId/run` calls the generated skill
+fast-path runner. This remains an Android generated-skill extension on top of
+the core v1 skills API. It accepts:
 
 ```json
 {
@@ -382,19 +393,19 @@ includes `success`, `state`, Android-facing `status`, `message`,
 - The Android frontend already has a Skill Library MVP in `SkillModels.kt`,
   `HttpRuntimeClient.kt`, and `SkillsScreen.kt`; the next step is sync,
   verification, and incremental fixes, not a rewrite.
-- Keep the existing list/detail/preview/run/fast-path/run-history calls. The
-  companion server also supports `/skills/:skillId/runs` and
-  `/skill-runs/:runId` for the Android skill history UI.
+- Keep the existing list/detail/preview/run/fast-path/run-history concepts, but
+  call them through `/v1`. The companion server also supports
+  `/v1/skills/:skillId/runs` and `/v1/skill-runs/:runId` for skill history UI.
 - The Android frontend consumes optional fields for the knowledge-first model:
   `appPackage`, `routeCount`, `appModel`, `knowledgeShortcuts`,
   `executionRoutes`, `executionState`, `recommendedAction`, `missingInputs`,
   and `eligibleFastPaths`.
-- Keep `POST /skills/route` available for local skill suggestions before a
+- Keep `POST /v1/skills/route` available for local skill suggestions before a
   free-form intent is submitted.
 - Preserve the original user task as `userText`, `inputText`, or `intentText`
-  when `/intent` injects compact skill context. The Android chat UI uses this
+  when `/v1/runs` injects compact skill context. The mobile chat UI uses this
   field instead of the expanded OpenClaw prompt.
-- Preserve the original user task as `userText` when `/intent` injects local
+- Preserve the original user task as `userText` when `/v1/runs` injects local
   attachment paths for shared images.
 - Update run `updatedAt` when a terminal `done` or `failed` result arrives so
   the Android unread badges and recent chats can refresh correctly.

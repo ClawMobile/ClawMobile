@@ -12,7 +12,7 @@ import { deleteNostrContact, fetchNostrInbox, getNostrStatus, listNostrContacts,
 import { archiveSession, deleteSession, getRunStatus, listRuns } from "./runs";
 import { getWorkspaceSkill, listWorkspaceSkills, previewWorkspaceSkill, routeWorkspaceSkills, runWorkspaceFastPath, runWorkspaceSkill } from "./skills";
 import { acceptSkillImport, createSkillSharePackage, listPendingSkillImports, rejectSkillImport, storePendingSkillImport } from "./skillSharing";
-import type { CompanionHealth, CompanionRunStatus, IntentAttachment, IntentRequest, TerminalCommandRequest, TerminalCommandResponse, TerminalSessionRequest, TerminalSessionResponse } from "./types";
+import type { CompanionHealth, CompanionRunStatus, IntentAttachment, RunCreateRequest, TerminalCommandRequest, TerminalCommandResponse, TerminalSessionRequest, TerminalSessionResponse } from "./types";
 
 const VERSION = "0.1.0";
 const DEFAULT_HOST = "127.0.0.1";
@@ -83,8 +83,9 @@ export function startCompanionServer() {
 async function route(req: http.IncomingMessage, res: http.ServerResponse) {
   const method = req.method || "GET";
   const requestUrl = new URL(req.url || "/", "http://localhost");
+  const routePath = normalizeProtocolPath(requestUrl.pathname);
 
-  if (shouldBlockBrowserRequest(req, requestUrl.pathname)) {
+  if (shouldBlockBrowserRequest(req, routePath || requestUrl.pathname)) {
     writeJson(res, 403, {
       success: false,
       message: "Browser-origin requests are not allowed for local companion control endpoints.",
@@ -97,7 +98,15 @@ async function route(req: http.IncomingMessage, res: http.ServerResponse) {
     return;
   }
 
-  if (isLocalOnlyRoute(requestUrl.pathname) && !isLoopbackRequest(req) && process.env.CLAWMOBILE_COMPANION_ALLOW_REMOTE_TERMINAL !== "1") {
+  if (!routePath) {
+    writeJson(res, 404, {
+      success: false,
+      message: `No route for ${method} ${requestUrl.pathname}. Use the /v1 runtime protocol.`,
+    });
+    return;
+  }
+
+  if (isLocalOnlyRoute(routePath) && !isLoopbackRequest(req) && process.env.CLAWMOBILE_COMPANION_ALLOW_REMOTE_TERMINAL !== "1") {
     writeJson(res, 403, {
       success: false,
       message: "This endpoint is restricted to local companion app requests.",
@@ -105,76 +114,138 @@ async function route(req: http.IncomingMessage, res: http.ServerResponse) {
     return;
   }
 
-  if (method === "GET" && requestUrl.pathname === "/") {
+  if (method === "GET" && routePath === "/") {
     writeJson(res, 200, {
       name: "ClawMobile Companion Server",
       version: VERSION,
-      endpoints: ["/health", "/attachments", "/intent", "/runtime/start", "/runtime/stop", "/runtime/restart", "/runtime/log", "/terminal/command", "/terminal/session", "/terminal/session/input", "/terminal/session/reset", "/skills", "/skills/route", "/skills/:skillId", "/skills/:skillId/share", "/skills/:skillId/share/nostr", "/skills/:skillId/preview", "/skills/:skillId/run", "/skills/:skillId/fast-paths/:fastPathId/run", "/skill-imports", "/skill-imports/:importId/accept", "/skill-imports/:importId/reject", "/nostr/status", "/nostr/setup-key", "/nostr/contacts", "/nostr/contacts/:contactId", "/nostr/send", "/nostr/inbox", "/agent/conversations", "/agent/conversations/:agentId/messages", "/agent/inbox/fetch", "/agent/messages/:messageId/read", "/runs", "/runs/:runId", "/sessions/:sessionId/archive", "/sessions/:sessionId"],
+      protocol: "v1",
+      endpoints: [
+        "/v1/health",
+        "/v1/capabilities",
+        "/v1/attachments",
+        "/v1/attachments/:attachmentId/content",
+        "/v1/runs",
+        "/v1/runs/:runId",
+        "/v1/sessions/:sessionId/archive",
+        "/v1/sessions/:sessionId",
+        "/v1/runtime/start",
+        "/v1/runtime/stop",
+        "/v1/runtime/restart",
+        "/v1/runtime/log",
+        "/v1/skills",
+        "/v1/skills/route",
+        "/v1/skills/:skillId",
+        "/v1/skills/:skillId/preview",
+        "/v1/skills/:skillId/run",
+        "/v1/skills/:skillId/fast-paths/:fastPathId/run",
+        "/v1/skills/:skillId/runs",
+        "/v1/skill-runs/:runId",
+        "/v1/extensions/android/terminal/command",
+        "/v1/extensions/android/terminal/session",
+        "/v1/extensions/android/terminal/session/input",
+        "/v1/extensions/android/terminal/session/reset",
+        "/v1/extensions/nostr/status",
+        "/v1/extensions/nostr/setup-key",
+        "/v1/extensions/nostr/contacts",
+        "/v1/extensions/nostr/contacts/:contactId",
+        "/v1/extensions/nostr/send",
+        "/v1/extensions/nostr/inbox",
+        "/v1/extensions/agent/conversations",
+        "/v1/extensions/agent/conversations/:agentId/messages",
+        "/v1/extensions/agent/inbox/fetch",
+        "/v1/extensions/agent/messages/:messageId/read",
+        "/v1/extensions/skill-sharing/skills/:skillId/share",
+        "/v1/extensions/skill-sharing/skills/:skillId/share/nostr",
+        "/v1/extensions/skill-sharing/imports",
+        "/v1/extensions/skill-sharing/imports/:importId/accept",
+        "/v1/extensions/skill-sharing/imports/:importId/reject",
+      ],
     });
     return;
   }
 
-  if (method === "GET" && requestUrl.pathname === "/health") {
+  if (method === "GET" && routePath === "/health") {
     writeJson(res, 200, await health());
     return;
   }
 
-  if (method === "POST" && requestUrl.pathname === "/intent") {
-    const body = await readJsonBody<IntentRequest>(req);
-    const result = await submitIntent(String(body?.text || ""), String(body?.sessionId || "default"), body?.attachments || []);
+  if (method === "GET" && routePath === "/capabilities") {
+    writeJson(res, 200, await capabilities());
+    return;
+  }
+
+  if (method === "POST" && routePath === "/runs") {
+    const body = await readJsonBody<RunCreateRequest>(req);
+    const instruction = String(body?.instruction || body?.text || "");
+    const displayText = String(body?.displayText || body?.userText || body?.text || instruction);
+    const result = await submitIntent(
+      instruction,
+      String(body?.sessionId || "default"),
+      body?.attachments || [],
+      {
+        userText: displayText,
+        clientRunId: body?.clientRunId,
+      },
+    );
     writeJson(res, result.success ? 200 : 400, result);
     return;
   }
 
-  if (method === "POST" && requestUrl.pathname === "/attachments") {
+  if (method === "POST" && routePath === "/attachments") {
     const result = await saveAttachment(req);
     writeJson(res, result.success ? 200 : 400, result);
     return;
   }
 
-  if (method === "POST" && requestUrl.pathname === "/runtime/start") {
+  if (method === "GET" && routePath.startsWith("/attachments/") && routePath.endsWith("/content")) {
+    const attachmentId = decodeURIComponent(routePath.slice("/attachments/".length, -"/content".length));
+    await serveAttachmentContent(res, attachmentId);
+    return;
+  }
+
+  if (method === "POST" && routePath === "/runtime/start") {
     writeJson(res, 200, await startRuntime());
     return;
   }
 
-  if (method === "POST" && requestUrl.pathname === "/runtime/stop") {
+  if (method === "POST" && routePath === "/runtime/stop") {
     const result = await stopRuntime();
     writeJson(res, result.success ? 200 : 500, result);
     return;
   }
 
-  if (method === "POST" && requestUrl.pathname === "/runtime/restart") {
+  if (method === "POST" && routePath === "/runtime/restart") {
     const result = await restartRuntime();
     writeJson(res, result.success ? 200 : 500, result);
     return;
   }
 
-  if (method === "GET" && requestUrl.pathname === "/runtime/log") {
+  if (method === "GET" && routePath === "/runtime/log") {
     const maxBytes = parsePort(requestUrl.searchParams.get("maxBytes") || undefined, 64 * 1024);
     writeJson(res, 200, getRuntimeLog(maxBytes));
     return;
   }
 
-  if (method === "POST" && requestUrl.pathname === "/terminal/command") {
+  if (method === "POST" && routePath === "/terminal/command") {
     const body = await readJsonBody<TerminalCommandRequest>(req);
     const result = await runTerminalCommand(String(body?.command || ""));
     writeJson(res, result.command ? 200 : 400, result);
     return;
   }
 
-  if (method === "GET" && requestUrl.pathname === "/terminal/session") {
+  if (method === "GET" && routePath === "/terminal/session") {
     writeJson(res, 200, terminalSessionSnapshot("Shell ready."));
     return;
   }
 
-  if (method === "POST" && requestUrl.pathname === "/terminal/session/input") {
+  if (method === "POST" && routePath === "/terminal/session/input") {
     const body = await readJsonBody<TerminalSessionRequest>(req);
     const result = sendTerminalSessionInput(String(body?.text || ""));
     writeJson(res, result.success ? 200 : 400, result);
     return;
   }
 
-  if (method === "POST" && requestUrl.pathname === "/terminal/session/reset") {
+  if (method === "POST" && routePath === "/terminal/session/reset") {
     stopTerminalShellSession();
     const session = startTerminalShellSession();
     appendTerminalShellText(session, "Shell restarted.\n");
@@ -182,25 +253,25 @@ async function route(req: http.IncomingMessage, res: http.ServerResponse) {
     return;
   }
 
-  if (method === "GET" && requestUrl.pathname === "/skills") {
+  if (method === "GET" && routePath === "/skills") {
     writeJson(res, 200, {
       skills: listWorkspaceSkills(),
     });
     return;
   }
 
-  if (method === "POST" && requestUrl.pathname === "/skills/route") {
+  if (method === "POST" && routePath === "/skills/route") {
     const body = await readJsonBody<Record<string, any>>(req);
     writeJson(res, 200, routeWorkspaceSkills(body || {}));
     return;
   }
 
-  if (method === "GET" && requestUrl.pathname === "/nostr/status") {
+  if (method === "GET" && routePath === "/nostr/status") {
     writeJson(res, 200, getNostrStatus());
     return;
   }
 
-  if (method === "POST" && requestUrl.pathname === "/nostr/setup-key") {
+  if (method === "POST" && routePath === "/nostr/setup-key") {
     const body = await readJsonBody<Record<string, any>>(req);
     writeJson(res, 200, setupNostrIdentity({
       secretKey: body?.secretKey || body?.nsec,
@@ -210,18 +281,18 @@ async function route(req: http.IncomingMessage, res: http.ServerResponse) {
     return;
   }
 
-  if (method === "GET" && requestUrl.pathname === "/nostr/contacts") {
+  if (method === "GET" && routePath === "/nostr/contacts") {
     writeJson(res, 200, listNostrContacts());
     return;
   }
 
-  if (method === "POST" && requestUrl.pathname === "/nostr/contacts") {
+  if (method === "POST" && routePath === "/nostr/contacts") {
     const body = await readJsonBody<Record<string, any>>(req);
     writeJson(res, 200, upsertNostrContact(body || {}));
     return;
   }
 
-  const nostrContactMatch = requestUrl.pathname.match(/^\/nostr\/contacts\/([^/]+)$/);
+  const nostrContactMatch = routePath.match(/^\/nostr\/contacts\/([^/]+)$/);
   if (method === "DELETE" && nostrContactMatch) {
     const contactId = decodeURIComponent(nostrContactMatch[1]);
     const result = deleteNostrContact({ value: contactId });
@@ -229,14 +300,14 @@ async function route(req: http.IncomingMessage, res: http.ServerResponse) {
     return;
   }
 
-  if (method === "POST" && requestUrl.pathname === "/nostr/send") {
+  if (method === "POST" && routePath === "/nostr/send") {
     const body = await readJsonBody<Record<string, any>>(req);
     const result = await sendNostrAgentMessage(body || {});
     writeJson(res, result.ok ? 200 : 502, result);
     return;
   }
 
-  if (method === "GET" && requestUrl.pathname === "/nostr/inbox") {
+  if (method === "GET" && routePath === "/nostr/inbox") {
     const limit = Number.parseInt(requestUrl.searchParams.get("limit") || "", 10);
     const since = Number.parseInt(requestUrl.searchParams.get("since") || "", 10);
     const relays = requestUrl.searchParams.getAll("relay").filter(Boolean);
@@ -249,7 +320,7 @@ async function route(req: http.IncomingMessage, res: http.ServerResponse) {
     return;
   }
 
-  if (method === "GET" && requestUrl.pathname === "/agent/conversations") {
+  if (method === "GET" && routePath === "/agent/conversations") {
     writeJson(res, 200, {
       ok: true,
       conversations: listAgentConversations(listNostrContacts().contacts),
@@ -257,7 +328,7 @@ async function route(req: http.IncomingMessage, res: http.ServerResponse) {
     return;
   }
 
-  const agentMessagesMatch = requestUrl.pathname.match(/^\/agent\/conversations\/([^/]+)\/messages$/);
+  const agentMessagesMatch = routePath.match(/^\/agent\/conversations\/([^/]+)\/messages$/);
   if (method === "GET" && agentMessagesMatch) {
     const agentId = decodeURIComponent(agentMessagesMatch[1]);
     const limit = Number.parseInt(requestUrl.searchParams.get("limit") || "", 10);
@@ -300,7 +371,7 @@ async function route(req: http.IncomingMessage, res: http.ServerResponse) {
     return;
   }
 
-  if (method === "POST" && requestUrl.pathname === "/agent/inbox/fetch") {
+  if (method === "POST" && routePath === "/agent/inbox/fetch") {
     const body: Record<string, any> = await readJsonBody<Record<string, any>>(req).catch(() => ({}));
     const result = await fetchNostrInbox({
       limit: Number.isFinite(Number(body?.limit)) ? Number(body.limit) : 50,
@@ -320,7 +391,7 @@ async function route(req: http.IncomingMessage, res: http.ServerResponse) {
     return;
   }
 
-  const markAgentMessageReadMatch = requestUrl.pathname.match(/^\/agent\/messages\/([^/]+)\/read$/);
+  const markAgentMessageReadMatch = routePath.match(/^\/agent\/messages\/([^/]+)\/read$/);
   if (method === "POST" && markAgentMessageReadMatch) {
     const messageId = decodeURIComponent(markAgentMessageReadMatch[1]);
     const body: Record<string, any> = await readJsonBody<Record<string, any>>(req).catch(() => ({}));
@@ -329,14 +400,14 @@ async function route(req: http.IncomingMessage, res: http.ServerResponse) {
     return;
   }
 
-  if (method === "GET" && requestUrl.pathname === "/skill-imports") {
+  if (method === "GET" && routePath === "/skill-imports") {
     writeJson(res, 200, {
       imports: listPendingSkillImports(),
     });
     return;
   }
 
-  if (method === "POST" && requestUrl.pathname === "/skill-imports") {
+  if (method === "POST" && routePath === "/skill-imports") {
     const body = await readJsonBody<Record<string, any>>(req);
     const record = storePendingSkillImport(body?.package || body, body?.source || { transport: "manual" });
     writeJson(res, 200, {
@@ -347,7 +418,7 @@ async function route(req: http.IncomingMessage, res: http.ServerResponse) {
     return;
   }
 
-  const acceptSkillImportMatch = requestUrl.pathname.match(/^\/skill-imports\/([^/]+)\/accept$/);
+  const acceptSkillImportMatch = routePath.match(/^\/skill-imports\/([^/]+)\/accept$/);
   if (method === "POST" && acceptSkillImportMatch) {
     const importId = decodeURIComponent(acceptSkillImportMatch[1]);
     const result = acceptSkillImport(importId);
@@ -358,7 +429,7 @@ async function route(req: http.IncomingMessage, res: http.ServerResponse) {
     return;
   }
 
-  const rejectSkillImportMatch = requestUrl.pathname.match(/^\/skill-imports\/([^/]+)\/reject$/);
+  const rejectSkillImportMatch = routePath.match(/^\/skill-imports\/([^/]+)\/reject$/);
   if (method === "POST" && rejectSkillImportMatch) {
     const importId = decodeURIComponent(rejectSkillImportMatch[1]);
     const result = rejectSkillImport(importId);
@@ -369,7 +440,7 @@ async function route(req: http.IncomingMessage, res: http.ServerResponse) {
     return;
   }
 
-  const skillDetailMatch = requestUrl.pathname.match(/^\/skills\/([^/]+)$/);
+  const skillDetailMatch = routePath.match(/^\/skills\/([^/]+)$/);
   if (method === "GET" && skillDetailMatch) {
     const skillId = decodeURIComponent(skillDetailMatch[1]);
     const skill = getWorkspaceSkill(skillId);
@@ -380,7 +451,7 @@ async function route(req: http.IncomingMessage, res: http.ServerResponse) {
     return;
   }
 
-  const skillShareMatch = requestUrl.pathname.match(/^\/skills\/([^/]+)\/share$/);
+  const skillShareMatch = routePath.match(/^\/skills\/([^/]+)\/share$/);
   if (method === "POST" && skillShareMatch) {
     const skillId = decodeURIComponent(skillShareMatch[1]);
     const result = createSkillSharePackage(skillId);
@@ -391,7 +462,7 @@ async function route(req: http.IncomingMessage, res: http.ServerResponse) {
     return;
   }
 
-  const skillShareNostrMatch = requestUrl.pathname.match(/^\/skills\/([^/]+)\/share\/nostr$/);
+  const skillShareNostrMatch = routePath.match(/^\/skills\/([^/]+)\/share\/nostr$/);
   if (method === "POST" && skillShareNostrMatch) {
     const skillId = decodeURIComponent(skillShareNostrMatch[1]);
     const body = await readJsonBody<Record<string, any>>(req);
@@ -403,7 +474,7 @@ async function route(req: http.IncomingMessage, res: http.ServerResponse) {
     return;
   }
 
-  const skillPreviewMatch = requestUrl.pathname.match(/^\/skills\/([^/]+)\/preview$/);
+  const skillPreviewMatch = routePath.match(/^\/skills\/([^/]+)\/preview$/);
   if (method === "POST" && skillPreviewMatch) {
     const skillId = decodeURIComponent(skillPreviewMatch[1]);
     const body = await readJsonBody<Record<string, any>>(req);
@@ -415,7 +486,7 @@ async function route(req: http.IncomingMessage, res: http.ServerResponse) {
     return;
   }
 
-  const skillRunMatch = requestUrl.pathname.match(/^\/skills\/([^/]+)\/run$/);
+  const skillRunMatch = routePath.match(/^\/skills\/([^/]+)\/run$/);
   if (method === "POST" && skillRunMatch) {
     const skillId = decodeURIComponent(skillRunMatch[1]);
     const body = await readJsonBody<Record<string, any>>(req);
@@ -427,7 +498,7 @@ async function route(req: http.IncomingMessage, res: http.ServerResponse) {
     return;
   }
 
-  const fastPathRunMatch = requestUrl.pathname.match(/^\/skills\/([^/]+)\/fast-paths\/([^/]+)\/run$/);
+  const fastPathRunMatch = routePath.match(/^\/skills\/([^/]+)\/fast-paths\/([^/]+)\/run$/);
   if (method === "POST" && fastPathRunMatch) {
     const skillId = decodeURIComponent(fastPathRunMatch[1]);
     const fastPathId = decodeURIComponent(fastPathRunMatch[2]);
@@ -440,7 +511,7 @@ async function route(req: http.IncomingMessage, res: http.ServerResponse) {
     return;
   }
 
-  const skillRunsMatch = requestUrl.pathname.match(/^\/skills\/([^/]+)\/runs$/);
+  const skillRunsMatch = routePath.match(/^\/skills\/([^/]+)\/runs$/);
   if (method === "GET" && skillRunsMatch) {
     const skillId = decodeURIComponent(skillRunsMatch[1]);
     const runs = (await listRuns())
@@ -450,14 +521,14 @@ async function route(req: http.IncomingMessage, res: http.ServerResponse) {
     return;
   }
 
-  if (method === "GET" && requestUrl.pathname.startsWith("/skill-runs/")) {
-    const runId = decodeURIComponent(requestUrl.pathname.slice("/skill-runs/".length));
+  if (method === "GET" && routePath.startsWith("/skill-runs/")) {
+    const runId = decodeURIComponent(routePath.slice("/skill-runs/".length));
     const result = await getRunStatus(runId);
     writeJson(res, result.success || result.state !== "unknown" ? 200 : 404, toSkillRunSummary(result));
     return;
   }
 
-  if (method === "GET" && requestUrl.pathname === "/runs") {
+  if (method === "GET" && routePath === "/runs") {
     const rawLimit = Number.parseInt(requestUrl.searchParams.get("limit") || "", 10);
     const limit = Number.isFinite(rawLimit) ? rawLimit : undefined;
     writeJson(res, 200, {
@@ -466,14 +537,14 @@ async function route(req: http.IncomingMessage, res: http.ServerResponse) {
     return;
   }
 
-  if (method === "GET" && requestUrl.pathname.startsWith("/runs/")) {
-    const runId = decodeURIComponent(requestUrl.pathname.slice("/runs/".length));
+  if (method === "GET" && routePath.startsWith("/runs/")) {
+    const runId = decodeURIComponent(routePath.slice("/runs/".length));
     const result = await getRunStatus(runId);
     writeJson(res, result.success || result.state !== "unknown" ? 200 : 404, result);
     return;
   }
 
-  const archiveSessionMatch = requestUrl.pathname.match(/^\/sessions\/([^/]+)\/archive$/);
+  const archiveSessionMatch = routePath.match(/^\/sessions\/([^/]+)\/archive$/);
   if (method === "POST" && archiveSessionMatch) {
     const sessionId = decodeURIComponent(archiveSessionMatch[1]);
     const result = await archiveSession(sessionId);
@@ -481,7 +552,7 @@ async function route(req: http.IncomingMessage, res: http.ServerResponse) {
     return;
   }
 
-  const deleteSessionMatch = requestUrl.pathname.match(/^\/sessions\/([^/]+)$/);
+  const deleteSessionMatch = routePath.match(/^\/sessions\/([^/]+)$/);
   if (method === "DELETE" && deleteSessionMatch) {
     const sessionId = decodeURIComponent(deleteSessionMatch[1]);
     const result = await deleteSession(sessionId);
@@ -495,6 +566,29 @@ async function route(req: http.IncomingMessage, res: http.ServerResponse) {
   });
 }
 
+function normalizeProtocolPath(pathname: string): string | null {
+  if (pathname === "/" || pathname === "/v1") return "/";
+  if (!pathname.startsWith("/v1/")) return null;
+
+  const path = pathname.slice("/v1".length);
+  const extensionMappings: Array<[string, string]> = [
+    ["/extensions/android", ""],
+    ["/extensions/nostr", "/nostr"],
+    ["/extensions/agent", "/agent"],
+    ["/extensions/skill-sharing/imports", "/skill-imports"],
+    ["/extensions/skill-sharing/skills", "/skills"],
+  ];
+
+  for (const [prefix, replacement] of extensionMappings) {
+    if (path === prefix) return replacement || "/";
+    if (path.startsWith(`${prefix}/`)) {
+      return `${replacement}${path.slice(prefix.length)}` || "/";
+    }
+  }
+
+  return path;
+}
+
 async function health(): Promise<CompanionHealth> {
   const [runtime, gateway] = await Promise.all([
     android_health().catch((error: any) => ({
@@ -505,13 +599,138 @@ async function health(): Promise<CompanionHealth> {
   ]);
 
   const runtimeOk = runtime?.ok !== false;
+  const runtimeDetails: any = runtime;
+  const runtimeStage = typeof runtimeDetails?.stage === "string" ? runtimeDetails.stage : undefined;
+  const runtimeError = runtimeDetails?.error ? String(runtimeDetails.error) : undefined;
+  const model = modelKeyHealth();
   return {
-    status: runtimeOk ? "ok" : "degraded",
+    status: runtimeOk ? "connected" : "disconnected",
     message: runtimeOk ? "ClawMobile companion server is running." : "Companion server is running with degraded runtime health.",
     version: VERSION,
+    stage: runtimeStage,
+    checks: [
+      {
+        id: "companion",
+        label: "Companion",
+        state: "online",
+        detail: "Companion HTTP server is reachable.",
+      },
+      {
+        id: "runtime",
+        label: "Runtime",
+        state: runtimeOk ? "online" : "offline",
+        detail: runtimeOk ? String(runtimeStage || "Runtime capability check passed.") : String(runtimeError || "Runtime capability check failed."),
+      },
+      {
+        id: "gateway",
+        label: "OpenClaw",
+        state: gateway.reachable ? "online" : "offline",
+        detail: gateway.message,
+      },
+      {
+        id: "model",
+        label: "Model",
+        state: model.configured ? "online" : "offline",
+        detail: model.message,
+      },
+    ],
     gateway,
     runtime,
-    model: modelKeyHealth(),
+    model,
+  };
+}
+
+async function capabilities() {
+  const currentHealth = await health();
+  const runtime = currentHealth.runtime || {};
+  const rawCapabilities = runtime.capabilities || {};
+  const modelConfigured = currentHealth.model?.configured === true;
+  const adbReady = rawCapabilities.ui_input === true || rawCapabilities.adb === true;
+  const ocrReady = rawCapabilities.ocr === true || rawCapabilities.screen_ocr === true;
+
+  return {
+    platform: "android",
+    runtime: "termux-openclaw",
+    version: VERSION,
+    health: currentHealth,
+    features: {
+      tasks: "available",
+      sessions: "available",
+      skills: "available",
+      attachments: "available",
+      artifacts: "planned",
+      approvals: "planned",
+      events: "unavailable",
+      runtimeLifecycle: "available",
+      runtimeLog: "available",
+      notifications: "frontend",
+      adb: adbReady ? "available" : "setup_required",
+      ocr: ocrReady ? "available" : "setup_required",
+      terminal: "local_only",
+      social: "available",
+      appIntents: "unavailable",
+      model: modelConfigured ? "available" : "setup_required",
+    },
+    tools: [
+      {
+        id: "android_health",
+        label: "Android Health",
+        description: "Read Android runtime health and setup status.",
+        status: "available",
+        risk: "low",
+        requiresApproval: false,
+        extension: "android",
+        permissions: [],
+      },
+      {
+        id: "terminal.command",
+        label: "Run Terminal Command",
+        description: "Run a shell command in the companion runtime.",
+        status: "available",
+        risk: "high",
+        requiresApproval: true,
+        extension: "android",
+        permissions: ["local_loopback"],
+      },
+    ],
+    extensions: [
+      {
+        namespace: "android",
+        basePath: "/v1/extensions/android",
+        status: "available",
+        routes: [
+          { id: "terminal.command", method: "POST", path: "/terminal/command", status: "available", risk: "high", requiresApproval: true },
+          { id: "terminal.session", method: "GET", path: "/terminal/session", status: "available", risk: "medium", requiresApproval: false },
+        ],
+      },
+      {
+        namespace: "nostr",
+        basePath: "/v1/extensions/nostr",
+        status: "available",
+        routes: [
+          { id: "nostr.status", method: "GET", path: "/status", status: "available", risk: "low", requiresApproval: false },
+          { id: "nostr.contacts", method: "GET", path: "/contacts", status: "available", risk: "low", requiresApproval: false },
+          { id: "nostr.send", method: "POST", path: "/send", status: "available", risk: "medium", requiresApproval: false },
+        ],
+      },
+      {
+        namespace: "agent",
+        basePath: "/v1/extensions/agent",
+        status: "available",
+        routes: [
+          { id: "agent.conversations", method: "GET", path: "/conversations", status: "available", risk: "low", requiresApproval: false },
+        ],
+      },
+      {
+        namespace: "skill-sharing",
+        basePath: "/v1/extensions/skill-sharing",
+        status: "available",
+        routes: [
+          { id: "skill-sharing.imports", method: "GET", path: "/imports", status: "available", risk: "low", requiresApproval: false },
+          { id: "skill-sharing.share", method: "POST", path: "/skills/:skillId/share", status: "available", risk: "medium", requiresApproval: false },
+        ],
+      },
+    ],
   };
 }
 
@@ -551,18 +770,66 @@ async function saveAttachment(req: http.IncomingMessage): Promise<IntentAttachme
     success: true,
     message: "Attachment uploaded.",
     id,
+    serverId: id,
     type: "image",
     mimeType,
     displayName,
     sizeBytes: body.length,
     path: outputPath,
+    serverPath: outputPath,
+    downloadUrl: `/v1/attachments/${encodeURIComponent(id)}/content`,
     createdAt: Date.now(),
   };
+}
+
+async function serveAttachmentContent(res: http.ServerResponse, attachmentId: string) {
+  const id = sanitizeFilePart(attachmentId);
+  if (!id) {
+    writeJson(res, 404, {
+      success: false,
+      message: "Attachment was not found.",
+    });
+    return;
+  }
+
+  const outputDir = attachmentDir();
+  const candidates = ["png", "jpg", "webp", "gif", "img"].map((extension) =>
+    path.join(outputDir, `${id}.${extension}`),
+  );
+  const filePath = candidates.find((candidate) => fs.existsSync(candidate));
+  if (!filePath) {
+    writeJson(res, 404, {
+      success: false,
+      message: "Attachment was not found.",
+    });
+    return;
+  }
+
+  const mimeType = mimeForExtension(path.extname(filePath).replace(/^\./, ""));
+  res.statusCode = 200;
+  res.setHeader("Content-Type", mimeType);
+  fs.createReadStream(filePath).pipe(res);
 }
 
 function attachmentDir() {
   const configured = (process.env.CLAWMOBILE_ATTACHMENT_DIR || "").trim();
   return configured || path.join(os.homedir(), ".clawmobile", "companion-attachments");
+}
+
+function mimeForExtension(extension: string) {
+  switch (extension) {
+    case "jpg":
+    case "jpeg":
+      return "image/jpeg";
+    case "webp":
+      return "image/webp";
+    case "gif":
+      return "image/gif";
+    case "png":
+      return "image/png";
+    default:
+      return "application/octet-stream";
+  }
 }
 
 function sanitizeFilePart(value: string) {
@@ -857,6 +1124,7 @@ function isTerminalRoute(pathname: string) {
 function isLocalOnlyRoute(pathname: string) {
   return isTerminalRoute(pathname) ||
     pathname === "/attachments" ||
+    pathname.startsWith("/attachments/") ||
     pathname.startsWith("/agent/") ||
     pathname.startsWith("/nostr/") ||
     pathname === "/skill-imports" ||
@@ -918,7 +1186,7 @@ function writeJson(res: http.ServerResponse, statusCode: number, value: any) {
   const corsOrigin = (process.env.CLAWMOBILE_COMPANION_CORS_ORIGIN || "").trim();
   if (corsOrigin) {
     res.setHeader("Access-Control-Allow-Origin", corsOrigin);
-    res.setHeader("Access-Control-Allow-Headers", "content-type, authorization, x-clawmobile-attachment-id, x-clawmobile-filename, x-clawmobile-attachment-type");
+    res.setHeader("Access-Control-Allow-Headers", "content-type, authorization, x-clawmobile-client, x-clawmobile-request-id, x-clawmobile-attachment-id, x-clawmobile-filename, x-clawmobile-attachment-type");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
   }
   res.end(body);

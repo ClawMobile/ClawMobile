@@ -362,7 +362,7 @@ function requireIdentity() {
   const config = readConfig();
   const secretKey = hexToBytes(config.secretKeyHex || "");
   if (!secretKey) {
-    throw new Error("Nostr identity is not configured. Call POST /nostr/setup-key first.");
+    throw new Error("Nostr identity is not configured. Call POST /v1/extensions/nostr/setup-key first.");
   }
   const publicKey = getPublicKey(secretKey);
   return { config, secretKey, publicKey };

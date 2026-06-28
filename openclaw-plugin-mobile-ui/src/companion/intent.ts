@@ -11,13 +11,16 @@ export async function submitIntent(
   text: string,
   sessionId = "default",
   attachments: IntentAttachment[] = [],
+  options: { userText?: string; clientRunId?: string } = {},
 ): Promise<IntentSubmitResponse> {
   const normalized = text.trim();
+  const visibleUserText = (options.userText || normalized).trim();
   const normalizedSessionId = normalizeCompanionSessionId(sessionId);
   if (!normalized) {
     return {
       success: false,
       runId: "",
+      clientRunId: options.clientRunId,
       sessionId: normalizedSessionId,
       result: "",
       message: "Intent text is required.",
@@ -31,10 +34,11 @@ export async function submitIntent(
     return {
       success: false,
       runId,
+      clientRunId: options.clientRunId,
       sessionId: normalizedSessionId,
       result: gateway.message,
       message: gateway.message,
-      canvas: intentCanvas(normalized, gateway.message),
+      canvas: intentCanvas(visibleUserText, gateway.message),
       attachments,
     };
   }
@@ -43,19 +47,20 @@ export async function submitIntent(
   const promptWithAttachments = appendAttachmentContext(normalized, attachments);
   const routed = buildAutoSkillContextForIntent(promptWithAttachments);
   const submittedPrompt = routed?.prompt || promptWithAttachments;
-  await rememberSubmittedRun(submittedPrompt, accepted, { userText: normalized, attachments });
-  void submitIntentInBackground(submittedPrompt, runId, normalizedSessionId, normalized, attachments);
+  await rememberSubmittedRun(submittedPrompt, accepted, { userText: visibleUserText, attachments });
+  void submitIntentInBackground(submittedPrompt, runId, normalizedSessionId, visibleUserText, attachments);
 
   const message = describeOpenClawResult(accepted);
   return {
     success: true,
     runId,
+    clientRunId: options.clientRunId,
     sessionId: normalizedSessionId,
     state: "running",
     result: message,
     message,
-    userText: normalized,
-    canvas: intentCanvas(normalized, message),
+    userText: visibleUserText,
+    canvas: intentCanvas(visibleUserText, message),
     attachments,
     gatewayRun: includeRawIntent() ? { ...accepted, skillRouting: routed?.routed } : undefined,
   };
@@ -85,7 +90,7 @@ async function submitIntentInBackground(
 
 function appendAttachmentContext(text: string, attachments: IntentAttachment[]) {
   const imageAttachments = attachments.filter((attachment) =>
-    String(attachment.type || "").toLowerCase() === "image" && attachment.path,
+    String(attachment.type || "").toLowerCase() === "image" && (attachment.path || attachment.serverPath),
   );
   if (imageAttachments.length === 0) return text;
 
@@ -93,7 +98,7 @@ function appendAttachmentContext(text: string, attachments: IntentAttachment[]) 
     const label = attachment.displayName || attachment.id || `image-${index + 1}`;
     const mime = attachment.mimeType ? `, ${attachment.mimeType}` : "";
     const size = attachment.sizeBytes ? `, ${attachment.sizeBytes} bytes` : "";
-    return `- ${label}${mime}${size}: ${attachment.path}`;
+    return `- ${label}${mime}${size}: ${attachment.path || attachment.serverPath}`;
   });
 
   return [

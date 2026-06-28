@@ -14,18 +14,31 @@ export type ModelKeyStatus = {
 };
 
 export type CompanionHealth = {
-  status: "ok" | "degraded";
+  status: "connected" | "disconnected" | "unknown";
   message: string;
   version: string;
+  stage?: string;
+  checks?: Array<{
+    id: string;
+    label: string;
+    state: "online" | "degraded" | "offline" | "unknown";
+    detail?: string;
+  }>;
   gateway: GatewayStatus;
   runtime: any;
   model?: ModelKeyStatus;
 };
 
-export type IntentRequest = {
-  text: string;
+export type RunCreateRequest = {
+  clientRunId?: string;
+  instruction?: string;
+  displayText?: string;
+  text?: string;
+  userText?: string;
   sessionId?: string;
   attachments?: IntentAttachment[];
+  source?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
 };
 
 export type IntentAttachment = {
@@ -36,6 +49,10 @@ export type IntentAttachment = {
   displayName?: string;
   sizeBytes?: number;
   path?: string;
+  serverId?: string;
+  serverPath?: string;
+  downloadUrl?: string;
+  expiresAt?: string | number | null;
   createdAt?: number;
 };
 
@@ -70,6 +87,7 @@ export type TerminalSessionResponse = {
 export type IntentSubmitResponse = {
   success: boolean;
   runId: string;
+  clientRunId?: string;
   sessionId?: string;
   state?: CompanionRunStatus["state"];
   result: string;
@@ -89,6 +107,7 @@ export type CompanionRunStatus = {
   status?: string;
   message: string;
   result?: string;
+  pendingApprovals?: unknown[];
   progress?: CompanionRunProgress;
   prompt?: string;
   userText?: string;
