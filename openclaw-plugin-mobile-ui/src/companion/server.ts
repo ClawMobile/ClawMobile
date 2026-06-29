@@ -106,7 +106,7 @@ async function route(req: http.IncomingMessage, res: http.ServerResponse) {
     return;
   }
 
-  if (isLocalOnlyRoute(routePath) && !isLoopbackRequest(req) && process.env.CLAWMOBILE_COMPANION_ALLOW_REMOTE_TERMINAL !== "1") {
+  if (isLocalOnlyRoute(routePath, method) && !isLoopbackRequest(req)) {
     writeJson(res, 403, {
       success: false,
       message: "This endpoint is restricted to local companion app requests.",
@@ -682,16 +682,6 @@ async function capabilities() {
         extension: "android",
         permissions: [],
       },
-      {
-        id: "terminal.command",
-        label: "Run Terminal Command",
-        description: "Run a shell command in the companion runtime.",
-        status: "available",
-        risk: "high",
-        requiresApproval: true,
-        extension: "android",
-        permissions: ["local_loopback"],
-      },
     ],
     extensions: [
       {
@@ -699,8 +689,8 @@ async function capabilities() {
         basePath: "/v1/extensions/android",
         status: "available",
         routes: [
-          { id: "terminal.command", method: "POST", path: "/terminal/command", status: "available", risk: "high", requiresApproval: true },
-          { id: "terminal.session", method: "GET", path: "/terminal/session", status: "available", risk: "medium", requiresApproval: false },
+          { id: "terminal.command", method: "POST", path: "terminal/command", status: "local_only", risk: "high", requiresApproval: false, availabilityReason: "Loopback-only companion UI route; not an agent-callable tool." },
+          { id: "terminal.session", method: "GET", path: "terminal/session", status: "local_only", risk: "medium", requiresApproval: false },
         ],
       },
       {
@@ -708,9 +698,9 @@ async function capabilities() {
         basePath: "/v1/extensions/nostr",
         status: "available",
         routes: [
-          { id: "nostr.status", method: "GET", path: "/status", status: "available", risk: "low", requiresApproval: false },
-          { id: "nostr.contacts", method: "GET", path: "/contacts", status: "available", risk: "low", requiresApproval: false },
-          { id: "nostr.send", method: "POST", path: "/send", status: "available", risk: "medium", requiresApproval: false },
+          { id: "nostr.status", method: "GET", path: "status", status: "available", risk: "low", requiresApproval: false },
+          { id: "nostr.contacts", method: "GET", path: "contacts", status: "available", risk: "low", requiresApproval: false },
+          { id: "nostr.send", method: "POST", path: "send", status: "available", risk: "medium", requiresApproval: false },
         ],
       },
       {
@@ -718,7 +708,7 @@ async function capabilities() {
         basePath: "/v1/extensions/agent",
         status: "available",
         routes: [
-          { id: "agent.conversations", method: "GET", path: "/conversations", status: "available", risk: "low", requiresApproval: false },
+          { id: "agent.conversations", method: "GET", path: "conversations", status: "available", risk: "low", requiresApproval: false },
         ],
       },
       {
@@ -726,8 +716,8 @@ async function capabilities() {
         basePath: "/v1/extensions/skill-sharing",
         status: "available",
         routes: [
-          { id: "skill-sharing.imports", method: "GET", path: "/imports", status: "available", risk: "low", requiresApproval: false },
-          { id: "skill-sharing.share", method: "POST", path: "/skills/:skillId/share", status: "available", risk: "medium", requiresApproval: false },
+          { id: "skill-sharing.imports", method: "GET", path: "imports", status: "available", risk: "low", requiresApproval: false },
+          { id: "skill-sharing.share", method: "POST", path: "skills/:skillId/share", status: "available", risk: "medium", requiresApproval: false },
         ],
       },
     ],
@@ -1121,15 +1111,11 @@ function isTerminalRoute(pathname: string) {
     pathname === "/terminal/session/reset";
 }
 
-function isLocalOnlyRoute(pathname: string) {
-  return isTerminalRoute(pathname) ||
-    pathname === "/attachments" ||
-    pathname.startsWith("/attachments/") ||
-    pathname.startsWith("/agent/") ||
-    pathname.startsWith("/nostr/") ||
-    pathname === "/skill-imports" ||
-    pathname.startsWith("/skill-imports/") ||
-    /^\/skills\/[^/]+\/share(?:\/nostr)?$/.test(pathname);
+function isLocalOnlyRoute(pathname: string, method = "GET") {
+  if (method === "GET" && (pathname === "/" || pathname === "/health" || pathname === "/capabilities")) {
+    return false;
+  }
+  return true;
 }
 
 function isLoopbackRequest(req: http.IncomingMessage) {

@@ -261,7 +261,7 @@ metadata so clients and agents can decide what is callable:
     {
       "id": "terminal.command",
       "method": "POST",
-      "path": "/terminal/command",
+      "path": "terminal/command",
       "label": "Run Terminal Command",
       "risk": "high",
       "requiresApproval": true,
@@ -287,7 +287,9 @@ metadata so clients and agents can decide what is callable:
 ```
 
 `routes[].path` is relative to `basePath`. In the example above, the full route
-is `/v1/extensions/android/terminal/command`.
+is `/v1/extensions/android/terminal/command`. Route `status` uses the same
+values as feature status, such as `available`, `local_only`, `setup_required`,
+or `unavailable`.
 
 `inputSchema` and `outputSchema` are recommended, but extension routes may
 initially advertise only `id`, `method`, `path`, `status`, `risk`, and
