@@ -106,7 +106,8 @@ async function route(req: http.IncomingMessage, res: http.ServerResponse) {
     return;
   }
 
-  if (isLocalOnlyRoute(routePath, method) && !isLoopbackRequest(req)) {
+  const isLoopback = isLoopbackRequest(req);
+  if (isLocalOnlyRoute(routePath, method) && !isLoopback) {
     writeJson(res, 403, {
       success: false,
       message: "This endpoint is restricted to local companion app requests.",
@@ -170,7 +171,7 @@ async function route(req: http.IncomingMessage, res: http.ServerResponse) {
   }
 
   if (method === "GET" && routePath === "/capabilities") {
-    writeJson(res, 200, await capabilities());
+    writeJson(res, 200, await capabilities({ trusted: isLoopback }));
     return;
   }
 
@@ -640,7 +641,11 @@ async function health(): Promise<CompanionHealth> {
   };
 }
 
-async function capabilities() {
+async function capabilities(options: { trusted?: boolean } = {}) {
+  if (!options.trusted) {
+    return bootstrapCapabilities();
+  }
+
   const currentHealth = await health();
   const runtime = currentHealth.runtime || {};
   const rawCapabilities = runtime.capabilities || {};
@@ -721,6 +726,22 @@ async function capabilities() {
         ],
       },
     ],
+  };
+}
+
+function bootstrapCapabilities() {
+  return {
+    platform: "android",
+    runtime: "termux-openclaw",
+    version: VERSION,
+    protocol: "v1",
+    access: {
+      status: "auth_required",
+      message: "Pairing or loopback access is required for runtime capabilities.",
+    },
+    features: {},
+    tools: [],
+    extensions: [],
   };
 }
 
