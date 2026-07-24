@@ -7,6 +7,8 @@ useful snapshots rather than long-term API stability.
 
 ## Unreleased
 
+## 0.5.1
+
 - Prepare the public v0.5.1 documentation and release metadata for the Android
   0.2.4 (`versionCode 11`) test build.
 - Add an Android beta testing guide covering invitation activation, single-use
