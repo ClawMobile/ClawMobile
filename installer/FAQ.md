@@ -345,6 +345,45 @@ Fix:
 4. Check "Always allow from this computer" when available.
 5. Rerun `adb devices`.
 
+## How do I get a ClawMobile Beta invitation code?
+
+Apply through the
+[ClawMobile waitlist](https://clawmobile.ae/#waitlist). Invitations are issued
+individually and may be limited by device compatibility and testing capacity.
+Do not request or share a code in a public GitHub issue.
+
+After receiving a code, open **Settings > Runtime Setup**, choose
+**ClawMobile Beta**, enter the code, and tap **Activate**. See the
+[Android beta testing guide](../docs/android-beta-testing.md) for the complete
+test flow.
+
+## My invitation code does not activate
+
+Check:
+
+- the phone can reach `https://api.clawmobile.ae`;
+- the complete code was entered without extra spaces;
+- the code has not already been redeemed on another install or device;
+- the test access has not been revoked by the maintainer;
+- the app is the current release-signed Android test build.
+
+Report the exact visible error and the phone/App version to the test maintainer.
+Do not send the invitation code in a screenshot, GitHub issue, or public log.
+
+## ClawMobile Beta access expired or reached its quota
+
+Open **Settings > Runtime Setup > ClawMobile Beta** and tap **Refresh usage** or
+**Check access**.
+
+The monthly request limit is enforced. The daily request value is a suggested
+usage guide, not a separate daily hard limit. The settings panel shows the
+monthly reset time and access-expiry time.
+
+If access expired, keep the existing access state and contact the test
+maintainer. Do not tap **Remove access**, clear app data, or uninstall the app
+unless replacement access has been arranged. Invitation codes are single-use,
+and removing access does not make the original code reusable.
+
 ## OpenClaw says no model or no API key
 
 Run quick setup again:

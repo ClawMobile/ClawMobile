@@ -51,7 +51,10 @@ want the full shell-backed OpenClaw runtime.
 
 Download the
 [latest ClawMobile Android APK](https://github.com/ClawMobile/ClawMobile/releases/latest),
-or read the [Android app guide](docs/android-companion-app.md).
+read the [Android app guide](docs/android-companion-app.md), or follow the
+[Android beta testing guide](docs/android-beta-testing.md) if you received an
+invitation code. Testers who need an invitation can
+[apply through the ClawMobile waitlist](https://clawmobile.ae/#waitlist).
 
 <table>
   <tr>
@@ -83,7 +86,10 @@ or read the [Android app guide](docs/android-companion-app.md).
 1. Download the latest APK from the
    [ClawMobile release page](https://github.com/ClawMobile/ClawMobile/releases/latest).
 2. Open the ClawMobile app and choose the app-local runtime to start quickly.
-3. Use Tasks, Skills, Social, and Settings from the phone-native UI.
+3. Configure a model provider. Invitation-based testers can select
+   **ClawMobile Beta** and redeem their one-time code in **Settings > Runtime
+   Setup**.
+4. Use Tasks, Skills, Social, and Settings from the phone-native UI.
 
 The app-local runtime can run tasks, use local tools, manage skills, process
 shared content, show token usage, and communicate with trusted agents. Shell
@@ -204,6 +210,7 @@ Read the [status and limitations](docs/status-and-limitations.md) and
 ## Where To Go Next
 
 - Use the Android app: [docs/android-companion-app.md](docs/android-companion-app.md)
+- Test the Android beta: [docs/android-beta-testing.md](docs/android-beta-testing.md)
 - Install ClawMobile: [installer/INSTALL.md](installer/INSTALL.md)
 - Runtime reference: [installer/termux-lite/README.md](installer/termux-lite/README.md)
 - Status and limitations: [docs/status-and-limitations.md](docs/status-and-limitations.md)

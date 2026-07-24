@@ -7,6 +7,20 @@ useful snapshots rather than long-term API stability.
 
 ## Unreleased
 
+- Prepare the public v0.5.1 documentation and release metadata for the Android
+  0.2.4 (`versionCode 11`) test build.
+- Add an Android beta testing guide covering invitation activation, single-use
+  code handling, hosted Gateway access, quota and expiry behavior, optional
+  Accessibility/ADB setup, suggested tests, and safe issue reporting.
+- Harden Android UI-skill recording and replay, structured multi-step UI
+  execution evidence, failure recovery, and action verification.
+- Document that stable Note and Maps workflows may use fast paths while
+  ambiguous dynamic-list workflows, including some repeated YouTube
+  `Action menu` controls, fall back to model-guided UI execution.
+- Keep the Feedback settings feature out of the Android 0.2.4 test build.
+
+## 0.5.0
+
 - Prepare v0.5.0 public documentation for the Android app-local runtime and the
   optional Termux/OpenClaw Shell Runtime.
 - Update the public README and Android app guide to describe the app as the

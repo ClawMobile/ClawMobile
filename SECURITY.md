@@ -7,14 +7,17 @@ potentially sensitive.
 
 ## Supported Versions
 
-The current public preview is **ClawMobile** on the default Termux runtime.
-Security fixes should target the latest public release and the `main` branch
-first.
+The current public preview uses the Android app-local runtime as the recommended
+starting point. The Termux/OpenClaw Shell Runtime remains an optional advanced
+backend. Security fixes should target the latest public release and the `main`
+branch first.
 
 ## What May Be Sensitive
 
 - Model provider keys such as `OPENAI_API_KEY`, Anthropic, Gemini, OpenRouter,
   or OpenAI-compatible endpoint credentials.
+- ClawMobile Beta invitation codes and the access credentials returned after
+  redemption.
 - Chat channel credentials such as Telegram bot tokens and user allowlists.
 - Demonstration recordings, screenshots, OCR text, UIAutomator XML, app package
   names, activity names, touch coordinates, typed text, and Android shell output.
@@ -62,6 +65,11 @@ Before sharing a bug report, demo trace, or generated skill:
 ## Runtime Safety Notes
 
 - Only authorize ADB on devices you control.
+- Treat ClawMobile Beta invitation codes as private until redeemed. Do not post
+  them in GitHub issues, screenshots, logs, or test reports.
+- ClawMobile Beta is a hosted model path. Model-backed tasks send the content
+  and relevant context needed for the request through the ClawMobile Gateway
+  and its configured model provider.
 - Keep Termux and OpenClaw configuration files private.
 - Use Telegram user allowlisting when using Telegram as the control channel.
 - Revoke model provider keys or Telegram bot tokens immediately if they were
