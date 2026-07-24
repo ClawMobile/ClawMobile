@@ -7,6 +7,11 @@ visibility, trusted-agent messaging, and optional phone-control capabilities.
 The Termux/OpenClaw Shell Runtime remains available for advanced users who need
 OpenClaw parity, shell-backed tools, remote debugging, or repeatable CLI setup.
 
+Selected Android testers can use the invitation-based ClawMobile Beta model
+provider. This hosted path requires network access, has access-expiry and usage
+limits, and processes model-backed task content through the ClawMobile Gateway
+and its configured model provider.
+
 An iOS app is also available on the
 [App Store](https://apps.apple.com/app/id6787042935). The iOS
 version focuses on the app-local mobile-agent and shared-content experience; it
@@ -37,9 +42,17 @@ not stable enough.
 - Generated skills should first be tested on the same device, app version, and
   starting app state used for the demo. Cross-device, cross-layout, and dynamic
   list workflows may require additional demonstrations.
+- Repeated controls in dynamic lists may not provide enough context for safe
+  deterministic replay. For example, some YouTube `Action menu` workflows
+  intentionally fall back to normal model-guided UI execution.
 - Screenshot-heavy verification can be slower on phone hardware than on desktop;
   deterministic fast paths for stable generated-skill actions are still
   experimental accelerators.
+- ClawMobile Beta invitation codes are single-use. Clearing app data,
+  uninstalling the app, or removing access can require a replacement code.
+- Hosted ClawMobile Beta access can expire or reach its monthly request limit.
+  Testers should keep the saved access state and contact the maintainer before
+  removing it.
 
 ## Archived Backend
 

@@ -9,11 +9,44 @@ full OpenClaw workflows.
 Download the latest APK from the public ClawMobile release page:
 
 - [Latest ClawMobile release](https://github.com/ClawMobile/ClawMobile/releases/latest)
-- APK: [`ClawMobile-v0.2.0.apk`](https://github.com/ClawMobile/ClawMobile/releases/latest/download/ClawMobile-v0.2.0.apk)
-- SHA-256: `8e19579a9a3786c18dd0bcaa3579fd4b424e2aaa9844c48b8d41abca30764494`
+- Planned v0.5.1 Android asset: `ClawMobile-v0.2.4.apk`
+- Android version: `0.2.4` (`versionCode 11`)
+- SHA-256:
+  `29c2d59a6d0e10ee95768bc1fb0cc09c8585ade8ef5c03f55ef96b5de4d409cf`
+
+The APK, release note, update manifest, and this guide must show the same
+version and SHA-256. Do not install or redistribute an APK whose checksum does
+not match the public release.
 
 If you installed an earlier debug-signed test APK, uninstall it before installing
-this release-signed APK.
+the release-signed APK. Uninstalling clears local app data, including settings,
+task history, and locally stored skills.
+
+## ClawMobile Beta Access
+
+ClawMobile Beta is an invitation-based model option for selected testers. It is
+not required when you configure another supported model provider.
+
+If you received a code:
+
+1. Open **Settings > Runtime Setup**.
+2. Select **ClawMobile Beta** as the model provider.
+3. Enter the invitation code and tap **Activate**.
+4. Wait for **ClawMobile Beta activated**.
+5. Confirm that the page shows monthly usage and an access-expiry time.
+6. Open **Tasks** and send a simple test request.
+
+Invitation codes are single-use. Redeem the code only on the device you intend
+to test, do not share it, and do not include it in screenshots or issue
+reports. After activation, avoid **Remove access**, clearing app data, or
+uninstalling the app unless a maintainer has arranged a replacement code.
+
+Access can be extended by the test administrator. If access expires, keep the
+saved access state and contact the maintainer before removing it. See the
+[Android beta testing guide](android-beta-testing.md) for quota, testing, and
+reporting details. To request an invitation, use the
+[ClawMobile waitlist](https://clawmobile.ae/#waitlist); do not post invitation
+codes or access credentials in a public GitHub issue.
 
 ## What It Adds
 
@@ -30,6 +63,8 @@ this release-signed APK.
 - A social/contact UI for trusted agent messaging and skill sharing.
 - Accessibility-based demo recording and optional UI control, enabled only after
   Android system consent.
+- Optional built-in ADB for stronger taps, swipes, key events, focused text
+  input, and supported diagnostics after Android debugging is authorized.
 - A terminal/debug surface for setup logs, runtime logs, and shell commands when
   Shell Runtime is used.
 
@@ -80,11 +115,49 @@ and HTTP.
 ## Recommended Setup Flow
 
 1. Install the APK from the latest ClawMobile release.
-2. Open the app and configure a model provider.
+2. Open the app and configure a model provider. Invitation-based testers can
+   activate ClawMobile Beta with their one-time code.
 3. Use the app-local runtime from the Tasks, Skills, Social, and Settings tabs.
-4. Optionally enable Accessibility or ADB for richer phone-control capabilities.
-5. Optionally configure Shell Runtime if you need Termux/OpenClaw workflows.
+4. Enable Accessibility when testing visible phone control, screenshots, or
+   demo recording.
+5. Optionally configure built-in ADB for stronger low-level phone actions.
+6. Optionally configure Shell Runtime if you need Termux/OpenClaw workflows.
 
-ADB is optional, but enables richer phone-control capabilities. Accessibility is
-also optional and requires explicit Android system consent before ClawMobile can
-inspect or control visible UI.
+Accessibility and ADB are separate capability layers. Accessibility provides
+visible UI context and semantic controls. Built-in ADB can accelerate supported
+low-level actions after an ADB endpoint has been authorized. ADB can be
+bootstrapped once from a USB-connected computer with `adb tcpip 5555`, or
+without a computer by pairing Android Wireless debugging from Termux and then
+switching the authorized session to port `5555`.
+
+The app-local runtime, normal model-backed tasks, Skills, and Social do not
+require Termux. ADB is also not required for basic app-local use.
+
+## Current Beta Focus
+
+Android 0.2.4 improves UI-skill recording and replay, structured multi-step UI
+execution evidence, failure recovery, and action verification. Stable Note and
+Maps workflows may use deterministic fast paths. Dynamic or ambiguous
+interfaces can fall back to normal model-guided UI execution.
+
+Generated skills remain preview software. Start tests from a known app state,
+use non-sensitive sample data, and expect dynamic lists or cross-device layouts
+to require additional demonstrations. In particular, repeated controls such as
+YouTube `Action menu` items may be too ambiguous for safe fast-path replay.
+
+## Safe Testing And Support
+
+When reporting a problem, include:
+
+- phone model and Android version;
+- ClawMobile version;
+- the steps you performed;
+- expected and actual results;
+- whether Accessibility, built-in ADB, or Shell Runtime was enabled;
+- a redacted screenshot when it is safe to share.
+
+Do not include invitation codes, access credentials, provider keys, private
+task content, recovery keys, or unreviewed runtime logs. Read the
+[security policy](../SECURITY.md) and
+[status and limitations](status-and-limitations.md) before sharing traces,
+screenshots, or generated skills.
