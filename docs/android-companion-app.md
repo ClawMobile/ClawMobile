@@ -9,18 +9,18 @@ full OpenClaw workflows.
 Download the latest APK from the public ClawMobile release page:
 
 - [Latest ClawMobile release](https://github.com/ClawMobile/ClawMobile/releases/latest)
-- Planned v0.5.1 Android asset: `ClawMobile-v0.2.4.apk`
-- Android version: `0.2.4` (`versionCode 11`)
-- SHA-256:
-  `29c2d59a6d0e10ee95768bc1fb0cc09c8585ade8ef5c03f55ef96b5de4d409cf`
+- [Published APK metadata](releases/android-companion.json): version, filename,
+  download URL, and SHA-256 for the currently available build.
 
-The APK, release note, update manifest, and this guide must show the same
-version and SHA-256. Do not install or redistribute an APK whose checksum does
-not match the public release.
+The APK, release note, update manifest, and published APK metadata must agree on
+the version. Verify the APK's SHA-256 against the release note and published
+metadata before installing or redistributing it.
 
-If you installed an earlier debug-signed test APK, uninstall it before installing
-the release-signed APK. Uninstalling clears local app data, including settings,
-task history, and locally stored skills.
+When updating an existing release-signed installation, install over it without
+uninstalling to retain local settings, task history, skills, and saved beta access.
+An earlier debug-signed test APK may require uninstalling first. Uninstalling
+clears local app data; invited testers should arrange replacement access with a
+maintainer before doing so.
 
 ## ClawMobile Beta Access
 
@@ -133,12 +133,21 @@ switching the authorized session to port `5555`.
 The app-local runtime, normal model-backed tasks, Skills, and Social do not
 require Termux. ADB is also not required for basic app-local use.
 
-## Current Beta Focus
+## Android 0.3.1 Update
 
-Android 0.2.4 improves UI-skill recording and replay, structured multi-step UI
-execution evidence, failure recovery, and action verification. Stable Note and
-Maps workflows may use deterministic fast paths. Dynamic or ambiguous
-interfaces can fall back to normal model-guided UI execution.
+Android 0.3.1 improves ordinary app-local agent execution: UI target tracking,
+text reading and input, task-local notes, completion checks, and recovery.
+New App-local OpenAI/Beta setups default to GPT-5.6-Sol. Ordinary Sol agent actions
+use low reasoning and an 8192-token completion cap; saved model choices and
+Shell Runtime defaults are preserved.
+See the [release notes](releases/android-v0.3.1.md) for the changes, APK checksum,
+and upgrade guidance.
+
+## Generated Skills Preview
+
+UI-skill recording and replay remain available. Stable Note and Maps workflows
+may use deterministic fast paths. Dynamic or ambiguous interfaces can fall back
+to normal model-guided UI execution.
 
 Generated skills remain preview software. Start tests from a known app state,
 use non-sensitive sample data, and expect dynamic lists or cross-device layouts
