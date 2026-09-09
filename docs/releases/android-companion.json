@@ -1,15 +1,19 @@
 {
   "name": "ClawMobile Android App",
   "packageName": "ai.clawmobile.companion",
-  "version": "0.2.4",
-  "versionCode": 11,
-  "releaseUrl": "https://github.com/ClawMobile/ClawMobile/releases/tag/v0.5.1",
-  "apkUrl": "https://github.com/ClawMobile/ClawMobile/releases/download/v0.5.1/ClawMobile-v0.2.4.apk",
-  "sha256": "29c2d59a6d0e10ee95768bc1fb0cc09c8585ade8ef5c03f55ef96b5de4d409cf",
+  "version": "0.3.1",
+  "versionCode": 15,
+  "releaseUrl": "https://github.com/ClawMobile/ClawMobile/releases/latest",
+  "apkUrl": "https://github.com/ClawMobile/ClawMobile/releases/latest/download/ClawMobile-v0.3.1.apk",
+  "sha256": "3c6687eb4da6beee46853b6e623402394babbbf95281d4c29029ad45e5b7dcb8",
   "signed": "release",
   "notes": [
-    "Release metadata for the public v0.5.1 release.",
-    "Install ClawMobile-v0.2.4.apk from the public v0.5.1 release page.",
+    "Android app versions and ClawMobile core/runtime versions are independent.",
+    "Install ClawMobile-v0.3.1.apk from the public ClawMobile release page.",
+    "Android 0.3.1 improves UI interaction, task-local notes, completion checks, recovery, and task-history reliability.",
+    "New App-local OpenAI/Beta setups default to GPT-5.6-Sol; ordinary Sol agent actions use low reasoning and an 8192-token completion cap.",
+    "Install over an existing release-signed build to retain local settings, task history, skills, and saved beta access.",
+    "Existing model preferences are preserved, and no new Android permissions are required.",
     "The Android app includes an app-local runtime for everyday tasks, skills, shared content, and trusted-agent messaging.",
     "Invitation-based testers can activate ClawMobile Beta from Settings > Runtime Setup using a privately issued single-use code.",
     "Invitation codes must not be posted in public issues, logs, screenshots, or repository files.",
@@ -18,6 +22,6 @@
     "Use the Social tab to create an Agent ID, add trusted contacts, exchange messages, and share compact skill knowledge.",
     "Messages from unknown senders are filtered from the app UI by default.",
     "Keep the Recovery Key private; it restores the same Agent ID on another device.",
-    "If an earlier debug-signed test APK is installed, uninstall it before installing the release-signed APK."
+    "A debug-signed test APK may require uninstalling first, which clears local data; invited testers should arrange replacement access before doing so."
   ]
 }

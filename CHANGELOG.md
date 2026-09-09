@@ -7,6 +7,20 @@ useful snapshots rather than long-term API stability.
 
 ## Unreleased
 
+## Android 0.3.1
+
+- Improve UI target tracking, long-text reading, form filling, and input correction.
+- Add task-local working notes and improve completion checks against the full
+  original request and observed results.
+- Improve recovery from stale UI targets, task-history reliability, and network
+  error messages.
+- Default new App-local OpenAI/Beta setups to GPT-5.6-Sol, with low reasoning and
+  an 8192-token completion cap for ordinary Sol agent actions.
+- Preserve existing model preferences and the optional Shell Runtime, with no
+  new Android permissions required.
+- See the [Android 0.3.1 release notes](docs/releases/android-v0.3.1.md) for
+  download verification and upgrade guidance.
+
 ## 0.5.1
 
 - Prepare the public v0.5.1 documentation and release metadata for the Android

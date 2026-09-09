@@ -56,6 +56,11 @@ read the [Android app guide](docs/android-companion-app.md), or follow the
 invitation code. Testers who need an invitation can
 [apply through the ClawMobile waitlist](https://clawmobile.ae/#waitlist).
 
+[Android 0.3.1](docs/releases/android-v0.3.1.md) improves everyday agent tasks:
+UI interaction, task-local notes, completion checks, and recovery. New App-local
+OpenAI/Beta setups default to GPT-5.6-Sol; saved model choices are preserved.
+See the release notes for the changes and upgrade guidance.
+
 <table>
   <tr>
     <td align="center">

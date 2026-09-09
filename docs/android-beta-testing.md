@@ -1,8 +1,10 @@
 # Android Beta Testing
 
 This guide is for invited testers of the ClawMobile Android public preview.
-The current test target is Android `0.2.4` (`versionCode 11`), distributed from
-the public ClawMobile GitHub release page.
+The test target is Android **0.3.1** (`versionCode 15`). See the
+[release notes](releases/android-v0.3.1.md) and
+[published APK metadata](releases/android-companion.json) for the download and
+checksum.
 
 ## Get A Test Invitation
 
@@ -18,16 +20,16 @@ Each tester should receive a code privately from a ClawMobile maintainer.
 
 1. Download the release-signed APK from the
    [latest ClawMobile release](https://github.com/ClawMobile/ClawMobile/releases/latest).
-2. Confirm that the asset is named `ClawMobile-v0.2.4.apk`.
-3. Confirm its SHA-256 against the value in the v0.5.1 release note.
+2. Confirm that the asset filename and version match the published APK metadata.
+3. Confirm its SHA-256 against the release note and published APK metadata.
 4. Allow your browser or file manager to install this APK when Android asks.
-5. Open ClawMobile and confirm Android version `0.2.4` in the app or system app
-   details.
+5. Open ClawMobile and confirm that the app or system app details show the
+   published Android version.
 
 A release-signed APK can update an earlier public release that used the same
-signing key. If a debug-signed test APK is installed, Android may require you to
-uninstall it first. Uninstalling or clearing app data removes local settings,
-task history, locally stored skills, and saved beta access.
+signing key; do not uninstall first. If a debug-signed test APK is installed,
+Android may require you to uninstall it first. Uninstalling or clearing app data
+removes local settings, task history, locally stored skills, and saved beta access.
 
 ## Activate ClawMobile Beta
 
@@ -111,6 +113,12 @@ Run tests with non-sensitive sample data:
 
 Avoid destructive actions, financial transactions, account changes, or
 messages to real contacts during initial testing.
+
+For Android 0.3.1, also check a short multi-step task with sample data, such as
+reading a list and adding one test entry. Confirm both the actual
+app state and ClawMobile's final report. Check that previous task history and
+settings remain available after the update. If a task fails, report the visible
+error text rather than repeatedly retrying and consuming quota.
 
 ## Known Preview Limitations
 

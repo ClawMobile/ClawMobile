@@ -49,15 +49,18 @@ tag.
 
 ## Android App Release
 
+- [ ] Prepare release notes and user-facing guides in a documentation-only PR
+      for the intended release snapshot before publishing the APK.
 - [ ] Bump Android `versionName` and `versionCode`.
 - [ ] Build the signed release APK.
 - [ ] Verify the APK file name and SHA-256. Do not publish or rename an
       unsigned APK as the public release asset.
+- [ ] Prepare `docs/releases/android-companion.json` with the matching Android
+      version, download URLs, and verified APK SHA-256 in the release docs PR.
 - [ ] Upload the APK to the public `ClawMobile/ClawMobile` release assets.
 - [ ] Upload the generated `ClawMobile-update.json` beside the APK.
-- [ ] Update `docs/releases/android-companion.json` after the APK release exists.
-- [ ] Update `README.md` and `docs/android-companion-app.md` with the latest
-      main ClawMobile release APK link when the release asset is available.
+- [ ] Verify that `README.md`, `docs/android-companion-app.md`, release notes,
+      and both metadata files identify the same published Android build.
 - [ ] Confirm the public release page and direct APK download link both resolve.
 - [ ] Update GitHub release notes, including Social / Trusted Contacts changes
       when relevant.
