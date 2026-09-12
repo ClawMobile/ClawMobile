@@ -133,14 +133,15 @@ switching the authorized session to port `5555`.
 The app-local runtime, normal model-backed tasks, Skills, and Social do not
 require Termux. ADB is also not required for basic app-local use.
 
-## Android 0.3.1 Update
+## Android 0.3.2 Update
 
-Android 0.3.1 improves ordinary app-local agent execution: UI target tracking,
-text reading and input, task-local notes, completion checks, and recovery.
+Android 0.3.2 improves ordinary app-local agent execution: text-preserving edits,
+safe clickable-parent selection, new-form evidence, deeply nested UI indexing,
+and cancellation and capability checks at tool execution.
 New App-local OpenAI/Beta setups default to GPT-5.6-Sol. Ordinary Sol agent actions
 use low reasoning and an 8192-token completion cap; saved model choices and
 Shell Runtime defaults are preserved.
-See the [release notes](releases/android-v0.3.1.md) for the changes, APK checksum,
+See the [release notes](releases/android-v0.3.2.md) for the changes, APK checksum,
 and upgrade guidance.
 
 ## Generated Skills Preview

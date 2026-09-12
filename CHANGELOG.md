@@ -7,6 +7,20 @@ useful snapshots rather than long-term API stability.
 
 ## Unreleased
 
+## Android 0.3.2
+
+- Preserve original plain text and whitespace during explicit insertions and
+  unique-fragment replacements, with local readback checks.
+- Improve clickable-parent selection, long-press input handling, and evidence
+  for newly opened creation forms.
+- Read more deeply nested controls within bounded local indexing limits.
+- Recheck enabled capabilities before tool execution and stop cancellation
+  from being mistaken for a recoverable task failure.
+- Keep model defaults, saved settings, permissions, and generated-Skill behavior
+  unchanged. No new benchmark score is claimed.
+- See the [Android 0.3.2 release notes](docs/releases/android-v0.3.2.md) for
+  download verification and upgrade guidance.
+
 ## Android 0.3.1
 
 - Improve UI target tracking, long-text reading, form filling, and input correction.
