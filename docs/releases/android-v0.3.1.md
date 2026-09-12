@@ -38,7 +38,7 @@ supplemental retries and one empty-target instance replacement.
 
 ## Android Download
 
-[Download ClawMobile for Android](https://github.com/ClawMobile/ClawMobile/releases/latest/download/ClawMobile-v0.3.1.apk)
+[Download ClawMobile for Android](https://github.com/ClawMobile/ClawMobile/releases/download/v0.5.2/ClawMobile-v0.3.1.apk)
 
 - Android version: **0.3.1** (`versionCode 15`).
 - APK filename: `ClawMobile-v0.3.1.apk`.
@@ -46,7 +46,7 @@ supplemental retries and one empty-target instance replacement.
   `3c6687eb4da6beee46853b6e623402394babbbf95281d4c29029ad45e5b7dcb8`.
 
 The APK checksum must match the value above and the
-[published APK metadata](android-companion.json).
+[published APK metadata for this version](https://github.com/ClawMobile/ClawMobile/blob/v0.5.2/docs/releases/android-companion.json).
 
 ## Known Limitations
 

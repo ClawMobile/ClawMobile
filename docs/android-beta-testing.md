@@ -1,8 +1,8 @@
 # Android Beta Testing
 
 This guide is for invited testers of the ClawMobile Android public preview.
-The test target is Android **0.3.1** (`versionCode 15`). See the
-[release notes](releases/android-v0.3.1.md) and
+The test target is Android **0.3.2** (`versionCode 16`). See the
+[release notes](releases/android-v0.3.2.md) and
 [published APK metadata](releases/android-companion.json) for the download and
 checksum.
 
@@ -114,8 +114,9 @@ Run tests with non-sensitive sample data:
 Avoid destructive actions, financial transactions, account changes, or
 messages to real contacts during initial testing.
 
-For Android 0.3.1, also check a short multi-step task with sample data, such as
-reading a list and adding one test entry. Confirm both the actual
+For Android 0.3.2, also check a short task with disposable sample data, such as
+adding a heading to an existing plain-text note while preserving its body and
+blank lines. Confirm both the actual
 app state and ClawMobile's final report. Check that previous task history and
 settings remain available after the update. If a task fails, report the visible
 error text rather than repeatedly retrying and consuming quota.
