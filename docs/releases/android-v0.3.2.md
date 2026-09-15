@@ -30,13 +30,14 @@ versions are independent.
 
 ## Android Download
 
-[Download ClawMobile for Android](https://github.com/ClawMobile/ClawMobile/releases/download/v0.5.3/ClawMobile-v0.3.2.apk)
+[Download the archived Android 0.3.2 APK](https://github.com/ClawMobile/ClawMobile/releases/download/v0.5.2/ClawMobile-v0.3.2.apk)
 
 - Android version: **0.3.2** (`versionCode 16`).
 - APK filename: `ClawMobile-v0.3.2.apk`.
 - SHA-256: `ed08426b5b0b045905ad4fc198b63a2d8f1e8a82659844160d237198043d5330`.
 
-The APK checksum must match the [published APK metadata](android-companion.json).
+This checksum describes the archived 0.3.2 APK. The
+[current APK metadata](android-companion.json) tracks the latest Android version.
 
 ## Known Limitations
 
