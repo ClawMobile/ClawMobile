@@ -7,6 +7,19 @@ useful snapshots rather than long-term API stability.
 
 ## Unreleased
 
+## Android 0.3.3
+
+- Fix UI references being misread as numeric text during click verification.
+- Recover input readback when the same focused field moves, without replaying
+  input or relaxing write-target checks.
+- Clarify clipboard source preservation and missing new-form evidence recovery.
+- Separate bounded visible row text from potentially stale accessibility
+  descriptions without changing target identity.
+- Keep model defaults, saved settings, permissions, and generated-Skill behavior
+  unchanged. No new Workflow engine or benchmark score is claimed.
+- See the [Android 0.3.3 release notes](docs/releases/android-v0.3.3.md) for
+  download verification and upgrade guidance.
+
 ## Android 0.3.2
 
 - Preserve original plain text and whitespace during explicit insertions and

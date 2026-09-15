@@ -56,8 +56,9 @@ read the [Android app guide](docs/android-companion-app.md), or follow the
 invitation code. Testers who need an invitation can
 [apply through the ClawMobile waitlist](https://clawmobile.ae/#waitlist).
 
-[Android 0.3.2](docs/releases/android-v0.3.2.md) improves text-preserving edits,
-UI target handling, deeply nested screens, and stopping tasks safely. New
+[Android 0.3.3](docs/releases/android-v0.3.3.md) improves bound-target verification,
+input readback after layout changes, and clipboard source preservation, and
+separates visible row text from accessibility metadata. New
 App-local OpenAI/Beta setups still default to GPT-5.6-Sol; saved model choices
 are preserved.
 See the release notes for the changes and upgrade guidance.
